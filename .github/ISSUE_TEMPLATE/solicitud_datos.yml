@@ -1,0 +1,59 @@
+name: 📊 Solicitud de datos o nueva fuente
+description: Propón una nueva fuente de datos, indicador o métrica que debería incluirse
+title: "[Datos] "
+labels: ["data-request", "pending-review"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ¿Hay alguna fuente de información o indicador que debería estar en el Observatorio y no está?
+
+  - type: dropdown
+    id: tipo_solicitud
+    attributes:
+      label: Tipo de solicitud
+      options:
+        - Nueva fuente de datos (API, base de datos, sitio web)
+        - Nuevo indicador o métrica calculada
+        - Actualización de datos ya existentes
+        - Corrección de datos incorrectos
+    validations:
+      required: true
+
+  - type: textarea
+    id: descripcion
+    attributes:
+      label: Describe qué dato o fuente necesitas
+      placeholder: |
+        Ej: "Me gustaría ver las publicaciones de CCHEN en repositorios de la OIEA (INIS), 
+        incluyendo informes técnicos, no solo artículos de revistas..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: fuente
+    attributes:
+      label: ¿Conoces la fuente oficial o el sitio donde están esos datos?
+      placeholder: "Ej: https://inis.iaea.org — la OIEA tiene una API pública llamada InvenioRDM"
+    validations:
+      required: false
+
+  - type: textarea
+    id: caso_de_uso
+    attributes:
+      label: ¿Para qué necesitas este dato? (caso de uso)
+      placeholder: "Ej: Para presentar al directorio el alcance internacional de CCHEN en organismos multilaterales"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: prioridad
+    attributes:
+      label: ¿Qué tan urgente es para ti?
+      options:
+        - Baja — sería bueno tenerlo
+        - Media — lo necesito para un informe próximo
+        - Alta — lo necesito este mes
+    validations:
+      required: true

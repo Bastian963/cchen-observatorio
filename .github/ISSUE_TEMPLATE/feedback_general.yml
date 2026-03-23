@@ -1,0 +1,85 @@
+name: 💬 Feedback general
+description: Comparte tu experiencia usando el Observatorio CCHEN 360°
+title: "[Feedback] "
+labels: ["feedback", "pending-review"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por tomarte el tiempo de dejar feedback. Tu opinión es clave para mejorar el Observatorio.
+
+  - type: dropdown
+    id: rol
+    attributes:
+      label: ¿Cuál es tu rol en CCHEN?
+      options:
+        - Dirección Ejecutiva
+        - Unidad de I+D
+        - DIAN (Documentación e Información)
+        - Vinculación y Transferencia
+        - Otra unidad CCHEN
+        - Usuario externo / colaborador
+    validations:
+      required: true
+
+  - type: dropdown
+    id: seccion
+    attributes:
+      label: ¿Qué sección(es) usaste?
+      multiple: true
+      options:
+        - Resumen general (home)
+        - Vigilancia Tecnológica
+        - Publicaciones científicas
+        - Patentes
+        - Proyectos ANID
+        - Capital humano
+        - Revistas científicas
+        - Tendencias (BERTopic)
+        - Asistente I+D
+        - Transferencia y portafolio
+        - Gobernanza
+        - Todas / visión general
+
+  - type: textarea
+    id: que_funciono
+    attributes:
+      label: ¿Qué funcionó bien?
+      placeholder: "Ej: La búsqueda por autor es muy rápida, los gráficos de tendencias son claros..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: que_mejorar
+    attributes:
+      label: ¿Qué mejorarías o qué te resultó difícil?
+      placeholder: "Ej: No encontré cómo filtrar por año, el mapa de colaboraciones tardó en cargar..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: que_falta
+    attributes:
+      label: ¿Qué información o función te gustaría que tuviera el Observatorio?
+      placeholder: "Ej: Comparación con CCHEN de otros países, exportar tabla a Excel, alertas por email..."
+    validations:
+      required: false
+
+  - type: dropdown
+    id: frecuencia
+    attributes:
+      label: ¿Con qué frecuencia usas el Observatorio?
+      options:
+        - Primera vez hoy
+        - Ocasionalmente (1-2 veces al mes)
+        - Regularmente (semanal)
+        - Muy seguido (varias veces por semana)
+    validations:
+      required: true
+
+  - type: textarea
+    id: comentario_libre
+    attributes:
+      label: Comentario adicional (opcional)
+      placeholder: "Cualquier otra cosa que quieras comentar..."

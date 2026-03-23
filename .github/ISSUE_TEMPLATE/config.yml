@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Documentación técnica
+    url: https://github.com/basticode/cchen-observatorio/blob/main/ARCHITECTURE.md
+    about: Arquitectura del sistema y pila tecnológica

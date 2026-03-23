@@ -1,0 +1,79 @@
+name: 🐛 Problema visual o error en el dashboard
+description: Algo no se muestra bien, un gráfico está roto, o un número parece incorrecto
+title: "[Bug] "
+labels: ["bug", "pending-review"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Reporta aquí cualquier problema visual, error en pantalla, o dato que parezca incorrecto.
+
+  - type: dropdown
+    id: tipo_problema
+    attributes:
+      label: Tipo de problema
+      options:
+        - El dashboard no carga / pantalla en blanco
+        - Un gráfico no se muestra o aparece vacío
+        - Un número o porcentaje parece incorrecto
+        - El filtro o selector no funciona
+        - El Asistente I+D no responde o da error
+        - La página carga muy lento
+        - Otro problema visual
+    validations:
+      required: true
+
+  - type: dropdown
+    id: seccion
+    attributes:
+      label: ¿En qué sección ocurre?
+      options:
+        - Resumen general (home)
+        - Vigilancia Tecnológica
+        - Publicaciones científicas
+        - Patentes
+        - Proyectos ANID
+        - Capital humano
+        - Revistas científicas
+        - Tendencias (BERTopic)
+        - Asistente I+D
+        - Transferencia y portafolio
+        - Gobernanza
+        - No sé / varias secciones
+    validations:
+      required: true
+
+  - type: textarea
+    id: descripcion
+    attributes:
+      label: Describe el problema con detalle
+      placeholder: |
+        Ej: "Al hacer clic en 'Proyectos ANID' y filtrar por año 2023, el gráfico de barras
+        desaparece y aparece el mensaje 'No data to display'..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: esperado
+    attributes:
+      label: ¿Qué esperabas que ocurriera?
+      placeholder: "Ej: Que el gráfico mostrara los 15 proyectos de 2023 como lo hace para otros años"
+    validations:
+      required: false
+
+  - type: input
+    id: fecha
+    attributes:
+      label: ¿Cuándo ocurrió?
+      placeholder: "Ej: 2026-03-20, aproximadamente las 10:00"
+    validations:
+      required: false
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Captura de pantalla (si tienes)
+      description: Puedes arrastrar y soltar una imagen aquí directamente.
+    validations:
+      required: false
