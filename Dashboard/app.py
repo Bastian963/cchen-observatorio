@@ -793,7 +793,7 @@ _DATASET_METADATA = {
     "iaea_tc": {
         "label": "IAEA Technical Cooperation",
         "source": "Data/Funding/cchen_iaea_tc.csv",
-        "table_name": "",
+        "table_name": "iaea_tc_projects",
         "sensitive": False,
     },
     "perfiles_inst": {
@@ -901,7 +901,7 @@ _DATASET_METADATA = {
     "dian": {
         "label": "Publicaciones DIAN",
         "source": "Data/Publicaciones DIAN CCHEN/Publicaciones DIAN.xlsx",
-        "table_name": "",
+        "table_name": "dian_publications",
         "sensitive": False,
     },
 }

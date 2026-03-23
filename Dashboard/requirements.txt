@@ -1,6 +1,7 @@
 streamlit[auth]>=1.35.0
 pandas>=2.0.0
 plotly>=5.20.0
+numpy>=2.0.0
 openpyxl>=3.1.0
 groq>=1.0.0
 reportlab>=4.0.0
@@ -8,3 +9,7 @@ matplotlib>=3.9.0
 duckdb>=1.1.0
 supabase>=2.4.0
 networkx>=3.0
+requests>=2.32.0
+python-dotenv>=1.0.0
+sentence-transformers>=5.0.0
+scikit-learn>=1.6.0
