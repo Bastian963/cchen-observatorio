@@ -1,0 +1,10 @@
+streamlit[auth]>=1.35.0
+pandas>=2.0.0
+plotly>=5.20.0
+openpyxl>=3.1.0
+groq>=1.0.0
+reportlab>=4.0.0
+matplotlib>=3.9.0
+duckdb>=1.1.0
+supabase>=2.4.0
+networkx>=3.0

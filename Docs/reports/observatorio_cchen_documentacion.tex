@@ -1,0 +1,1429 @@
+%% ============================================================
+%%  Observatorio Tecnológico CCHEN 360° --- Documentación Técnica
+%%  Versión beta 0.2 · Marzo 2026
+%%  Autor: Bastián Ayala Inostroza
+%% ============================================================
+\documentclass[12pt,a4paper]{report}
+
+% --- Paquetes -----------------------------------------------
+% inputenc not needed with lualatex
+% fontenc handled by lualatex
+\usepackage[spanish,es-nodecimaldot,es-noshorthands]{babel}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setsansfont{Latin Modern Sans}
+\setmonofont{Latin Modern Mono}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\usepackage{fontawesome5}
+\usepackage{amsmath}
+\usepackage{parskip}
+\usepackage{microtype}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{mdframed}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds}
+
+% --- Colores institucionales --------------------------------
+\definecolor{cchenblue}{RGB}{0,59,111}
+\definecolor{cchenred}{RGB}{176,30,30}
+\definecolor{cchengold}{RGB}{200,160,0}
+\definecolor{cchengreen}{RGB}{0,128,96}
+\definecolor{cchengray}{RGB}{90,90,90}
+\definecolor{cchenlightblue}{RGB}{214,228,240}
+\definecolor{codebg}{RGB}{248,249,250}
+\definecolor{codefg}{RGB}{40,44,52}
+\definecolor{kpiblue}{RGB}{0,59,111}
+\definecolor{kpigreen}{RGB}{0,128,96}
+\definecolor{kpired}{RGB}{176,30,30}
+\definecolor{kpigold}{RGB}{180,140,0}
+
+% --- Hipervínculos ------------------------------------------
+\hypersetup{
+  colorlinks   = true,
+  linkcolor    = cchenblue,
+  urlcolor     = cchenblue,
+  citecolor    = cchenblue,
+  pdftitle     = {Observatorio Tecnológico CCHEN 360° --- Documentación Técnica},
+  pdfauthor    = {Bastián Ayala Inostroza},
+  pdfsubject   = {Documentación interna beta},
+}
+
+% --- Cabeceras y pies ---------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textcolor{cchenblue}{\small\textbf{Observatorio CCHEN 360°}}}
+\fancyhead[R]{\textcolor{cchengray}{\small Documentación Técnica --- Beta 0.2}}
+\fancyfoot[C]{\textcolor{cchengray}{\small\thepage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{cchenblue}\leaders\hrule height\headrulewidth\hfill}}
+
+% --- Secciones con color ------------------------------------
+\titleformat{\chapter}[display]
+  {\color{cchenblue}\bfseries\LARGE}
+  {\color{cchenblue}\chaptertitlename\ \thechapter}{14pt}{\huge}
+\titleformat{\section}
+  {\color{cchenblue}\bfseries\Large}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\color{cchenblue}\bfseries\large}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\color{cchengray}\bfseries\normalsize}{\thesubsubsection}{1em}{}
+
+% --- Cajas de información ------------------------------------
+\tcbuselibrary{skins,breakable}
+
+\newtcolorbox{infobox}[1][]{
+  enhanced, breakable,
+  colback=cchenlightblue!30, colframe=cchenblue,
+  boxrule=0.5pt, arc=4pt,
+  title={#1}, fonttitle=\bfseries\small\color{white},
+  coltitle=white, attach boxed title to top left={yshift=-2mm,xshift=4mm},
+  boxed title style={colback=cchenblue, arc=3pt},
+}
+
+\newtcolorbox{alertbox}[1][]{
+  enhanced, breakable,
+  colback=kpired!7, colframe=kpired,
+  boxrule=0.5pt, arc=4pt,
+  title={#1}, fonttitle=\bfseries\small,
+  coltitle=white, attach boxed title to top left={yshift=-2mm,xshift=4mm},
+  boxed title style={colback=kpired, arc=3pt},
+}
+
+\newtcolorbox{codebox}[1][]{
+  enhanced, breakable,
+  colback=codebg, colframe=cchengray!40,
+  boxrule=0.4pt, arc=3pt,
+  fontupper=\ttfamily\small,
+  title={#1}, fonttitle=\sffamily\small\bfseries,
+  coltitle=cchengray,
+}
+
+% --- Listings (código) --------------------------------------
+\lstdefinestyle{pythonstyle}{
+  language=Python,
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small\color{codefg},
+  keywordstyle=\color{cchenblue}\bfseries,
+  stringstyle=\color{cchengreen},
+  commentstyle=\color{cchengray}\itshape,
+  numberstyle=\tiny\color{cchengray},
+  numbers=left, numbersep=8pt,
+  breaklines=true, showstringspaces=false,
+  frame=single, framerule=0.4pt,
+  rulecolor=\color{cchengray!40},
+  xleftmargin=14pt,
+}
+\lstdefinestyle{bashstyle}{
+  language=bash,
+  backgroundcolor=\color{gray!8},
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{cchenblue}\bfseries,
+  breaklines=true, showstringspaces=false,
+  frame=single, framerule=0.4pt,
+  rulecolor=\color{cchengray!40},
+}
+\lstdefinestyle{sqlstyle}{
+  language=SQL,
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small\color{codefg},
+  keywordstyle=\color{cchenred}\bfseries,
+  stringstyle=\color{cchengreen},
+  commentstyle=\color{cchengray}\itshape,
+  breaklines=true, showstringspaces=false,
+  frame=single, framerule=0.4pt,
+  rulecolor=\color{cchengray!40},
+}
+
+% --- KPI box ------------------------------------------------
+\newcommand{\kpi}[3]{%
+  \begin{tcolorbox}[
+    enhanced, colback=#1!10, colframe=#1,
+    boxrule=0.5pt, arc=4pt,
+    width=0.22\textwidth,
+    halign=center, valign=center,
+    height=1.8cm, nobeforeafter,
+  ]
+    {\Large\bfseries\color{#1}#2}\\[2pt]
+    {\small\color{cchengray}#3}
+  \end{tcolorbox}%
+}
+
+% --- Columna nueva de tabla ----------------------------------
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+
+% --- Macros -------------------------------------------------
+\newcommand{\api}[1]{\texttt{\color{cchengreen}#1}}
+\newcommand{\file}[1]{\texttt{\color{cchenblue}#1}}
+\newcommand{\pkg}[1]{\textit{\color{cchengold}#1}}
+\newcommand{\badge}[2]{%
+  \colorbox{#1}{\color{white}\small\textbf{\ #2\ }}%
+}
+\newcommand{\trl}[1]{\badge{cchengreen}{TRL #1}}
+\newcommand{\bpending}{\badge{kpigold}{Pendiente}}
+\newcommand{\bactive}{\badge{cchengreen}{Activo}}
+\newcommand{\bpartial}{\badge{cchengold}{Parcial}}
+
+% --- Inicio del documento -----------------------------------
+\begin{document}
+
+%% ════════════════════════════════════════════════════════════
+%%  PORTADA
+%% ════════════════════════════════════════════════════════════
+\begin{titlepage}
+  \pagecolor{cchenblue}
+  \color{white}
+  \centering
+  \vspace*{2cm}
+
+  % Logo/icono institucional (placeholder)
+  {\fontsize{60}{60}\selectfont \faAtom}
+
+  \vspace{0.8cm}
+  {\fontsize{11}{13}\selectfont\sffamily\color{white!80}
+    COMISIÓN CHILENA DE ENERGÍA NUCLEAR \textbullet\ CORFO CCHEN 360°}
+
+  \vspace{0.5cm}
+  \rule{12cm}{0.4pt}
+  \vspace{0.5cm}
+
+  {\fontsize{28}{34}\selectfont\bfseries\sffamily
+    Observatorio Tecnológico\\[6pt] CCHEN 360°}
+
+  \vspace{0.4cm}
+  {\fontsize{14}{18}\selectfont\sffamily\color{white!80}
+    Documentación Técnica Integral}
+
+  \vspace{1.2cm}
+  \rule{12cm}{0.4pt}
+  \vspace{0.8cm}
+
+  \begin{tabular}{ll}
+    \faCalendar\quad \textbf{Versión:}    & Beta 0.2 \\[4pt]
+    \faCalendar\quad \textbf{Fecha:}   & Marzo 2026 \\[4pt]
+    \faUser\quad \textbf{Autor:}          & Bastián Ayala Inostroza \\[4pt]
+    \faCode\quad \textbf{TRL actual:}     & 4 (demostración de concepto) \\[4pt]
+    \faDatabase\quad \textbf{Publicaciones:} & 877 trabajos · 7{,}971 autoría \\[4pt]
+    \faRobot\quad \textbf{LLM:}           & Groq API (llama-3.3-70b) \\
+  \end{tabular}
+
+  \vfill
+  {\small\color{white!60}
+    Documento interno de uso técnico --- No distribuir sin autorización\\
+    Plan de Fortalecimiento de Aplicaciones Nucleares --- CCHEN / CORFO}
+\end{titlepage}
+\nopagecolor
+
+%% ════════════════════════════════════════════════════════════
+%%  TABLA DE CONTENIDOS
+%% ════════════════════════════════════════════════════════════
+\tableofcontents
+\clearpage
+
+%% ════════════════════════════════════════════════════════════
+\chapter{Resumen Ejecutivo}
+%% ════════════════════════════════════════════════════════════
+
+El \textbf{Observatorio Tecnológico CCHEN 360°} es un sistema de inteligencia de datos diseñado para la Comisión Chilena de Energía Nuclear (CCHEN), en el marco del proyecto CORFO de fortalecimiento de aplicaciones nucleares. Su objetivo es consolidar y analizar la producción científica, técnica e institucional de CCHEN, proveyendo capacidades de vigilancia tecnológica, análisis bibliométrico, gestión de capital humano y gobernanza de datos.
+
+\begin{infobox}[Estado actual del sistema]
+\begin{tabular}{ll}
+  \faCheckCircle\quad \textbf{877} publicaciones científicas indexadas (OpenAlex) \\
+  \faCheckCircle\quad \textbf{7{,}971} autorías con afiliación verificada \\
+  \faCheckCircle\quad \textbf{112} registros de capital humano (formación) \\
+  \faCheckCircle\quad \textbf{48} perfiles ORCID de investigadores CCHEN \\
+  \faCheckCircle\quad \textbf{30} proyectos ANID adjudicados (2000–2025) \\
+  \faCheckCircle\quad \textbf{84} convenios nacionales + \textbf{41} acuerdos internacionales \\
+  \faCheckCircle\quad \textbf{764} DOIs verificados con Unpaywall (OA status) \\
+  \faCheckCircle\quad \textbf{109+} documentos nucleares IAEA INIS (vigilancia semanal) \\
+  \faCheckCircle\quad Automatización semanal vía GitHub Actions (lunes 05:00 CLT) \\
+\end{tabular}
+\end{infobox}
+
+\bigskip
+
+El sistema integra \textbf{15+ APIs públicas}, \textbf{12 scripts de automatización}, una \textbf{base de datos PostgreSQL} en Supabase con 17+ tablas, y un \textbf{dashboard interactivo} con asistente IA integrado (Groq/LLM).
+
+\section*{KPIs del sistema}
+
+\noindent
+\kpi{kpiblue}{877}{Publicaciones}\hfill
+\kpi{kpigreen}{50\%}{Papers OA}\hfill
+\kpi{kpired}{21{,}348}{Conceptos OpenAlex}\hfill
+\kpi{kpigold}{TRL 4}{Madurez actual}
+
+\bigskip\bigskip
+
+\noindent
+\kpi{kpiblue}{12}{Scripts activos}\hfill
+\kpi{kpigreen}{15+}{APIs integradas}\hfill
+\kpi{kpired}{7}{Módulos}\hfill
+\kpi{kpigold}{475 MB}{Data lake}
+
+%% ════════════════════════════════════════════════════════════
+\chapter{Contexto Institucional y Motivación}
+%% ════════════════════════════════════════════════════════════
+
+\section{La CCHEN y el proyecto CORFO}
+
+La Comisión Chilena de Energía Nuclear (CCHEN) es la institución estatal responsable de la investigación, desarrollo y aplicaciones pacíficas de la energía nuclear en Chile. Dentro del \textbf{Plan de Fortalecimiento de Aplicaciones Nucleares} financiado por CORFO (CORFO CCHEN 360°), se identificó la necesidad de contar con un observatorio de inteligencia científica y tecnológica que permita:
+
+\begin{enumerate}[leftmargin=2cm]
+  \item Monitorear y analizar la producción científica institucional de forma sistemática.
+  \item Vigilar el entorno tecnológico y de financiamiento relevante para las áreas nucleares.
+  \item Gestionar y visualizar el capital humano en formación.
+  \item Fortalecer la gobernanza de datos institucionales.
+  \item Facilitar la transferencia tecnológica y la colaboración ecosistémica.
+\end{enumerate}
+
+\section{Alcance y usuarios objetivo}
+
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Usuario} & \textbf{Uso principal} \\
+  \midrule
+  Dirección Ejecutiva & KPIs institucionales, decisiones estratégicas \\
+  Unidad I+D & Análisis bibliométrico, vigilancia tecnológica \\
+  DIAN & Seguimiento de publicaciones internas \\
+  Gestores de capital humano & Formación y trayectorias del personal \\
+  Equipo de vinculación & Convenios, colaboraciones, transferencia \\
+  Analistas de datos & Backend, ETL, calidad de datos \\
+  \bottomrule
+\end{tabular}
+
+\section{Nivel de madurez tecnológica (TRL)}
+
+El proyecto sigue el marco \textit{Technology Readiness Level} (TRL) de la Agencia Espacial Europea (ESA), adaptado al contexto de software de inteligencia institucional:
+
+\begin{center}
+\begin{tikzpicture}
+  \foreach \i/\label/\color in {
+    1/Concepto/gray!40,
+    2/Formulado/gray!50,
+    3/Prueba\\ analítica/gray!60,
+    4/Validación\\ laboratorio/cchenblue!70,
+    5/Validación\\ entorno relevante/gray!30,
+    6/Demo\\ entorno relevante/gray!30,
+    7/Demo\\ operacional/gray!30,
+    8/Sistema\\ completo/gray!30,
+    9/Producción/gray!30
+  } {
+    \pgfmathsetmacro{\x}{(\i-1)*1.2}
+    \ifnum\i=4
+      \node[draw, fill=cchenblue, text=white, minimum width=1.1cm, minimum height=0.7cm,
+            align=center, font=\tiny\bfseries] at (\x,0) {TRL \i\\\label};
+    \else
+      \node[draw, fill=gray!20, text=gray, minimum width=1.1cm, minimum height=0.7cm,
+            align=center, font=\tiny] at (\x,0) {TRL \i\\\label};
+    \fi
+  }
+  \draw[->, thick, cchenblue] (3.6, -0.6) -- (3.6,-0.9) node[below, font=\small\bfseries\color{cchenblue}]{Estado actual};
+\end{tikzpicture}
+\end{center}
+
+%% ════════════════════════════════════════════════════════════
+\chapter{Arquitectura del Sistema}
+%% ════════════════════════════════════════════════════════════
+
+\section{Visión general: arquitectura de tres capas}
+
+El sistema sigue una arquitectura de tres capas bien definida:
+
+\begin{center}
+\begin{tikzpicture}[node distance=0.8cm, >=Stealth]
+  % Capa 3
+  \node[draw=cchenblue, fill=cchenblue!10, rounded corners=5pt,
+        minimum width=12cm, minimum height=1.5cm, align=center, font=\small\bfseries] (c3)
+    {CAPA 3 --- PRESENTACIÓN\\[4pt]
+     \small\normalfont Streamlit Dashboard \quad|\quad Asistente IA (Groq) \quad|\quad Reportes PDF};
+
+  % Capa 2
+  \node[draw=cchengreen, fill=cchengreen!8, rounded corners=5pt,
+        minimum width=12cm, minimum height=1.5cm, align=center, below=of c3, font=\small\bfseries] (c2)
+    {CAPA 2 --- LÓGICA / ANÁLISIS\\[4pt]
+     \small\normalfont data\_loader.py \quad|\quad DuckDB \quad|\quad Supabase REST API};
+
+  % Capa 1
+  \node[draw=kpigold, fill=kpigold!8, rounded corners=5pt,
+        minimum width=12cm, minimum height=1.5cm, align=center, below=of c2, font=\small\bfseries] (c1)
+    {CAPA 1 --- DATOS\\[4pt]
+     \small\normalfont CSVs locales (Data Lake) \quad|\quad Supabase / PostgreSQL \quad|\quad JSON state files};
+
+  % Flechas
+  \draw[->, thick, cchenblue!60] (c3.south) -- (c2.north);
+  \draw[->, thick, cchengreen!60] (c2.south) -- (c1.north);
+\end{tikzpicture}
+\end{center}
+
+\section{Arquitectura de datos: Data Lake + Data Warehouse}
+
+\begin{lstlisting}[caption={Flujo de datos del sistema}, style=bashstyle]
+FUENTES EXTERNAS                     FUENTES INTERNAS
+--------------------                 --------------------
+OpenAlex API (publicaciones)         Registro DIAN (Excel -> CSV)
+CrossRef API (financiamiento)        Capital Humano (Excel -> CSV)
+ORCID API (investigadores)           ANID Repositorio (scraping)
+Lens.org / PatentsView (patentes)    datos.gob.cl (convenios)
+arXiv RSS (vigilancia)
+Google News RSS (noticias)
+IAEA INIS REST API (nuclear)
+SJR/Scimago CSV (rankings)
+Unpaywall API (OA status)
+
+        |--- Notebooks/ ETL (ejecucion manual trimestral)
+        |--- Scripts/   (ejecucion automatica semanal -- GitHub Actions)
+
++-------------------------------------------+
+|  DATA LAKE (raw)                          |
+|  /Data/**/*.csv  118 archivos, ~475 MB    |
+|  Versionados en GitHub                    |
++-------------------------------------------+
+        |--- data_loader.py (normalizacion, pandas)
+
++-------------------------------------------+
+|  DATA WAREHOUSE (curado)                  |
+|  Supabase (PostgreSQL 15) -- 17+ tablas   |
+|  API REST autogenerada + RLS              |
++-------------------------------------------+
+        |--- DuckDB + data_loader.py
+
++-------------------------------------------+
+|  CAPA ANALITICA                           |
+|  Streamlit Dashboard -- 60+ secciones UI  |
+|  Groq/LLM Assistant -- llama-3.3-70b     |
++-------------------------------------------+
+\end{lstlisting}
+
+\section{Stack tecnológico actual (TRL 4)}
+
+\begin{longtable}{L{3.5cm} L{4cm} L{6.5cm}}
+  \toprule
+  \textbf{Capa} & \textbf{Componente} & \textbf{Tecnología / Versión} \\
+  \midrule
+  \endhead
+  \multirow{3}{*}{Frontend} & Dashboard principal & Streamlit $\geq$ 1.35.0 (Python) \\
+                             & Gráficos interactivos & Plotly $\geq$ 5.20.0 \\
+                             & Gráficos estáticos/PDF & Matplotlib $\geq$ 3.9.0 \\
+  \midrule
+  \multirow{4}{*}{Backend/Lógica} & Data loading & pandas $\geq$ 2.0.0 \\
+                                   & Queries analíticas & DuckDB $\geq$ 1.1.0 \\
+                                   & Redes de colaboración & NetworkX $\geq$ 3.0 \\
+                                   & HTTP requests & requests $\geq$ 2.31.0 \\
+  \midrule
+  \multirow{3}{*}{Bases de datos} & Data warehouse & Supabase / PostgreSQL 15 \\
+                                   & Motor analítico local & DuckDB (embedded) \\
+                                   & Estado de monitoreo & JSON (state files) \\
+  \midrule
+  \multirow{2}{*}{IA / LLM} & Modelo principal & Groq API: \texttt{llama-3.3-70b-versatile} \\
+                              & Modelo ligero & Groq API: \texttt{llama-3.1-8b-instant} \\
+  \midrule
+  \multirow{2}{*}{Reportes} & PDF institucionales & reportlab $\geq$ 4.0.0 \\
+                              & Excel/CSV & openpyxl $\geq$ 3.1.0 \\
+  \midrule
+  \multirow{2}{*}{Infraestructura} & Almacenamiento actual & Dropbox $\to$ GitHub \\
+                                    & Automatización semanal & GitHub Actions (cron) \\
+  \bottomrule
+\end{longtable}
+
+\section{Stack objetivo (TRL 6–7)}
+
+Con un presupuesto estimado de MM\$42+, el stack de producción contempla:
+
+\begin{longtable}{L{3.5cm} L{4.5cm} L{5.5cm}}
+  \toprule
+  \textbf{Capa} & \textbf{Tecnología objetivo} & \textbf{Justificación} \\
+  \midrule
+  \endhead
+  Frontend SPA & Angular / TypeScript & Rendimiento, escalabilidad empresarial \\
+  Backend API & Django REST Framework & Ecosistema Python maduro \\
+  BD producción & PostgreSQL en Huawei Cloud & Soberanía de datos, SLA institucional \\
+  Data Lake & Object Storage S3-compat. & Escalabilidad sin límite \\
+  BI & Power BI o Metabase OSS & Dashboards para no-técnicos \\
+  Orquestación ETL & Apache Airflow & DAGs reproducibles, monitoreo \\
+  Auth & SAML 2.0 + OAuth2 & SSO institucional \\
+  Monitoreo & Prometheus + Grafana & Observabilidad del sistema \\
+  \bottomrule
+\end{longtable}
+
+%% ════════════════════════════════════════════════════════════
+\chapter{Módulos del Observatorio}
+%% ════════════════════════════════════════════════════════════
+
+El Observatorio CCHEN 360° se organiza en \textbf{7 módulos estratégicos} definidos en la Memoria Metodológica:
+
+\section{Módulo A --- Vigilancia y Prospección Tecnológica}
+\textbf{Estado:} \bpartial \quad \textbf{TRL:} 4
+
+Monitoreo sistemático del entorno científico, tecnológico y de financiamiento relevante para CCHEN. Incluye alertas de relevancia ALTA/MEDIA/BAJA automatizadas.
+
+\textbf{Fuentes activas:}
+\begin{itemize}
+  \item \textbf{arXiv RSS} --- 5 feeds temáticos (nuclear, física, medicina nuclear, etc.)
+  \item \textbf{Google News RSS} --- menciones de CCHEN en medios
+  \item \textbf{ANID Convocatorias} --- scraping del calendario de fondos
+  \item \textbf{IAEA INIS} --- base de datos nuclear especializada (InvenioRDM API)
+\end{itemize}
+
+\textbf{Clasificación de relevancia} (keywords):
+
+\begin{tabular}{L{2.5cm} L{10cm}}
+  \toprule
+  \textbf{Nivel} & \textbf{Keywords} \\
+  \midrule
+  ALTA & \texttt{nuclear medicine, radiopharmaceutical, radioactive waste, nuclear safety, radiation dosimetry, neutron activation, isotope production, reactor physics, nuclear fuel, gamma spectroscopy, chile} \\
+  \midrule
+  MEDIA & \texttt{radiation, nuclear, isotope, neutron, proton therapy, brachytherapy, cyclotron, radioactivity, fission, fusion, dosimeter, shielding, radiotracer} \\
+  \bottomrule
+\end{tabular}
+
+\textbf{Búsquedas IAEA INIS activas:}
+
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Query} & \textbf{Área} \\
+  \midrule
+  \texttt{nuclear medicine Chile} & Medicina Nuclear \\
+  \texttt{radiation protection Chile} & Radioprotección \\
+  \texttt{nuclear reactor physics} & Física de Reactores \\
+  \texttt{radiopharmaceuticals production} & Radiofármacos \\
+  \texttt{radioactive waste management} & Residuos Radiactivos \\
+  \texttt{neutron activation analysis} & Activación Neutrónica \\
+  \texttt{radiation dosimetry} & Dosimetría \\
+  \texttt{nuclear safety regulation} & Regulación Nuclear \\
+  \texttt{isotope production cyclotron} & Producción de Isótopos \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Módulo B --- Inteligencia Aplicada}
+\textbf{Estado:} \bactive \quad \textbf{TRL:} 4
+
+Motor analítico central: dashboard interactivo, reportes bibliométricos, asistente IA, redes de colaboración.
+
+\textbf{Capacidades actuales:}
+\begin{itemize}
+  \item Análisis bibliométrico completo (h-index, distribución cuartil SJR, tendencias)
+  \item Mapa de colaboración internacional (choropleth 60+ países)
+  \item Red de co-autoría (NetworkX + Plotly, spring layout, top-N autores)
+  \item Red institucional (bipartita autor $\leftrightarrow$ institución)
+  \item Perfiles individuales de investigador (H-index, papers, evolución)
+  \item Análisis de capital humano (trayectorias, cohortes, cumplimiento documental)
+  \item Asistente IA con contexto CCHEN (streaming, memoria de sesión)
+\end{itemize}
+
+\section{Módulo C --- Difusión y Divulgación}
+\textbf{Estado:} \bpartial \quad \textbf{TRL:} 3
+
+Generación automática de boletines científicos semanales en HTML.
+
+\begin{itemize}
+  \item Script \file{generar\_boletin.py}: agrega noticias, arXiv, publicaciones CCHEN
+  \item Salida: \file{Data/Boletines/boletin\_YYYY-SWW.html}
+  \item Futuro: envío automático vía Mailchimp/Brevo, publicación en GitHub Pages
+\end{itemize}
+
+\section{Módulo D --- Repositorio de Datos}
+\textbf{Estado:} \bpartial \quad \textbf{TRL:} 3
+
+Data lake local (CSV) + migración en curso a Supabase (PostgreSQL). Script de migración idempotente disponible (\file{Database/migrate\_to\_supabase.py}).
+
+\section{Módulo E --- Transferencia y Codiseño}
+\textbf{Estado:} \bpending \quad \textbf{TRL:} 1--2
+
+Portafolio tecnológico semilla (\file{portafolio\_tecnologico\_semilla.csv}). Pendiente: inventario TRL 6--9, gestión de IP, plataformas colaborativas.
+
+\section{Módulo F --- Colaboración Ecosistémica}
+\textbf{Estado:} \bpartial \quad \textbf{TRL:} 2--3
+
+84 convenios nacionales + 41 acuerdos internacionales integrados. Registro ROR de instituciones colaboradoras normalizado ($\sim$150 entidades).
+
+\section{Módulo G --- Gobernanza de Datos}
+\textbf{Estado:} \bpartial \quad \textbf{TRL:} 3
+
+Sistema de calidad de datos (\file{Database/data\_quality.py}): 20+ checks de integridad, control de frescura de datos, reporte semanal automático.
+
+%% ════════════════════════════════════════════════════════════
+\chapter{APIs e Integraciones Externas}
+%% ════════════════════════════════════════════════════════════
+
+\section{APIs públicas (sin autenticación)}
+
+\begin{longtable}{L{3.5cm} L{4cm} L{4.5cm} L{2cm}}
+  \toprule
+  \textbf{API} & \textbf{Endpoint base} & \textbf{Uso en el sistema} & \textbf{Rate limit} \\
+  \midrule
+  \endhead
+  \textbf{OpenAlex} & \api{api.openalex.org} & Publicaciones, conceptos, instituciones, financiamiento & 10M/mes \\
+  \midrule
+  \textbf{CrossRef} & \api{api.crossref.org} & Financiamiento de publicaciones, abstracts, referencias & 50 req/s \\
+  \midrule
+  \textbf{ORCID} & \api{pub.orcid.org/v3.0} & Perfiles de investigadores, ORCID IDs & Generoso \\
+  \midrule
+  \textbf{arXiv RSS} & \api{arxiv.org/rss/*} & Vigilancia semanal de preprints (5 feeds) & Via cron \\
+  \midrule
+  \textbf{Google News RSS} & \api{news.google.com/rss} & Monitoreo de prensa (4 queries) & Via cron \\
+  \midrule
+  \textbf{IAEA INIS} & \api{inis.iaea.org/api} & Base de datos nuclear especializada (InvenioRDM) & Generoso \\
+  \midrule
+  \textbf{DataCite} & \api{api.datacite.org} & Datasets y outputs no-publicaciones & Generoso \\
+  \midrule
+  \textbf{OpenAIRE} & \api{api.openaire.eu} & Fuentes alternativas de outputs & Generoso \\
+  \midrule
+  \textbf{Unpaywall} & \api{api.unpaywall.org/v2} & OA status, PDF URLs directos (764 DOIs) & Email req. \\
+  \midrule
+  \textbf{Semantic Scholar} & \api{api.semanticscholar.org} & Enriquecimiento de citas & Moderado \\
+  \bottomrule
+\end{longtable}
+
+\section{APIs con credenciales}
+
+\begin{longtable}{L{3.5cm} L{3cm} L{4cm} L{3cm}}
+  \toprule
+  \textbf{API} & \textbf{Tipo acceso} & \textbf{Uso} & \textbf{Estado} \\
+  \midrule
+  \endhead
+  \textbf{Groq API} & API key (gratuito) & Asistente IA (LLM streaming) & \bactive \\
+  \midrule
+  \textbf{Supabase} & URL + anon key & Data warehouse, API REST & \bpartial \\
+  \midrule
+  \textbf{PatentsView} & API key (gratuito) & Patentes USPTO & \bpending \\
+  \midrule
+  \textbf{Lens.org} & Token (académico) & Patentes globales & \bpending \\
+  \bottomrule
+\end{longtable}
+
+\section{Protocolo de acceso responsable}
+
+Todos los scripts siguen el protocolo de \textit{polite access}:
+\begin{itemize}
+  \item \textbf{User-Agent:} \texttt{CCHEN-Observatory/1.0 (mailto:\{email\})}
+  \item \textbf{Email contacto:} variable de entorno \texttt{CCHEN\_CONTACT\_EMAIL}
+  \item \textbf{Delays:} 0.12--1.0 segundos entre requests según la API
+  \item \textbf{Timeouts:} 20--30 segundos (sin bloqueos indefinidos)
+  \item \textbf{Retry logic:} manejo de HTTP 429, 422, 404 con fallback gracioso
+\end{itemize}
+
+%% ════════════════════════════════════════════════════════════
+\chapter{Pipeline de Datos (ETL)}
+%% ════════════════════════════════════════════════════════════
+
+\section{ETL manual --- Notebooks Jupyter}
+
+Los notebooks ejecutan el pipeline de ingestión principal de forma trimestral o semestral:
+
+\begin{longtable}{C{0.8cm} L{5cm} C{2cm} L{4cm} L{2.5cm}}
+  \toprule
+  \textbf{\#} & \textbf{Notebook} & \textbf{Frecuencia} & \textbf{Output principal} & \textbf{Fuente} \\
+  \midrule
+  \endhead
+  01 & Download publications & Trimestral & \file{cchen\_openalex\_works.csv} & OpenAlex \\
+  02 & CrossRef enrichment & Trimestral & \file{cchen\_crossref\_enriched.csv} & CrossRef \\
+  03 & OpenAlex concepts & Trimestral & \file{cchen\_openalex\_concepts.csv} & OpenAlex \\
+  04 & ORCID researchers & Semestral & \file{cchen\_researchers\_orcid.csv} & ORCID \\
+  05 & Download patents & On-demand & \file{cchen\_patents.csv} & Lens.org/USPTO \\
+  06 & ANID repository & Trimestral & \file{RepositorioAnid\_con\_monto.csv} & ANID \\
+  07 & MinCiencia funding & Semestral & \file{cchen\_funding\_complementario.csv} & Manual + APIs \\
+  08 & Web scraping ANID & Semanal & \file{convocatorias\_curadas.csv} & ANID.cl \\
+  09 & SJR crossmatch & Anual (Enero) & \file{..\_with\_quartile\_sjr.csv} & Scimago \\
+  \bottomrule
+\end{longtable}
+
+\section{ETL automatizado --- GitHub Actions}
+
+\textbf{Disparador:} Cron \texttt{0 8 * * 1} (lunes 08:00 UTC = 05:00 CLT)\\
+\textbf{Disparador adicional:} \texttt{workflow\_dispatch} (ejecución manual desde GitHub)
+
+\begin{longtable}{L{5cm} L{3.5cm} L{4.5cm}}
+  \toprule
+  \textbf{Script} & \textbf{Output} & \textbf{Nota} \\
+  \midrule
+  \endhead
+  \file{arxiv\_monitor.py} & \file{arxiv\_monitor.csv} & 5 feeds RSS; deduplicación por ID \\
+  \file{news\_monitor.py} & \file{news\_monitor.csv} & 4 queries Google News; MD5 state \\
+  \file{convocatorias\_monitor.py} & \file{convocatorias\_curadas.csv} & HTML scraping ANID; \texttt{continue-on-error} \\
+  \file{iaea\_inis\_monitor.py} & \file{iaea\_inis\_monitor.csv} & 9 búsquedas nucleares; strip HTML \\
+  \file{generar\_boletin.py} & \file{boletin\_YYYY-SWW.html} & Newsletter semanal HTML \\
+  \file{data\_quality.py} & \file{calidad\_datos.csv} & 20+ checks de integridad \\
+  \bottomrule
+\end{longtable}
+
+\textbf{Post-ejecución:} commit + push automático de los CSV actualizados al repositorio GitHub.
+
+\section{Gestión de estado y deduplicación}
+
+Cada script de vigilancia mantiene un archivo JSON de estado para evitar registros duplicados entre ejecuciones:
+
+\begin{lstlisting}[style=pythonstyle, caption={Patrón de gestión de estado (arxiv\_monitor.py)}]
+# Cargar IDs ya procesados
+def load_state() -> set:
+    if STATE.exists():
+        with open(STATE) as f:
+            return set(json.load(f).get("seen_ids", []))
+    return set()
+
+# Guardar estado actualizado
+def save_state(seen_ids: set) -> None:
+    with open(STATE, "w") as f:
+        json.dump({
+            "seen_ids": sorted(seen_ids),
+            "updated":  datetime.datetime.now().isoformat()
+        }, f)
+
+# Solo procesar entradas nuevas
+new_items = [it for it in items if it["id"] not in seen_ids]
+for it in new_items:
+    seen_ids.add(it["id"])
+\end{lstlisting}
+
+\textbf{Generación de IDs:}
+\begin{itemize}
+  \item \textbf{arXiv:} extraído de la URL (\texttt{2403.12345})
+  \item \textbf{Google News:} \texttt{MD5(título + fuente)[:12]}
+  \item \textbf{ANID convocatorias:} \texttt{MD5(título + url)[:12]}
+  \item \textbf{IAEA INIS:} ID nativo del registro InvenioRDM
+\end{itemize}
+
+%% ════════════════════════════════════════════════════════════
+\chapter{Scripts del Sistema}
+%% ════════════════════════════════════════════════════════════
+
+\section{Inventario completo de scripts}
+
+\begin{longtable}{L{5.5cm} C{1.2cm} L{7cm}}
+  \toprule
+  \textbf{Script} & \textbf{Líneas} & \textbf{Propósito} \\
+  \midrule
+  \endhead
+  \file{arxiv\_monitor.py} & $\sim$300 & Vigilancia semanal de preprints arXiv (5 feeds RSS) \\
+  \file{news\_monitor.py} & $\sim$253 & Monitoreo de menciones CCHEN en Google News \\
+  \file{convocatorias\_monitor.py} & $\sim$310 & Scraping y curaduría de convocatorias ANID \\
+  \file{iaea\_inis\_monitor.py} & $\sim$273 & Vigilancia en base de datos nuclear IAEA INIS \\
+  \file{generar\_boletin.py} & $\sim$200 & Generación de boletín semanal HTML \\
+  \file{build\_ror\_registry.py} & $\sim$300 & Normalización de instituciones vía ROR \\
+  \file{fetch\_datacite\_outputs.py} & $\sim$150 & Descarga de datasets/outputs desde DataCite \\
+  \file{fetch\_openaire\_outputs.py} & $\sim$150 & Outputs alternativos desde OpenAIRE Graph \\
+  \file{fetch\_patentsview\_patents.py} & $\sim$200 & Búsqueda de patentes USPTO (PatentsView) \\
+  \file{fetch\_semantic\_scholar.py} & $\sim$180 & Enriquecimiento de citas (Semantic Scholar) \\
+  \file{enrich\_unpaywall.py} & $\sim$185 & Enriquecimiento OA: status, PDF URLs \\
+  \file{run\_bertopic.py} & $\sim$120 & Modelado de tópicos (BERTopic + SBERT) \\
+  \midrule
+  \file{Database/data\_quality.py} & $\sim$350 & 20+ validaciones de integridad de datos \\
+  \file{Database/migrate\_to\_supabase.py} & $\sim$280 & Migración CSV $\to$ Supabase (idempotente) \\
+  \bottomrule
+\end{longtable}
+
+\section{Detalle: enrich\_unpaywall.py}
+
+\textbf{Objetivo:} Enriquecer las publicaciones con datos de acceso abierto desde la API de Unpaywall.
+
+\textbf{Resultado del full run (Marzo 2026):}
+
+\begin{center}
+\begin{tabular}{lrr}
+  \toprule
+  \textbf{OA Status} & \textbf{Registros} & \textbf{Descripción} \\
+  \midrule
+  closed & 380 & Sin copia OA disponible \\
+  gold & 212 & Revista completamente OA \\
+  green & 102 & Repositorio (preprint, postprint) \\
+  hybrid & 39 & Pago por abrir en revista cerrada \\
+  bronze & 29 & Libre temporal (sin licencia) \\
+  not\_found & 2 & DOI no indexado en Unpaywall \\
+  \midrule
+  \textbf{Total} & \textbf{764} & 50\% con alguna copia OA \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Campos de salida:}
+\begin{itemize}
+  \item \texttt{doi, is\_oa, oa\_status, oa\_url, oa\_pdf\_url}
+  \item \texttt{journal\_is\_oa, journal\_name, publisher, published\_date}
+  \item \texttt{updated} (última actualización en Unpaywall), \texttt{fetched\_at}
+\end{itemize}
+
+\textbf{Uso:}
+\begin{lstlisting}[style=bashstyle]
+# Full run (todos los DOIs)
+python Scripts/enrich_unpaywall.py
+
+# Solo DOIs donde OpenAlex no tiene OA
+python Scripts/enrich_unpaywall.py --only-missing
+
+# Con email de contacto personalizado
+python Scripts/enrich_unpaywall.py --email contacto@ejemplo.cl
+\end{lstlisting}
+
+\section{Detalle: iaea\_inis\_monitor.py}
+
+\textbf{Objetivo:} Vigilar la base de datos nuclear especializada IAEA INIS via su API pública InvenioRDM.
+
+\textbf{API:} \api{https://inis.iaea.org/api/records?q=\{query\}\&sort=newest\&size=25}
+
+\textbf{Características especiales:}
+\begin{itemize}
+  \item Limpieza de tags HTML y entidades en títulos/abstracts (\texttt{\_strip\_html()})
+  \item 9 búsquedas temáticas centradas en el dominio nuclear
+  \item Sleep de 1 segundo entre queries (respeto al servidor)
+  \item Primer run: 109 documentos nuevos ingresados
+\end{itemize}
+
+%% ════════════════════════════════════════════════════════════
+\chapter{Dashboard Interactivo (Streamlit)}
+%% ════════════════════════════════════════════════════════════
+
+\section{Estructura del dashboard}
+
+El dashboard principal (\file{Dashboard/app.py}, $\sim$4{,}900 líneas) organiza la información en secciones de navegación:
+
+\begin{center}
+\begin{tabular}{llL{6.5cm}}
+  \toprule
+  \textbf{\#} & \textbf{Sección} & \textbf{Contenido principal} \\
+  \midrule
+  1 & Panel de Indicadores & KPIs globales, alertas de datos, estado del sistema \\
+  2 & Producción Científica & Bibliometría, cuartiles SJR, h-index, mapa collab. \\
+  3 & Redes y Colaboración & Co-autoría, red institucional, h-index por autor \\
+  4 & Vigilancia Tecnológica & arXiv, prensa, boletín, IAEA INIS, BERTopic \\
+  5 & Investigadores / Cap. Humano & Perfiles ORCID, trayectorias, cohortes, centros \\
+  6 & Financiamiento I+D & ANID, fondos complementarios, IAEA TC \\
+  7 & Convocatorias & Radar de fondos, matching perfil CCHEN \\
+  8 & Portafolio Tecnológico & Inventario TRL, transferencia tecnológica \\
+  9 & Modelo y Gobernanza & Entidades, catálogo de datos, calidad \\
+  10 & Asistente IA & Chat LLM con contexto CCHEN (streaming) \\
+  11 & Fuentes y Actualización & Timestamps, catálogo de datasets, modo de carga \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Asistente IA (Groq + LLM)}
+
+El asistente integrado utiliza el modelo \texttt{llama-3.3-70b-versatile} de Groq con:
+
+\begin{itemize}
+  \item \textbf{Contexto institucional:} sistema prompt con datos reales de CCHEN (877 publicaciones, KPIs, investigadores activos)
+  \item \textbf{Streaming:} respuestas progresivas con \texttt{st.write\_stream()}
+  \item \textbf{Memoria de sesión:} historial de conversación en \texttt{st.session\_state.messages}
+  \item \textbf{Max tokens:} 2{,}048 por respuesta
+\end{itemize}
+
+\begin{lstlisting}[style=pythonstyle, caption={Implementación del streaming con Groq}]
+with st.chat_message("assistant"):
+    client = Groq(api_key=api_key)
+    stream = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        max_tokens=2048,
+        stream=True,
+        messages=[{"role": "system", "content": system_prompt}] +
+                 [{"role": m["role"], "content": m["content"]}
+                  for m in st.session_state.messages],
+    )
+    reply = st.write_stream(
+        (chunk.choices[0].delta.content or "")
+        for chunk in stream if chunk.choices
+    )
+\end{lstlisting}
+
+\section{Data Loader (data\_loader.py)}
+
+El módulo de carga de datos (\file{Dashboard/data\_loader.py}, $\sim$800 líneas) implementa una \textbf{capa de abstracción} sobre tres fuentes posibles:
+
+\begin{center}
+\begin{tikzpicture}[node distance=1.2cm, >=Stealth]
+  \node[draw=cchenblue, fill=cchenblue!10, rounded corners=4pt,
+        minimum width=4cm, minimum height=1cm, align=center, font=\small\bfseries] (dash)
+    {Dashboard (app.py)};
+
+  \node[draw=cchengreen, fill=cchengreen!8, rounded corners=4pt,
+        minimum width=4cm, minimum height=1cm, align=center, below=of dash, font=\small\bfseries] (loader)
+    {data\_loader.py};
+
+  \node[draw=kpigold, fill=kpigold!8, rounded corners=4pt,
+        minimum width=3cm, minimum height=0.8cm, align=center, below left=1.2cm and 1.5cm of loader, font=\small] (local)
+    {CSVs locales\\(Data/)};
+
+  \node[draw=kpired, fill=kpired!6, rounded corners=4pt,
+        minimum width=3cm, minimum height=0.8cm, align=center, below=1.2cm of loader, font=\small] (duck)
+    {DuckDB\\(analítico)};
+
+  \node[draw=cchenblue, fill=cchenblue!6, rounded corners=4pt,
+        minimum width=3cm, minimum height=0.8cm, align=center, below right=1.2cm and 1.5cm of loader, font=\small] (supa)
+    {Supabase\\(PostgreSQL)};
+
+  \draw[->, thick] (dash) -- (loader);
+  \draw[->, dashed, color=kpigold] (loader) -- (local);
+  \draw[->, dashed, color=kpired] (loader) -- (duck);
+  \draw[->, dashed, color=cchenblue] (loader) -- (supa);
+\end{tikzpicture}
+\end{center}
+
+\textbf{Modo de operación} (configurable vía \texttt{OBSERVATORIO\_DATA\_SOURCE}):
+
+\begin{tabular}{lL{8cm}}
+  \toprule
+  \textbf{Modo} & \textbf{Comportamiento} \\
+  \midrule
+  \texttt{local} & Lee siempre desde \file{Data/*.csv} \\
+  \texttt{auto} & Intenta Supabase; fallback a CSV si hay error \\
+  \texttt{supabase\_public} & Requiere Supabase; falla si no disponible \\
+  \bottomrule
+\end{tabular}
+
+\subsection*{Funciones de carga (inventario completo)}
+
+\begin{longtable}{L{6.5cm} L{7cm}}
+  \toprule
+  \textbf{Función} & \textbf{Datos que carga} \\
+  \midrule
+  \endhead
+  \texttt{load\_publications()} & 877 publicaciones base (OpenAlex) \\
+  \texttt{load\_publications\_enriched()} & 616 con cuartiles SJR \\
+  \texttt{load\_authorships()} & 7{,}971 autorías \\
+  \texttt{load\_crossref\_enriched()} & 764 con datos de financiamiento \\
+  \texttt{load\_concepts()} & 21{,}348 conceptos OpenAlex \\
+  \texttt{load\_publications\_with\_concepts()} & Join publicaciones + conceptos \\
+  \texttt{load\_grants\_openalex()} & Grants desde OpenAlex \\
+  \texttt{load\_datacite\_outputs()} & Outputs DataCite (datasets) \\
+  \texttt{load\_openaire\_outputs()} & Outputs OpenAIRE \\
+  \texttt{load\_anid()} & 30 proyectos ANID \\
+  \texttt{load\_funding\_complementario()} & Financiamiento no-ANID \\
+  \texttt{load\_iaea\_tc()} & Proyectos IAEA TC \\
+  \texttt{load\_capital\_humano()} & 112 registros de formación \\
+  \texttt{load\_ch\_resumen\_ejecutivo()} & KPI JSON capital humano \\
+  \texttt{load\_ch\_analisis\_avanzado()} & 15+ análisis avanzados CH \\
+  \texttt{load\_ch\_cumplimiento\_centros()} & Cumplimiento documental por centro \\
+  \texttt{load\_ch\_transiciones()} & Transiciones de modalidad \\
+  \texttt{load\_ch\_participacion\_tipo\_anio()} & Participación tipo $\times$ año \\
+  \texttt{load\_orcid\_researchers()} & 48 perfiles ORCID \\
+  \texttt{load\_ror\_registry()} & $\sim$150 instituciones normalizadas \\
+  \texttt{load\_ror\_pending\_review()} & Cola de revisión ROR \\
+  \texttt{load\_convenios\_nacionales()} & 84 convenios nacionales \\
+  \texttt{load\_acuerdos\_internacionales()} & 41 acuerdos internacionales \\
+  \texttt{load\_dian\_publications()} & Publicaciones DIAN internas \\
+  \texttt{load\_patents()} & Registro de patentes \\
+  \texttt{load\_unpaywall\_oa()} & OA status + PDF URLs (764 DOIs) \\
+  \texttt{load\_iaea\_inis()} & Documentos IAEA INIS (vigilancia) \\
+  \texttt{get\_source\_timestamps()} & Timestamps de última actualización \\
+  \bottomrule
+\end{longtable}
+
+%% ════════════════════════════════════════════════════════════
+\chapter{Base de Datos y Esquema}
+%% ════════════════════════════════════════════════════════════
+
+\section{Plataforma: Supabase (PostgreSQL 15)}
+
+Supabase provee una base de datos PostgreSQL 15 totalmente gestionada con:
+\begin{itemize}
+  \item API REST autogenerada (PostgREST)
+  \item Autenticación integrada (JWT)
+  \item Row-Level Security (RLS) \textit{(pendiente de configurar)}
+  \item Dashboard web de administración
+  \item Backups automáticos diarios
+\end{itemize}
+
+\section{Tablas principales}
+
+\begin{longtable}{L{4.5cm} R{1.5cm} L{3cm} L{4cm}}
+  \toprule
+  \textbf{Tabla} & \textbf{Filas} & \textbf{PK} & \textbf{Fuente} \\
+  \midrule
+  \endhead
+  \texttt{publications} & 877 & \texttt{openalex\_id} & OpenAlex API \\
+  \texttt{publications\_enriched} & 616 & \texttt{work\_id} & OpenAlex + SJR \\
+  \texttt{authorships} & 7{,}971 & \texttt{id} (serial) & OpenAlex API \\
+  \texttt{crossref\_data} & 764 & \texttt{doi} & CrossRef API \\
+  \texttt{concepts} & 21{,}348 & \texttt{id} (serial) & OpenAlex API \\
+  \texttt{patents} & 0+ & \texttt{patent\_uid} & Lens.org / USPTO \\
+  \texttt{anid\_projects} & 30 & \texttt{proyecto} & ANID \\
+  \texttt{capital\_humano} & 112 & \texttt{id} (serial) & DIAN interno \\
+  \texttt{researchers\_orcid} & 48 & \texttt{orcid\_id} & ORCID API \\
+  \texttt{convenios\_nacionales} & 84 & \texttt{id} (serial) & datos.gob.cl \\
+  \texttt{acuerdos\_internacionales} & 41 & \texttt{id} (serial) & datos.gob.cl \\
+  \texttt{funding\_complementario} & 2+ & \texttt{id} (serial) & Manual \\
+  \texttt{institution\_registry} & $\sim$150 & \texttt{normalized\_key} & ROR + manual \\
+  \texttt{institution\_pending\_review} & $\sim$30 & \texttt{canonical\_name} & Cola de curaduría \\
+  \texttt{datacite\_outputs} & 50+ & \texttt{doi} & DataCite API \\
+  \texttt{openaire\_outputs} & 100+ & \texttt{openaire\_id} & OpenAIRE Graph \\
+  \texttt{data\_sources} & $\sim$17 & \texttt{source\_name} & Gobernanza \\
+  \bottomrule
+\end{longtable}
+
+\section{Relaciones clave}
+
+\begin{lstlisting}[style=sqlstyle, caption={Relaciones principales del esquema}]
+-- Una publicacion tiene muchas autorias
+publications (openalex_id)
+  +-- authorships.work_id        FK
+  +-- publications_enriched.work_id  FK
+  +-- crossref_data.doi           FK (via DOI)
+  \-- concepts.work_id            FK
+
+-- Investigadores conectan publicaciones, ORCID y capital humano
+researchers_orcid (orcid_id)
+  ↔  authorships.orcid_id
+  ↔  capital_humano (via nombre)
+
+-- Instituciones normalizadas con ROR
+institution_registry (normalized_key)
+  <-  authorships.institution_ror
+  <-  convenios_nacionales.institucion_normalizada
+\end{lstlisting}
+
+\section{Migración CSV $\to$ Supabase}
+
+El script \file{Database/migrate\_to\_supabase.py} implementa:
+\begin{itemize}
+  \item \textbf{Operación idempotente:} upsert (insert + update en conflicto de PK)
+  \item \textbf{Paginación:} inserta en lotes de 500 registros
+  \item \textbf{Limpieza de tipos:} convierte NaN a None, fechas a ISO8601
+  \item \textbf{Verificación post-insert:} cuenta filas esperadas vs. insertadas
+\end{itemize}
+
+%% ════════════════════════════════════════════════════════════
+\chapter{Gobernanza y Calidad de Datos}
+%% ════════════════════════════════════════════════════════════
+
+\section{Sistema de calidad de datos}
+
+El módulo \file{Database/data\_quality.py} ejecuta validaciones en tres categorías:
+
+\subsection*{1. Validaciones por tabla}
+Para cada dataset se verifica:
+\begin{itemize}
+  \item Existencia y legibilidad del archivo CSV
+  \item Número de filas vs. umbral mínimo esperado
+  \item Duplicados por clave primaria
+  \item Completitud de columnas requeridas (umbral $\geq$ 80--95\%)
+  \item Rango de años (sin fechas fuera de \texttt{1990--2026})
+\end{itemize}
+
+\subsection*{2. Integridad cruzada}
+\begin{itemize}
+  \item FK orphans: autorías sin publicación padre
+  \item Consistencia de campos comunes entre tablas
+\end{itemize}
+
+\subsection*{3. Control de frescura (staleness)}
+
+\begin{center}
+\begin{tabular}{L{6cm} C{3cm}}
+  \toprule
+  \textbf{Dataset} & \textbf{Máx. días sin actualizar} \\
+  \midrule
+  \texttt{arxiv\_monitor.csv} & 8 días \\
+  \texttt{news\_monitor.csv} & 8 días \\
+  \texttt{convocatorias\_curadas.csv} & 8 días \\
+  \texttt{cchen\_openalex\_works.csv} & 90 días \\
+  \texttt{cchen\_authorships\_enriched.csv} & 90 días \\
+  \texttt{cchen\_crossref\_enriched.csv} & 90 días \\
+  \texttt{cchen\_researchers\_orcid.csv} & 180 días \\
+  Convenios / Acuerdos & 180 días \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Registro ROR (Research Organization Registry)}
+
+El script \file{Scripts/build\_ror\_registry.py} normaliza los nombres de instituciones colaboradoras:
+\begin{itemize}
+  \item \textbf{Fuente autoritativa:} ROR (\url{ror.org}) --- identificadores persistentes
+  \item \textbf{$\sim$150 instituciones} normalizadas actualmente
+  \item \textbf{Cola de revisión:} \file{ror\_pending\_review.csv} para instituciones ambiguas
+  \item \textbf{Aliases manuales:} \file{ror\_manual\_aliases.csv} para variantes conocidas
+  \item \textbf{Alerta en dashboard:} instituciones con prioridad \texttt{Alta} aparecen en Panel de Indicadores
+\end{itemize}
+
+\section{Inventario de datos (Data Lake)}
+
+\begin{longtable}{L{3.5cm} R{1.8cm} R{2.5cm} L{4.5cm}}
+  \toprule
+  \textbf{Directorio} & \textbf{\# CSVs} & \textbf{Tamaño} & \textbf{Contenido} \\
+  \midrule
+  \endhead
+  \file{Publications/} & 10 & 169 MB & OpenAlex, CrossRef, SJR, Unpaywall \\
+  \file{Capital humano CCHEN/} & 27 & 42 MB & Formación: maestro + 26 análisis \\
+  \file{scimagojr/} & 26 & 235 MB & Rankings SJR 1999--2024 \\
+  \file{Publicaciones DIAN/} & 3 & 14 MB & Publicaciones internas \\
+  \file{Institutional/} & 10 & 336 KB & Convenios, ROR, acuerdos \\
+  \file{Vigilancia/} & 6 & 540 KB & arXiv, noticias, ANID, INIS \\
+  \file{ANID/} & 2 & 84 KB & Proyectos adjudicados \\
+  \file{Researchers/} & 1 & 12 KB & ORCID profiles \\
+  \file{Funding/} & 2 & 8 KB & Complementario, IAEA TC \\
+  \file{ResearchOutputs/} & 4 & 1.4 MB & DataCite, OpenAIRE \\
+  \file{Boletines/} & 1--4 & 20 KB & HTML newsletters \\
+  \file{Gobernanza/} & 2 & 8 KB & Modelo entidades \\
+  \file{Patents/} & 0 & 0 B & Pendiente (Lens/USPTO) \\
+  \midrule
+  \textbf{Total} & \textbf{118} & \textbf{$\sim$475 MB} & \\
+  \bottomrule
+\end{longtable}
+
+%% ════════════════════════════════════════════════════════════
+\chapter{Configuración y Variables de Entorno}
+%% ════════════════════════════════════════════════════════════
+
+\section{Dashboard (.streamlit/secrets.toml)}
+
+\begin{lstlisting}[style=bashstyle, caption={Configuración del dashboard}]
+# API del asistente IA
+GROQ_API_KEY = "gsk_..."   # console.groq.com (gratuito)
+
+# Base de datos (opcional --- puede operar solo con CSVs)
+[supabase]
+url         = "https://xxxx.supabase.co"
+anon_key    = "eyJ..."
+data_source = "auto"       # "auto" | "local" | "supabase_public"
+\end{lstlisting}
+
+\section{Scripts ETL (.env)}
+
+\begin{lstlisting}[style=bashstyle, caption={Variables de entorno para ETL}]
+SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_KEY=eyJ...          # anon key o service_role key
+
+# Opcionales
+CCHEN_DATA_ROOT=/ruta/a/Data  # Override de la ruta de datos
+CCHEN_CONTACT_EMAIL=observatory@cchen.cl  # User-Agent en APIs
+OBSERVATORIO_DATA_SOURCE=auto             # Modo de carga
+PATENTSVIEW_API_KEY=...       # Para fetch_patentsview_patents.py
+LENS_TOKEN=...                # Para Lens.org (patentes globales)
+\end{lstlisting}
+
+\section{Ejecución local}
+
+\begin{lstlisting}[style=bashstyle, caption={Comandos de instalación y ejecución}]
+cd /ruta/a/CCHEN
+
+# Instalar dependencias del dashboard
+pip install -r Dashboard/requirements.txt
+
+# Instalar dependencias de scripts ETL
+pip install -r Scripts/requirements.txt
+
+# Ejecutar dashboard (modo desarrollo)
+streamlit run Dashboard/app.py
+
+# Ejecutar scripts de vigilancia manualmente
+python Scripts/arxiv_monitor.py
+python Scripts/news_monitor.py
+python Scripts/iaea_inis_monitor.py
+
+# Verificar calidad de datos
+python Database/data_quality.py
+
+# Migrar a Supabase (requiere .env)
+python Database/migrate_to_supabase.py
+
+# Full run Unpaywall (enriquecimiento OA)
+python Scripts/enrich_unpaywall.py
+\end{lstlisting}
+
+%% ════════════════════════════════════════════════════════════
+\chapter{Ruta de Desarrollo y Trabajo Pendiente}
+%% ════════════════════════════════════════════════════════════
+
+\section{Estado de implementación por componente}
+
+\begin{longtable}{L{5.5cm} C{2cm} C{2cm} L{3.5cm}}
+  \toprule
+  \textbf{Componente} & \textbf{TRL actual} & \textbf{TRL objetivo} & \textbf{Bloqueador} \\
+  \midrule
+  \endhead
+  Dashboard Streamlit & 4 & 6 & Supabase credentials \\
+  Vigilancia arXiv/News & 4 & 5 & --- (activo) \\
+  Vigilancia IAEA INIS & 4 & 5 & --- (activo) \\
+  Asistente IA Groq & 4 & 5 & --- (activo) \\
+  Migración Supabase & 3 & 6 & Credenciales pendientes \\
+  PatentsView/Lens & 2 & 5 & API key (gratuita) \\
+  BERTopic topics & 3 & 5 & Integrar en dashboard \\
+  Boletín automático & 4 & 5 & Mailchimp/Brevo \\
+  GitHub Pages & 1 & 4 & Configuración \\
+  Angular enterprise UI & 1 & 4 & Presupuesto MM\$42+ \\
+  RLS Supabase & 2 & 5 & Configuración \\
+  SAML/OAuth2 auth & 1 & 4 & Presupuesto \\
+  Zenodo archival & 1 & 4 & Configuración \\
+  \bottomrule
+\end{longtable}
+
+\section{Tareas inmediatas de alta prioridad}
+
+\begin{enumerate}[leftmargin=2cm]
+  \item \textbf{Migración Supabase:} configurar credenciales y ejecutar \file{migrate\_to\_supabase.py}
+  \item \textbf{PatentsView API key:} registrarse en \url{patentsview.org/apis/keyrequest} (gratuito) y ejecutar \file{fetch\_patentsview\_patents.py}
+  \item \textbf{BERTopic:} integrar visualización de tópicos (\file{run\_bertopic.py}) en el dashboard
+  \item \textbf{GitHub Pages:} publicar dashboard o reportes estáticos semanales
+\end{enumerate}
+
+\section{Roadmap de madurez}
+
+\begin{center}
+\begin{tabular}{L{2.5cm} L{5cm} L{6cm}}
+  \toprule
+  \textbf{Período} & \textbf{Hito} & \textbf{Descripción} \\
+  \midrule
+  Q2 2026 & TRL 5 (entorno relevante) & Supabase en producción, PatentsView activo, BERTopic integrado \\
+  H2 2026 & TRL 6 (demo operacional) & GitHub Pages, mailchimp automático, Zenodo \\
+  2027 & TRL 7--8 (sistema completo) & Angular + Django, Huawei Cloud, SAML/OAuth2 \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+%% ════════════════════════════════════════════════════════════
+\chapter{Glosario de Términos}
+%% ════════════════════════════════════════════════════════════
+
+\begin{longtable}{L{4cm} L{10cm}}
+  \toprule
+  \textbf{Término} & \textbf{Definición} \\
+  \midrule
+  \endhead
+  \textbf{OpenAlex} & Índice académico abierto con 250M+ publicaciones. Sucesor de Microsoft Academic Graph. \url{openalex.org} \\
+  \textbf{CrossRef} & DOI registration agency. Provee metadatos de publicaciones, incluyendo fuentes de financiamiento. \url{crossref.org} \\
+  \textbf{ORCID} & Open Researcher and Contributor ID. Identificador único persistente para investigadores. \url{orcid.org} \\
+  \textbf{ROR} & Research Organization Registry. Identificadores abiertos para instituciones de investigación. \url{ror.org} \\
+  \textbf{DOI} & Digital Object Identifier. Identificador persistente para publicaciones y datasets. \\
+  \textbf{arXiv} & Repositorio de preprints (física, matemáticas, ciencias de la computación, etc.). \url{arxiv.org} \\
+  \textbf{IAEA INIS} & International Nuclear Information System. Base de datos nuclear especializada de la IAEA. \\
+  \textbf{InvenioRDM} & Plataforma de repositorio digital institucional de código abierto. Usada por IAEA INIS. \\
+  \textbf{SJR} & SCImago Journal Rank. Indicador de impacto de revistas basado en Scopus. \\
+  \textbf{H-index} & Índice Hirsch. Mayor $h$ tal que $h$ publicaciones han recibido al menos $h$ citas. \\
+  \textbf{OA} & Open Access. Acceso abierto a publicaciones científicas sin barreras de pago. \\
+  \textbf{Gold OA} & La revista es completamente de acceso abierto. \\
+  \textbf{Green OA} & Copia abierta en repositorio (preprint, postprint, tesis). \\
+  \textbf{Hybrid OA} & Revista de pago con opción de apertura por artículo. \\
+  \textbf{Bronze OA} & Libre en el sitio del editor sin licencia explícita (temporal). \\
+  \textbf{TRL} & Technology Readiness Level. Escala 1--9 de madurez tecnológica (ESA/NASA). \\
+  \textbf{DuckDB} & Motor de base de datos analítica embebido. Ideal para queries sobre CSV/Parquet. \\
+  \textbf{Supabase} & Backend-as-a-Service basado en PostgreSQL. Incluye API REST, autenticación y storage. \\
+  \textbf{Groq} & Plataforma de inferencia LLM de alta velocidad (\url{console.groq.com}). \\
+  \textbf{LLM} & Large Language Model. Modelo de lenguaje de gran escala. ej: llama-3.3-70b. \\
+  \textbf{BERTopic} & Técnica de modelado de tópicos basada en BERT + clustering (HDBSCAN + c-TF-IDF). \\
+  \textbf{SBERT} & Sentence-BERT. Embeddings semánticos de oraciones para NLP. \\
+  \textbf{ETL} & Extract, Transform, Load. Pipeline de ingestión y transformación de datos. \\
+  \textbf{GitHub Actions} & Plataforma de CI/CD integrada en GitHub. Usada para automatización semanal. \\
+  \textbf{Cron} & Mecanismo de programación de tareas en Unix/Linux. Formato: \texttt{min hora día mes dow}. \\
+  \textbf{DataCite} & Registro de metadatos para datasets y outputs de investigación. \url{datacite.org} \\
+  \textbf{OpenAIRE} & Infraestructura europea para outputs de investigación abierta. \url{openaire.eu} \\
+  \textbf{PatentsView} & API del USPTO para búsqueda y análisis de patentes. \url{patentsview.org} \\
+  \textbf{Unpaywall} & Servicio que identifica copias legales abiertas de artículos de pago. \url{unpaywall.org} \\
+  \textbf{Data Lake} & Almacenamiento de datos en formato raw/original (aquí: CSVs en \file{Data/}). \\
+  \textbf{Data Warehouse} & BD estructurada para análisis (aquí: Supabase/PostgreSQL). \\
+  \textbf{Streamlit} & Framework Python para crear aplicaciones web de datos de forma rápida. \\
+  \textbf{Plotly} & Librería de visualización interactiva para Python/JavaScript. \\
+  \textbf{NetworkX} & Librería Python para análisis y visualización de grafos y redes. \\
+  \textbf{pandas} & Librería Python para manipulación y análisis de datos tabulares. \\
+  \bottomrule
+\end{longtable}
+
+%% ════════════════════════════════════════════════════════════
+\chapter*{Apéndice: Estructura de directorios}
+\addcontentsline{toc}{chapter}{Apéndice: Estructura de directorios}
+%% ════════════════════════════════════════════════════════════
+
+\begin{lstlisting}[caption={Arbol de directorios del proyecto}, style=bashstyle]
+CCHEN/
++-- README.md
++-- ARCHITECTURE.md                [27 KB -- diseno tecnico completo]
++-- .gitignore
++-- .github/
+|   +-- workflows/
+|       +-- arxiv_monitor.yml      [automatizacion semanal lunes 08:00 UTC]
++-- Dashboard/
+|   +-- app.py                     [~4,900 lineas -- aplicacion Streamlit]
+|   +-- data_loader.py             [~800 lineas -- capa de abstraccion datos]
+|   +-- requirements.txt
+|   +-- .streamlit/
+|       +-- secrets.toml           [API keys, Supabase credentials]
++-- Database/
+|   +-- schema.sql                 [DDL PostgreSQL -- 17+ tablas]
+|   +-- data_quality.py            [validaciones + staleness checks]
+|   +-- migrate_to_supabase.py     [ETL CSV -> Supabase idempotente]
+|   +-- .env                       [SUPABASE_URL, SUPABASE_KEY]
++-- Scripts/                       [12 scripts Python]
+|   +-- arxiv_monitor.py
+|   +-- news_monitor.py
+|   +-- convocatorias_monitor.py
+|   +-- generar_boletin.py
+|   +-- build_ror_registry.py
+|   +-- fetch_datacite_outputs.py
+|   +-- fetch_openaire_outputs.py
+|   +-- fetch_patentsview_patents.py
+|   +-- fetch_semantic_scholar.py
+|   +-- enrich_unpaywall.py
+|   +-- iaea_inis_monitor.py
+|   +-- run_bertopic.py
+|   +-- requirements.txt
++-- Notebooks/                     [ETL manual -- ejecutar en orden]
+|   +-- 01_Download_publications.ipynb
+|   +-- 02_CrossRef_enrichment.ipynb
+|   +-- 03_OpenAlex_concepts.ipynb
+|   +-- 04_ORCID_researchers.ipynb
+|   +-- 05_Download_patents.ipynb
+|   +-- 06_ANID_repository.ipynb
+|   +-- 07_MinCiencia_funding.ipynb
+|   +-- 08_web_scraping_ANID.ipynb
+|   +-- 09_revistas_crossmatch.ipynb
+|   +-- analysis/
++-- Data/                          [Data Lake -- 118 CSVs, ~475 MB]
+|   +-- Publications/              [169 MB -- OpenAlex, CrossRef, SJR]
+|   +-- Capital humano CCHEN/      [42 MB -- formacion institucional]
+|   +-- ANID/                      [30 proyectos adjudicados]
+|   +-- Funding/                   [complementario + IAEA TC]
+|   +-- Researchers/               [48 perfiles ORCID]
+|   +-- Institutional/             [convenios + acuerdos + ROR]
+|   +-- ResearchOutputs/           [DataCite + OpenAIRE]
+|   +-- Vigilancia/                [arXiv + noticias + ANID + INIS]
+|   +-- Boletines/                 [newsletters HTML semanales]
+|   +-- scimagojr/                 [235 MB -- rankings SJR 1999-2024]
+|   +-- Publicaciones DIAN CCHEN/  [14 MB -- publicaciones internas]
+|   +-- Gobernanza/                [modelo de entidades]
+|   +-- Transferencia/             [portafolio tecnologico]
+|   +-- Patents/                   [pendiente -- Lens/USPTO]
++-- Docs/
+|   +-- design/                    [Propuesta, Memoria metodologica]
+|   +-- reports/                   [Bitacora, calidad de datos]
+|   +-- methodology/
++-- Bitacora/                      [LaTeX fuente de bitacora de trabajo]
+\end{lstlisting}
+
+%% ════════════════════════════════════════════════════════════
+%%  CHANGELOG — ACTUALIZACIONES POST-BETA 0.2
+%% ════════════════════════════════════════════════════════════
+\chapter*{Changelog: Actualizaciones Marzo 2026}
+\addcontentsline{toc}{chapter}{Changelog: Actualizaciones Marzo 2026}
+
+\section*{v0.3 --- Modularización y nuevas fuentes de datos}
+
+Las siguientes mejoras fueron implementadas durante la sesión de desarrollo de marzo 2026,
+elevando el observatorio de TRL 4 a TRL 5.
+
+\subsection*{1. Modularización del Dashboard (Task 4)}
+
+\textbf{Problema:} \texttt{app.py} tenía 5.275 líneas, haciendo el mantenimiento difícil
+y los errores difíciles de aislar.
+
+\textbf{Solución:} Se creó el paquete \texttt{Dashboard/sections/} con 12 archivos:
+
+\begin{itemize}
+  \item \texttt{sections/shared.py} (867 líneas) --- constantes, helpers, funciones de UI
+  \item \texttt{sections/panel\_indicadores.py} --- KPIs y alertas de gobernanza
+  \item \texttt{sections/produccion\_cientifica.py} --- publicaciones, cuartiles, DOI
+  \item \texttt{sections/redes\_colaboracion.py} --- red de colaboración y mapa
+  \item \texttt{sections/vigilancia\_tecnologica.py} --- noticias, arXiv, INIS, tópicos
+  \item \texttt{sections/financiamiento\_id.py} --- ANID, IAEA TC, convenios
+  \item \texttt{sections/convocatorias\_matching.py} --- scoring y matching institucional
+  \item \texttt{sections/transferencia\_portafolio.py} --- patentes, DataCite, OpenAIRE
+  \item \texttt{sections/modelo\_gobernanza.py} --- registro de entidades, ROR
+  \item \texttt{sections/formacion\_capacidades.py} --- capital humano
+  \item \texttt{sections/asistente\_id.py} --- asistente LLM + exportación PDF
+  \item \texttt{sections/\_\_init\_\_.py} --- paquete Python
+\end{itemize}
+
+\textbf{Patrón de despacho} en \texttt{app.py} (líneas 1601--1618):
+\begin{lstlisting}[style=pythonstyle]
+_SECTION_MAP = {
+    "Panel de Indicadores":       panel_indicadores.render,
+    "Produccion Cientifica":      produccion_cientifica.render,
+    # ... 8 secciones mas ...
+}
+_render_fn = _SECTION_MAP.get(seccion)
+if _render_fn is not None:
+    _render_fn(_ctx)
+\end{lstlisting}
+
+Cada \texttt{render(ctx)} recibe un diccionario con todos los dataframes y contexto.
+El código legacy está preservado bajo \texttt{if False:} para rollback fácil.
+
+\subsection*{2. Grafo de Citas OpenAlex (Task 1)}
+
+Nuevo script \texttt{Scripts/fetch\_openalex\_citations.py} que:
+\begin{itemize}
+  \item Procesa los 877 papers CCHEN en OpenAlex de forma incremental
+  \item Obtiene \texttt{cited\_by\_count}, \texttt{referenced\_works} y \texttt{cited\_by\_api\_url}
+  \item Descarga hasta 50 papers citantes externos por trabajo CCHEN
+  \item Extrae instituciones citantes (top 5 por paper)
+  \item Guarda estado en \texttt{citation\_graph\_state.json} para reanudar
+  \item Salidas: \texttt{cchen\_citation\_graph.csv} + \texttt{cchen\_citing\_papers.csv}
+\end{itemize}
+
+\subsection*{3. Patentes INAPI Chile (Task 2)}
+
+Nuevo script \texttt{Scripts/fetch\_inapi\_patents.py} que:
+\begin{itemize}
+  \item Busca en \texttt{patentes.inapi.cl/busca} por titular (CCHEN, variantes)
+  \item Busca por palabras clave nucleares (reactor, radiofármaco, dosimetría, etc.)
+  \item Fallback a CSV abierto de \texttt{datos.inapi.cl} si la API no responde
+  \item Filtra por relevancia nuclear con \texttt{\_is\_relevant()}
+  \item Salida: \texttt{Data/Patents/cchen\_inapi\_patents.csv}
+  \item Genera CSV vacío con headers si no hay resultados (evita fallo en data\_loader)
+\end{itemize}
+
+\subsection*{4. Semantic Scholar (Task 3)}
+
+El script existente \texttt{Scripts/fetch\_semantic\_scholar.py} fue activado y ejecutado
+exitosamente: \textbf{877/877 papers descargados} con métricas de impacto (influentialCitationCount,
+openAccessPdf, fieldsOfStudy, tldr).
+
+\subsection*{5. Correcciones de calidad (6 fixes)}
+
+\begin{enumerate}
+  \item \textbf{Asistente LLM:} fallback por keywords cuando Groq API no disponible
+  \item \textbf{JSON parsing:} extractor de llaves balanceadas reemplaza regex \texttt{DOTALL}
+  \item \textbf{Entity links:} vectorización con \texttt{isin()} reemplaza \texttt{iterrows()}
+  \item \textbf{ALLOWED\_ROR\_RESOLUTIONS:} constante a nivel módulo (\texttt{frozenset})
+  \item \textbf{news\_monitor.py:} flag \texttt{--log} con clase \texttt{\_Tee} (stdout + archivo)
+  \item \textbf{fetch\_funding\_plus.py:} \texttt{\_infer\_area()} usa todas las columnas texto
+\end{enumerate}
+
+\subsection*{Resultados de pruebas (marzo 2026)}
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Componente} & \textbf{Prueba} & \textbf{Resultado} \\
+\midrule
+sections/ (11 módulos) & import + callable & PASS \\
+app.py & ast.parse() & PASS \\
+data\_loader (13 loaders) & carga real de CSV & PASS (0 errores) \\
+Publicaciones OpenAlex & 826 filas & OK \\
+Autorías enriquecidas & 7.971 filas & OK \\
+Unpaywall OA & 764 filas (382 OA) & OK \\
+ROR registry & 697 instituciones & OK \\
+Convenios nacionales & 84 registros & OK \\
+Acuerdos internacionales & 41 registros & OK \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%% ════════════════════════════════════════════════════════════
+%%  FIN
+%% ════════════════════════════════════════════════════════════
+\vfill
+\begin{center}
+  \textcolor{cchengray}{\rule{12cm}{0.4pt}}\\[8pt]
+  {\small\textcolor{cchengray}{
+    Observatorio Tecnológico CCHEN 360° --- Documentación Técnica Beta 0.2\\
+    Comisión Chilena de Energía Nuclear · Marzo 2026\\
+    Uso interno --- No distribuir sin autorización
+  }}
+\end{center}
+
+\end{document}

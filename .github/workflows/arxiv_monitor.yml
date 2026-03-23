@@ -1,0 +1,110 @@
+name: Vigilancia Monitor — CCHEN
+
+on:
+  schedule:
+    # Cada lunes a las 08:00 UTC (05:00 Chile)
+    - cron: "0 8 * * 1"
+  workflow_dispatch:  # Permite ejecución manual desde GitHub
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # necesario para hacer push de los CSV actualizados
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: pip install --quiet requests pandas openpyxl
+
+      # ── Módulo Vigilancia ────────────────────────────────────────────────
+
+      - name: Ejecutar monitor arXiv
+        run: python Scripts/arxiv_monitor.py
+
+      - name: Ejecutar monitor de noticias (Google News)
+        run: python Scripts/news_monitor.py
+
+      - name: Ejecutar radar de convocatorias (ANID)
+        # continue-on-error porque depende de scraping HTML del sitio de ANID
+        continue-on-error: true
+        run: python Scripts/convocatorias_monitor.py
+
+      - name: Ejecutar monitor IAEA INIS
+        # continue-on-error porque depende de la API pública de INIS
+        continue-on-error: true
+        run: python Scripts/iaea_inis_monitor.py
+
+      # ── Módulo Difusión: boletín semanal HTML ────────────────────────────
+
+      - name: Generar boletín semanal
+        continue-on-error: true
+        run: python Scripts/generar_boletin.py
+
+      # ── Módulo Gobernanza: calidad de datos ─────────────────────────────
+
+      - name: Verificar calidad de datos
+        continue-on-error: true
+        run: |
+          pip install --quiet pandas openpyxl
+          python Database/data_quality.py --output Data/Vigilancia/calidad_datos.csv
+
+      # ── Commit y push ────────────────────────────────────────────────────
+
+      - name: Commit y push si hay cambios
+        run: |
+          git config user.name  "CCHEN Observatory Bot"
+          git config user.email "observatory@cchen.cl"
+          git add Data/Vigilancia/arxiv_monitor.csv \
+                  Data/Vigilancia/arxiv_state.json \
+                  Data/Vigilancia/news_monitor.csv \
+                  Data/Vigilancia/news_state.json \
+                  Data/Vigilancia/convocatorias_curadas.csv \
+                  Data/Vigilancia/iaea_inis_monitor.csv \
+                  Data/Vigilancia/iaea_inis_state.json \
+                  Data/Vigilancia/calidad_datos.csv \
+                  "Data/Boletines/" || true
+          git diff --staged --quiet || \
+            git commit -m "chore(data): vigilancia + boletin update $(date +%Y-%m-%d)"
+          git push
+
+      # ── Resumen en el log ────────────────────────────────────────────────
+
+      - name: Resumen en el log
+        if: always()
+        run: |
+          echo "=== arXiv — ultimos papers ==="
+          tail -5 Data/Vigilancia/arxiv_monitor.csv 2>/dev/null || echo "Sin archivo aun"
+          echo ""
+          echo "=== Noticias — ultimas nuevas ==="
+          tail -5 Data/Vigilancia/news_monitor.csv 2>/dev/null || echo "Sin archivo aun"
+          echo ""
+          echo "=== Convocatorias ANID ==="
+          if [ -f Data/Vigilancia/convocatorias_curadas.csv ]; then
+            total=$(tail -n +2 Data/Vigilancia/convocatorias_curadas.csv | wc -l | tr -d ' ')
+            abiertas=$(awk -F',' 'NR>1 && $6=="Abierto"' Data/Vigilancia/convocatorias_curadas.csv | wc -l | tr -d ' ')
+            proximas=$(awk -F',' 'NR>1 && $6=="Proximo"' Data/Vigilancia/convocatorias_curadas.csv | wc -l | tr -d ' ')
+            echo "Total: $total | Abiertas: $abiertas | Proximas: $proximas"
+          else
+            echo "Sin archivo de convocatorias aun"
+          fi
+          echo ""
+          echo "=== IAEA INIS — ultimos documentos ==="
+          tail -5 Data/Vigilancia/iaea_inis_monitor.csv 2>/dev/null || echo "Sin archivo aun"
+          echo ""
+          echo "=== Boletin generado ==="
+          ls -lh Data/Boletines/ 2>/dev/null || echo "Sin boletines aun"
+          echo ""
+          echo "=== Calidad de datos ==="
+          if [ -f Data/Vigilancia/calidad_datos.csv ]; then
+            tail -10 Data/Vigilancia/calidad_datos.csv
+          else
+            echo "Sin reporte de calidad aun"
+          fi

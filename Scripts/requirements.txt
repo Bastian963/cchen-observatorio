@@ -1,0 +1,36 @@
+# Scripts/requirements.txt
+# ─────────────────────────────────────────────────────────────────────────────
+# Dependencias para los scripts ETL y de vigilancia del observatorio.
+# Instalar con: pip install -r Scripts/requirements.txt
+#
+# Los scripts de vigilancia semanal (arxiv_monitor.py, news_monitor.py,
+# convocatorias_monitor.py, iaea_inis_monitor.py) solo usan la biblioteca
+# estándar de Python — no requieren instalar nada extra.
+# enrich_unpaywall.py — también solo stdlib (urllib + json)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Requerido por la mayoría de scripts ETL ──────────────────────────────────
+pandas>=2.0.0
+requests>=2.31.0
+openpyxl>=3.1.0          # generar_boletin.py, load_dian_publications
+
+# ── Construcción del registro ROR ────────────────────────────────────────────
+# build_ror_registry.py — solo pandas (ya incluido arriba)
+
+# ── Descarga de outputs externos ─────────────────────────────────────────────
+# fetch_openaire_outputs.py   — solo pandas + stdlib
+# fetch_datacite_outputs.py   — solo pandas + stdlib
+# fetch_patentsview_patents.py — solo pandas + stdlib
+#   Requiere: export PATENTSVIEW_API_KEY="..."
+#   API key gratis en: https://patentsview.org/apis/keyrequest
+# iaea_inis_monitor.py  — solo stdlib (urllib + json)
+# enrich_unpaywall.py   — solo stdlib; sin API key necesaria (solo email contacto)
+# fetch_semantic_scholar.py   — pandas + requests (ya incluidos arriba)
+
+# ── Análisis de tópicos (BERTopic) ───────────────────────────────────────────
+# Solo necesario para run_bertopic.py — instalar aparte si es necesario:
+# pip install bertopic>=0.15.0 sentence-transformers>=2.2.0
+
+# ── Migración a Supabase ─────────────────────────────────────────────────────
+# Solo necesario para Database/migrate_to_supabase.py:
+# pip install supabase>=2.4.0

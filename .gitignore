@@ -1,0 +1,61 @@
+# Credenciales — NUNCA subir al repositorio
+Database/.env
+.streamlit/secrets.toml
+Dashboard/.streamlit/secrets.toml
+
+# Datos locales — demasiado grandes / sensibles para GitHub
+Data/
+Codes/
+*.npy
+*.xlsx
+*.db
+
+# Playwright
+.playwright-mcp/
+
+# Claude Code internal
+.claude/
+
+# Archivos privados / bitácora personal
+Bitacora/
+Archive/
+Docs/reports/*.pdf
+
+# PDFs y ZIPs grandes
+*.zip
+*.pdf
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.ipynb_checkpoints/
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# Dropbox
+*.dropbox
+.dropbox
+Icon
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Archivos temporales
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# Logs
+*.log
