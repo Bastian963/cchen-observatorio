@@ -53,6 +53,7 @@ PUBLIC_TABLE_CONFIG = {
     "entity_registry_proyectos": {"order_by": "project_id"},
     "entity_registry_convocatorias": {"order_by": "convocatoria_id"},
     "entity_links": {},
+    "citing_papers": {"order_by": "citing_id"},
 }
 
 
@@ -767,10 +768,11 @@ def load_citation_graph() -> pd.DataFrame:
 def load_citing_papers() -> pd.DataFrame:
     """Papers externos que citan publicaciones CCHEN"""
     p = BASE_PUB / "cchen_citing_papers.csv"
-    if not p.exists():
+    try:
+        return _load_public_table("citing_papers", p).fillna("")
+    except Exception:
         return pd.DataFrame(columns=["citing_id","cited_cchen_id","citing_doi",
                                       "citing_title","citing_year","citing_institutions"])
-    return pd.read_csv(p).fillna("")
 
 
 # ─── Altmetric ────────────────────────────────────────────────────────────────
