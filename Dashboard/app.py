@@ -30,6 +30,7 @@ from data_loader import (
     load_convenios_nacionales, load_acuerdos_internacionales,
     load_unpaywall_oa, load_iaea_inis,
     load_citation_graph, load_citing_papers, load_altmetric,
+    load_europmc,
     get_data_backend_info, BASE,
 )
 
@@ -446,6 +447,7 @@ def get_data():
         citation_graph = load_citation_graph(),
         citing_papers  = load_citing_papers(),
         altmetric      = load_altmetric(),
+        europmc        = load_europmc(),
     )
 
 D = get_data()
@@ -477,6 +479,7 @@ unpaywall    = D["unpaywall"]
 citation_graph = D["citation_graph"]
 citing_papers  = D["citing_papers"]
 altmetric      = D["altmetric"]
+europmc        = D["europmc"]
 
 @st.cache_data
 def get_patents():
@@ -1605,6 +1608,7 @@ _ctx = dict(
     citation_graph=citation_graph,
     citing_papers=citing_papers,
     altmetric=altmetric,
+    europmc=europmc,
     patents=patents,
     render_operational_strip=render_operational_strip,
     open_dataset_inspector=open_dataset_inspector,

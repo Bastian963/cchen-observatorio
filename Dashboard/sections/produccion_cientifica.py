@@ -20,6 +20,7 @@ def render(ctx: dict) -> None:
     concepts = ctx["concepts"]
     orcid    = ctx["orcid"]
     unpaywall = ctx["unpaywall"]
+    europmc  = ctx.get("europmc", __import__("pandas").DataFrame())
 
     from data_loader import BASE
 
@@ -520,6 +521,58 @@ def render(ctx: dict) -> None:
             st.dataframe(_dian_show, use_container_width=True, height=320, column_config=_dian_cfg)
             st.download_button("Exportar DIAN CSV", make_csv(_dian_show),
                                "publicaciones_dian_cchen.csv", "text/csv")
+
+    # ── EuroPMC ───────────────────────────────────────────────────────────────
+    _europmc_label = f"Publicaciones CCHEN en EuroPMC ({len(europmc)} registros)" if not europmc.empty else "Publicaciones CCHEN en EuroPMC (sin datos)"
+    with st.expander(_europmc_label, expanded=False):
+        if europmc.empty:
+            st.info("No se encontró el archivo cchen_europmc_works.csv o está vacío.")
+        else:
+            st.metric("Papers indexados en EuroPMC", len(europmc))
+
+            # Build display table using only columns that actually exist
+            _epmc_desired = ["title", "year", "pmid", "pmcid", "europmc_url",
+                             "doi", "journal_title", "cited_by_count"]
+            _epmc_cols = [c for c in _epmc_desired if c in europmc.columns]
+            _epmc_show = europmc[_epmc_cols].copy()
+
+            # Sort by year descending if available
+            if "year" in _epmc_show.columns:
+                _epmc_show = _epmc_show.sort_values("year", ascending=False)
+
+            # Build column config for link/special columns
+            _epmc_cfg = {}
+            _epmc_rename = {
+                "title":         "Título",
+                "year":          "Año",
+                "pmid":          "PMID",
+                "pmcid":         "PMCID",
+                "europmc_url":   "EuroPMC",
+                "doi":           "DOI",
+                "journal_title": "Revista",
+                "cited_by_count": "Citas",
+            }
+            _epmc_show = _epmc_show.rename(columns={k: v for k, v in _epmc_rename.items() if k in _epmc_show.columns})
+
+            if "EuroPMC" in _epmc_show.columns:
+                _epmc_cfg["EuroPMC"] = st.column_config.LinkColumn("EuroPMC", display_text="Ver")
+            if "DOI" in _epmc_show.columns:
+                _epmc_show["DOI"] = _epmc_show["DOI"].apply(
+                    lambda d: f"https://doi.org/{d}" if pd.notna(d) and str(d).startswith("10.") else None
+                )
+                _epmc_cfg["DOI"] = st.column_config.LinkColumn("DOI", display_text="DOI")
+            if "Título" in _epmc_show.columns:
+                _epmc_cfg["Título"] = st.column_config.TextColumn("Título", width="large")
+
+            st.dataframe(_epmc_show, use_container_width=True, height=400,
+                         hide_index=True, column_config=_epmc_cfg)
+            st.download_button(
+                "Exportar EuroPMC CSV",
+                make_csv(_epmc_show),
+                "publicaciones_europmc_cchen.csv",
+                "text/csv",
+                key="dl_europmc",
+            )
 
     # ── PERFIL DE INVESTIGADOR ────────────────────────────────────────────────
     st.markdown("---")
