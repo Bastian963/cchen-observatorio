@@ -235,6 +235,11 @@ def load_anid():
     df = _load_public_table("anid_projects", BASE_ANID / "RepositorioAnid_con_monto.csv")
     df["anio_concurso"] = pd.to_numeric(df["anio_concurso"], errors="coerce").astype("Int64")
     df["monto_programa_num"] = pd.to_numeric(df["monto_programa_num"], errors="coerce")
+    # Supabase guarda programa_full→programa, instrumento_full→instrumento
+    if "programa_full" not in df.columns and "programa" in df.columns:
+        df = df.rename(columns={"programa": "programa_full"})
+    if "instrumento_full" not in df.columns and "instrumento" in df.columns:
+        df = df.rename(columns={"instrumento": "instrumento_full"})
 
     def norm_programa(p):
         if pd.isna(p):
