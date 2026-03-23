@@ -16,6 +16,7 @@
 -- Extensiones útiles
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "unaccent";
+CREATE EXTENSION IF NOT EXISTS vector;     -- pgvector: búsqueda semántica
 
 -- ============================================================
 -- MÓDULO: PUBLICACIONES CIENTÍFICAS
@@ -846,6 +847,50 @@ CREATE TABLE IF NOT EXISTS bertopic_topic_info (
 
 COMMENT ON TABLE bertopic_topic_info IS
     'Metadatos de los temas BERTopic: nombre base, representación y documentos representativos.';
+
+-- ============================================================
+-- MÓDULO: BÚSQUEDA SEMÁNTICA (pgvector)
+-- Fuente: Scripts/build_embeddings.py + Database/migrate_embeddings.py
+-- Modelo: paraphrase-multilingual-MiniLM-L12-v2 (384 dims)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS paper_embeddings (
+    openalex_id  TEXT PRIMARY KEY REFERENCES publications(openalex_id),
+    doi          TEXT,
+    title        TEXT,
+    year         NUMERIC,
+    embedding    vector(384)
+);
+
+CREATE INDEX IF NOT EXISTS idx_paper_embeddings_vec
+    ON paper_embeddings USING ivfflat (embedding vector_cosine_ops)
+    WITH (lists = 50);
+
+COMMENT ON TABLE paper_embeddings IS
+    'Embeddings semánticos de publicaciones CCHEN para búsqueda vectorial. '
+    'Modelo: paraphrase-multilingual-MiniLM-L12-v2 (384 dims, normalizado L2). '
+    '877 vectores. Fuente: Database/migrate_embeddings.py.';
+
+-- Función RPC para búsqueda semántica por similitud coseno
+CREATE OR REPLACE FUNCTION match_papers(
+    query_embedding vector(384),
+    match_count     int DEFAULT 5
+)
+RETURNS TABLE(openalex_id text, doi text, title text, year numeric, similarity float)
+LANGUAGE sql STABLE AS $$
+    SELECT  pe.openalex_id,
+            pe.doi,
+            pe.title,
+            pe.year,
+            1 - (pe.embedding <=> query_embedding) AS similarity
+    FROM    paper_embeddings pe
+    ORDER BY pe.embedding <=> query_embedding
+    LIMIT   match_count;
+$$;
+
+ALTER TABLE paper_embeddings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public_read_paper_embeddings" ON paper_embeddings;
+CREATE POLICY "public_read_paper_embeddings" ON paper_embeddings FOR SELECT USING (TRUE);
 
 -- ============================================================
 -- MÓDULO: GRAFO DE CITAS
