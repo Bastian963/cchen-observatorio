@@ -1,518 +1,708 @@
 # Arquitectura Técnica — Observatorio Tecnológico CCHEN 360°
 
-**Versión:** 1.0 · **Fecha:** Marzo 2026
+**Versión:** 2.0 · **Fecha:** Marzo 2026
 **Autor:** Bastián Ayala Inostroza
-**Documento base:** Memoria Metodológica - Observatorio CCHEN 360 (Sept. 2025)
+**Documentos base:** Memoria Metodológica - Observatorio CCHEN 360 (Sept. 2025); Propuesta de Implementación CORFO
 
 ---
 
-## 1. Visión general
+## 1. Visión general del sistema
 
-El observatorio es un sistema de inteligencia de datos con **arquitectura de tres capas**:
+El Observatorio Tecnológico CCHEN es un sistema de inteligencia de datos con **arquitectura de tres capas** que transforma datos científicos dispersos en indicadores estratégicos accionables.
 
 ```
-┌──────────────────────────────────────────────────────┐
-│  CAPA 3 — PRESENTACIÓN                               │
-│  Streamlit Dashboard · Asistente IA · PDF Reports    │
-├──────────────────────────────────────────────────────┤
-│  CAPA 2 — LÓGICA / ANÁLISIS                          │
-│  data_loader.py · DuckDB · Supabase API              │
-├──────────────────────────────────────────────────────┤
-│  CAPA 1 — DATOS                                      │
-│  CSVs locales → Supabase (PostgreSQL) → Data Lake    │
-└──────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│  CAPA 3 — PRESENTACIÓN                                          │
+│  Streamlit Dashboard (11 secciones modulares)                   │
+│  Asistente I+D (RAG + Groq LLM)                                 │
+│  Reportes PDF (reportlab + matplotlib)                          │
+│  Grafo de citas interactivo (pyvis)                             │
+├─────────────────────────────────────────────────────────────────┤
+│  CAPA 2 — LÓGICA Y ANÁLISIS                                     │
+│  data_loader.py — carga unificada Supabase ↔ CSV local          │
+│  DuckDB — queries analíticas sobre CSV                          │
+│  semantic_search.py — búsqueda vectorial (RAG backend)          │
+│  Scripts/ — pipelines ETL y monitores de vigilancia             │
+├─────────────────────────────────────────────────────────────────┤
+│  CAPA 1 — DATOS                                                 │
+│  CSVs locales en Data/ (Data Lake raw)                          │
+│  Supabase / PostgreSQL 15 (Data Warehouse curado)               │
+│  GitHub — versionado y trazabilidad                             │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ### Stack tecnológico actual (TRL 5)
-- **Frontend:** Streamlit (Python) — modularizado en `Dashboard/sections/`
-- **Backend/Lógica:** Python 3.9, pandas, plotly
-- **Base de datos analítica:** DuckDB (en desarrollo)
-- **Base de datos producción:** Supabase / PostgreSQL (en migración)
-- **IA / LLM:** Groq API (llama-3.3-70b-versatile + llama-3.1-8b-instant) + fallback por keywords
-- **Almacenamiento:** Dropbox → GitHub + Supabase Storage
-- **Reportes:** reportlab (PDF), matplotlib
-- **Citas científicas:** OpenAlex citation graph (script listo)
-- **Patentes nacionales:** INAPI Chile (script listo)
-- **Métricas alternativas:** Semantic Scholar (877 papers procesados)
+
+| Componente | Tecnología | Versión | Notas |
+|-----------|-----------|---------|-------|
+| Dashboard | Streamlit | 1.50.0 | 11 secciones modulares en sections/ |
+| Dataframes | pandas | 2.3.3 | Carga principal de datos |
+| Visualización | plotly | 6.6.0 | Gráficos interactivos |
+| Álgebra lineal | numpy | 2.0.2 | Embeddings semánticos |
+| Base de datos | Supabase (PostgreSQL) | supabase-py 2.28.3 | 22 tablas, RLS desactivado |
+| Query local | DuckDB | — | Fallback y consultas analíticas |
+| LLM principal | Groq (llama-3.3-70b-versatile) | groq>=0.11.0 | Asistente I+D |
+| LLM auxiliar | Groq (llama-3.1-8b-instant) | groq>=0.11.0 | Decisión de gráficos PDF |
+| Embeddings | sentence-transformers | 5.1.2 | paraphrase-multilingual-MiniLM-L12-v2 |
+| Grafo visual | pyvis | 0.3.2 | Red de citas interactiva HTML |
+| Reportes | reportlab + matplotlib | — | PDF con gráficos contextuales |
+| Patrones sklearn | scikit-learn | 1.6.1 | Auxiliar en análisis |
 
 ### Stack objetivo (TRL 6–7, con presupuesto MM$42+)
-- **Frontend:** Angular (JavaScript)
+
+- **Frontend:** Angular + TypeScript
 - **Backend:** Django REST Framework (Python)
 - **Base de datos:** PostgreSQL en Huawei Cloud
 - **Data Lake:** Object Storage S3-compatible
 - **BI:** Power BI o Metabase open source
-- **Orquestación:** Apache Airflow o GitHub Actions
+- **Orquestación:** Apache Airflow o GitHub Actions avanzado
+- **Autenticación:** OAuth2 institucional CCHEN
 
 ---
 
-## 2. Arquitectura de datos
-
-### Modelo híbrido Data Lake + Data Warehouse
+## 2. Diagrama de flujo de datos
 
 ```
-FUENTES EXTERNAS                   FUENTES INTERNAS
-──────────────                     ────────────────
-OpenAlex API                       Registro DIAN (Excel)
-CrossRef API                       Capital Humano (Excel)
-ORCID API                          ANID Repositorio
-Lens.org API                       datos.gob.cl CSVs
+FUENTES EXTERNAS                         FUENTES INTERNAS
+────────────────                         ────────────────
+OpenAlex API (REST)                      Registro DIAN Excel
+  → publicaciones, autorías, citas,      Capital Humano Excel (maestro limpio)
+    conceptos, grants, citas             ANID Repositorio CSV
+CrossRef API (REST)                      datos.gob.cl (convenios, acuerdos)
+  → financiadores, abstracts, refs
+ORCID API (REST)
+  → perfiles investigadores
+EuroPMC REST API
+  → literatura biomédica, PMID/PMCID
+DataCite API (REST)
+  → datasets y outputs DOI vía ROR
+OpenAIRE Graph API (REST)
+  → outputs adicionales vía ORCID
+ANID Repositorio (web scraping)
+  → proyectos con montos
 arXiv RSS
-SJR/Scimago CSV
+  → papers nuevos relevantes
+IAEA INIS
+  → documentos nucleares (vigilancia)
+Semantic Scholar API
+  → métricas adicionales de impacto
+Altmetric API
+  → impacto en redes y medios
+PatentsView / INAPI Chile
+  → patentes y PI
+Scimago SJR (CSV anual)
+  → cuartiles de revistas 1999–2024
 
-        ↓ Notebooks/ (ETL)
-
-┌─────────────────────────────────────────┐
-│  DATA LAKE (raw)                        │
-│  /Data/**/*.csv — archivos originales   │
-│  GitHub → versionados y trazables       │
-└─────────────────────────────────────────┘
-        ↓ data_loader.py (transformación)
-
-┌─────────────────────────────────────────┐
-│  DATA WAREHOUSE (curado)                │
-│  Supabase (PostgreSQL)                  │
-│  Tablas normalizadas y relacionadas     │
-│  API REST autogenerada                  │
-└─────────────────────────────────────────┘
-        ↓
-┌─────────────────────────────────────────┐
-│  CAPA ANALÍTICA                         │
-│  DuckDB (queries sobre Supabase/CSVs)   │
-│  data_loader.py (carga en Streamlit)    │
-└─────────────────────────────────────────┘
-        ↓
-┌─────────────────────────────────────────┐
-│  PUBLICACIÓN                            │
-│  Zenodo (DOI por dataset)               │
-│  Dashboard público (futuro)             │
-└─────────────────────────────────────────┘
+        │
+        ▼ Notebooks/ + Scripts/ (ETL, extracción, limpieza)
+        │
+┌───────────────────────────────────────────────────────┐
+│  DATA LAKE local  Data/**/*.csv                       │
+│  ─ cchen_openalex_works.csv           (877 papers)    │
+│  ─ cchen_authorships_enriched.csv     (7.971 filas)   │
+│  ─ cchen_openalex_concepts.csv        (21.348 filas)  │
+│  ─ cchen_crossref_enriched.csv        (764 filas)     │
+│  ─ cchen_publications_with_quartile_sjr.csv           │
+│  ─ cchen_citing_papers.csv            (8.499 filas)   │
+│  ─ cchen_europmc_works.csv            (74 filas)      │
+│  ─ cchen_datacite_outputs.csv                         │
+│  ─ cchen_openaire_outputs.csv                         │
+│  ─ cchen_institution_registry.csv     (697 filas)     │
+│  ─ RepositorioAnid_con_monto.csv      (24 proyectos)  │
+│  ─ dataset_maestro_limpio.csv         (capital humano)│
+│  ─ entity_registry_*.csv + links.csv                 │
+│  ─ cchen_embeddings.npy + _meta.csv   (RAG)          │
+└───────────────────────────────┬───────────────────────┘
+                                │ Database/migrate_to_supabase.py
+                                │ (upsert idempotente, chunks de 500 filas)
+                                ▼
+┌───────────────────────────────────────────────────────┐
+│  SUPABASE (PostgreSQL 15)                             │
+│  22 tablas normalizadas, relaciones FK                │
+│  API REST autogenerada con autenticación JWT          │
+│  Row Level Security: desactivado (service_role key)   │
+│  Lectura: anon key pública o service_role             │
+│  Paginación: 1.000 filas por página (SUPABASE_PAGE_SIZE) │
+└───────────────────────────────┬───────────────────────┘
+                                │ data_loader.py
+                                │ (_load_public_table → _fetch_supabase_table)
+                                ▼
+┌───────────────────────────────────────────────────────┐
+│  DASHBOARD STREAMLIT                                  │
+│  app.py → carga todos los datasets vía get_data()    │
+│  sections/*.py → render() recibe ctx dict            │
+│  shared.py → helpers, estilos, generate_pdf_report() │
+└───────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Esquema de tablas (Supabase / PostgreSQL)
+## 3. Módulo data_loader.py
 
-Ver `Database/schema.sql` para el DDL completo.
+`Dashboard/data_loader.py` es el núcleo de carga de datos del sistema. Implementa un patrón de **fallback automático** Supabase → CSV local.
 
-### Tablas principales
+### PUBLIC_TABLE_CONFIG
 
-| Tabla | Filas actuales | Fuente | Clave primaria |
-|-------|----------------|--------|----------------|
-| `publications` | 877 | OpenAlex API | `openalex_id` |
-| `authorships` | 7.971 | OpenAlex API | `(work_id, author_id)` |
-| `publications_enriched` | 616 | OpenAlex + SJR | `work_id` |
-| `crossref_data` | 764 | CrossRef API | `doi` |
-| `concepts` | 21.348 | OpenAlex API | `(work_id, concept_name)` |
-| `patents` | 0+ | PatentsView / USPTO | `patent_uid` |
-| `anid_projects` | 30 | ANID Repositorio | `proyecto` |
-| `capital_humano` | 112 | Registro interno | `id` (serial) |
-| `researchers_orcid` | 48 | ORCID API | `orcid_id` |
-| `funding_complementario` | 2+ | Dataset curado | `funding_id` |
-| `institution_registry` | 697 | ROR + OpenAlex + ORCID + convenios | `normalized_key` |
-| `institution_registry_pending_review` | 48 | Curaduría ROR | `canonical_name` |
-| `entity_registry_personas` | 604 | Núcleo institucional fase 1 | `persona_id` |
-| `entity_registry_proyectos` | 24 | Núcleo institucional fase 1 | `project_id` |
-| `entity_registry_convocatorias` | 26 | Núcleo institucional fase 1 | `convocatoria_id` |
-| `entity_links` | 657 | Núcleo institucional fase 1 | `(origin_type, origin_id, relation, target_type, target_id)` |
-| `convocatorias_matching_institucional` | 26 | Mesa institucional fase 1 | `(conv_id, perfil_id)` |
-| `convenios_nacionales` | 84 | datos.gob.cl | `id` (serial) |
-| `acuerdos_internacionales` | 91 | datos.gob.cl | `id` (serial) |
-| `data_sources` | — | Gobernanza | `source_name` |
+Diccionario que declara todas las tablas con soporte de lectura remota desde Supabase:
 
-### Relaciones clave
+```python
+PUBLIC_TABLE_CONFIG = {
+    "publications":              {"order_by": "openalex_id"},
+    "publications_enriched":     {"order_by": "work_id"},
+    "authorships":               {"order_by": "id"},
+    "crossref_data":             {"order_by": "doi"},
+    "concepts":                  {"order_by": "id"},
+    "datacite_outputs":          {"order_by": "doi"},
+    "openaire_outputs":          {"order_by": "openaire_id"},
+    "anid_projects":             {"order_by": "proyecto"},
+    "researchers_orcid":         {"order_by": "orcid_id"},
+    "institution_registry":      {"order_by": "normalized_key"},
+    "institution_registry_pending_review": {"order_by": "canonical_name"},
+    "convenios_nacionales":      {"order_by": "id"},
+    "acuerdos_internacionales":  {"order_by": "id"},
+    "capital_humano":            {"order_by": "id"},
+    "funding_complementario":    {"order_by": "funding_id"},
+    "convocatorias_matching_institucional": {"order_by": "conv_id"},
+    "entity_registry_personas":  {"order_by": "persona_id"},
+    "entity_registry_proyectos": {"order_by": "project_id"},
+    "entity_registry_convocatorias": {"order_by": "convocatoria_id"},
+    "entity_links":              {},
+    "citing_papers":             {"order_by": "citing_id"},
+}
+```
+
+### _load_public_table(table_name, local_path)
+
+Función central de carga con tres modos:
+
+```
+modo "local"          → _read_csv_fast(local_path)
+modo "supabase_public" → _fetch_supabase_table(table_name)  [falla si Supabase no disponible]
+modo "auto" (default) → intenta Supabase; si falla → _read_csv_fast(local_path)
+```
+
+### _fetch_supabase_table(table_name)
+
+Implementa **paginación completa** de Supabase:
+- Primera página: `range(0, 999)` con `count="exact"` para obtener total
+- Páginas siguientes: bucle `while start < total`, chunks de 1.000 filas
+- Garantiza que nunca se pierden filas por el límite de 1.000 por request de Supabase
+
+### _read_csv_fast(path)
+
+Lee CSVs usando DuckDB si está disponible (mucho más rápido para archivos grandes), con fallback a pandas:
+
+```python
+con.execute(f"SELECT * FROM read_csv_auto('{path}', HEADER=TRUE, SAMPLE_SIZE=-1)")
+```
+
+---
+
+## 4. Esquema de tablas Supabase
+
+El DDL completo está en `Database/schema.sql`. La estructura de módulos es:
+
+### Módulo: Publicaciones Científicas
+
+```sql
+publications          -- 877 papers: openalex_id (PK), doi, title, year, source,
+                      --             cited_by_count, is_oa, oa_status, oa_url
+publications_enriched -- 616 filas: work_id (FK→publications), quartile, sjr_num,
+                      --             areas, has_international_collab, n_cchen_authors
+authorships           -- 7.971 filas: work_id (FK), author_name, institution_name,
+                      --             institution_country_code, is_cchen_affiliation
+crossref_data         -- 764 filas: doi (FK via publications.doi), funder_names,
+                      --             references_count, abstract
+concepts              -- 21.348 filas: work_id (FK), concept_name, concept_score,
+                      --              concept_level (L0–L5)
+```
+
+### Módulo: Proyectos y Financiamiento
+
+```sql
+anid_projects         -- 24 proyectos: proyecto (PK), titulo, instrumento_full,
+                      --              anio_concurso, monto_programa_num
+funding_complementario -- Variable: funding_id (PK), fuente, titulo, instrumento,
+                      --           area_cchen, elegibilidad_base, source_confidence
+```
+
+### Módulo: Capital Humano e Investigadores
+
+```sql
+capital_humano        -- 97+ personas: id (serial PK), nombre, tipo_norm, centro_norm,
+                      --              universidad, tutor, anio_hoja, duracion_dias
+researchers_orcid     -- 48 perfiles: orcid_id (PK), full_name, orcid_works_count,
+                      --             current_affiliation, area_expertise
+```
+
+### Módulo: Institucional y Territorial
+
+```sql
+institution_registry  -- 697 filas: normalized_key (PK), canonical_name, ror_id,
+                      --           country_code, type, source_list
+institution_registry_pending_review  -- 48 filas: instituciones pendientes de revisión ROR
+convenios_nacionales  -- 84 filas: id (serial PK), contraparte, objeto, vigencia
+acuerdos_internacionales -- 91 filas: id (serial PK), pais, instrumento, firma, vigencia
+```
+
+### Módulo: Gobernanza y Entidades Canónicas
+
+```sql
+entity_registry_personas     -- 604 personas canónicas con rol, área y centro
+entity_registry_proyectos    -- 24 proyectos canónicos (ANID + otros)
+entity_registry_convocatorias -- 26 convocatorias canónicas
+entity_links                 -- 657 enlaces (persona→proyecto, proyecto→convocatoria, etc.)
+```
+
+### Módulo: Matching Institucional
+
+```sql
+convocatorias_matching_institucional  -- 26 filas: conv_id + perfil_id (PK compuesta),
+                                      --  score_total, eligibility_status, readiness_status,
+                                      --  owner_unit, recommended_action
+```
+
+### Módulo: Outputs de Investigación
+
+```sql
+datacite_outputs   -- datasets y outputs DOI vía ROR https://ror.org/03hv95d67
+openaire_outputs   -- outputs OpenAIRE indexados por ORCID de investigadores CCHEN
+```
+
+### Módulo: Grafo de Citas
+
+```sql
+citing_papers      -- 8.499 filas: citing_id + cited_cchen_id (PK compuesta),
+                   --              citing_doi, citing_title, citing_year, citing_institutions
+```
+
+### Relaciones FK principales
 
 ```
 publications (openalex_id)
-    ├── authorships (work_id → openalex_id)
-    ├── publications_enriched (work_id → openalex_id)
-    ├── crossref_data (doi → doi)
-    └── concepts (work_id → openalex_id)
+    ├── authorships.work_id
+    ├── publications_enriched.work_id
+    ├── crossref_data.doi → publications.doi
+    └── concepts.work_id
 
-anid_projects
-    └── (relacionable con publications por autor)
-
-capital_humano
-    └── (relacionable con researchers_orcid por nombre)
+citing_papers.cited_cchen_id → publications.openalex_id
 ```
 
 ---
 
-## 4. Pipeline de actualización de datos
+## 5. Pipeline RAG / Búsqueda Semántica
+
+### Arquitectura del sistema RAG
 
 ```
-Paso 1 — Recolección (Notebooks/ en orden numérico)
-  01_Download_publications      → Data/Publications/cchen_openalex_works.csv
-  02_CrossRef_enrichment        → Data/Publications/cchen_crossref_enriched.csv
-  03_OpenAlex_concepts          → Data/Publications/cchen_openalex_concepts.csv
-  04_ORCID_researchers          → Data/Researchers/cchen_researchers_orcid.csv
-  05_Download_patents / Scripts/fetch_patentsview_patents.py
-                                 → Data/Patents/cchen_patents.csv o Data/Patents/cchen_patents_uspto.csv
-  06_ANID_repository            → Data/ANID/RepositorioAnid_con_monto.csv
-  07_MinCiencia_funding / Scripts/fetch_funding_plus.py
-                                 → Data/Funding/cchen_funding_complementario.csv
-  Scripts/build_ror_registry.py  → Data/Institutional/cchen_institution_registry.csv
-                                 → Data/Institutional/ror_pending_review.csv
-  Scripts/build_operational_core.py
-                                 → Data/Gobernanza/entity_registry_*.csv
-                                 → Data/Gobernanza/entity_links.csv
-                                 → Data/Vigilancia/convocatorias_matching_institucional.csv
-  Scripts/fetch_openalex_citations.py
-                                 → Data/Publications/cchen_citation_graph.csv
-                                 → Data/Publications/cchen_citing_papers.csv
-  Scripts/fetch_inapi_patents.py → Data/Patents/cchen_inapi_patents.csv
-  Scripts/fetch_semantic_scholar.py
-                                 → Data/Publications/cchen_semantic_scholar.csv
+                    OFFLINE (pre-cómputo)
+                    ─────────────────────
+cchen_openalex_works.csv
+        │
+        │ Scripts/build_embeddings.py
+        │ Modelo: paraphrase-multilingual-MiniLM-L12-v2
+        │ Dimensión: 384 (float32)
+        │ Normalización: L2 (para cosine similarity = dot product)
+        ▼
+cchen_embeddings.npy          ← matriz (N × 384) float32
+cchen_embeddings_meta.csv     ← openalex_id | doi | title | year
 
-Paso 2 — Validación de calidad
-  python Database/data_quality.py
-  → Genera reporte de calidad + alertas
 
-Paso 3 — Migración a Supabase
-  python Database/migrate_to_supabase.py
-  → Upsert en todas las tablas
-
-Paso 4 — Verificación
-  Dashboard → Panel de Indicadores → Fuentes y actualización
+                    RUNTIME (por cada consulta)
+                    ───────────────────────────
+Usuario escribe pregunta
+        │
+        │ Scripts/semantic_search.py :: search(query, top_k=5)
+        │ 1. Carga embeddings.npy en memoria (una vez, cached)
+        │ 2. Codifica query con SentenceTransformer (misma instancia)
+        │ 3. scores = embeddings @ query_vec  (dot product vectorizado)
+        │ 4. top_idx = argsort(scores)[::-1][:top_k]
+        ▼
+DataFrame: openalex_id | doi | title | year | score
+        │
+        │ Dashboard/sections/asistente_id.py
+        │ Formatea top-5 como contexto:
+        │   "Papers más relevantes a tu consulta:
+        │    - (2023) Título del paper | score=0.87 | doi:..."
+        ▼
+Groq API  (llama-3.3-70b-versatile)
+        │ System prompt: contexto institucional + top-5 papers
+        │ User message: pregunta del usuario
+        ▼
+Respuesta con contexto científico específico de CCHEN
 ```
 
-### Frecuencia recomendada
+### Modelo de embeddings
 
-| Fuente | Frecuencia | Automatización | Razón |
-|--------|-----------|---------------|-------|
-| arXiv RSS (vigilancia) | Semanal | GitHub Actions (lunes 08:00 UTC) | Papers nuevos cada semana |
-| Google News CCHEN | Semanal | GitHub Actions (lunes 08:00 UTC) | Noticias de alta rotación |
-| Convocatorias ANID | Semanal | GitHub Actions (lunes 08:00 UTC) | Estados cambian durante el año |
-| OpenAlex publicaciones | Trimestral | Manual (Notebook 01) | Nuevos papers se indexan con ~3 meses de delay |
-| CrossRef | Trimestral | Manual (Notebook 02) | Junto con OpenAlex |
-| ORCID | Semestral | Manual (Notebook 04) | Perfiles cambian poco |
-| SJR/Scimago | Anual | Manual (Notebook 09) | Publican en enero del año siguiente |
-| datos.gob.cl | Semestral | Manual | Convenios/acuerdos cambian poco |
+| Atributo | Valor |
+|---------|-------|
+| Nombre | `paraphrase-multilingual-MiniLM-L12-v2` |
+| Dimensiones | 384 |
+| Idiomas soportados | 50+ (incluye español e inglés) |
+| Tamaño del modelo | ~480 MB |
+| Normalización | L2 (normalizado, cosine = dot product) |
+| Batch size | 64 (configurable) |
+| Fallback | Si no hay embeddings pre-calculados, el asistente funciona sin RAG |
 
-### Workflow automatizado
+### Comando para recalcular embeddings
 
-`.github/workflows/arxiv_monitor.yml` ejecuta cada lunes los tres monitores de vigilancia:
+```bash
+# Modelo por defecto (multilingual, recomendado)
+python3 Scripts/build_embeddings.py
 
+# Modelo alternativo (inglés, más rápido)
+python3 Scripts/build_embeddings.py --model all-MiniLM-L6-v2
+
+# Forzar recálculo completo
+python3 Scripts/build_embeddings.py --reset
 ```
-arXiv RSS       → Data/Vigilancia/arxiv_monitor.csv  + arxiv_state.json
-Google News     → Data/Vigilancia/news_monitor.csv   + news_state.json
-Convocatorias   → Data/Vigilancia/convocatorias_curadas.csv
-```
-
-El script de convocatorias corre con `continue-on-error: true` porque depende de scraping HTML del sitio de ANID.
 
 ---
 
-## 5. Módulos del observatorio
+## 6. Integración Groq API
 
-Según la Memoria Metodológica (Documento de Trabajo N°2, Sept. 2025), el observatorio tiene 7 módulos:
+### Modelos utilizados
 
-### Mapa de recopilación por módulo
+| Modelo | Uso | Temperatura | Max tokens |
+|--------|-----|------------|-----------|
+| `llama-3.3-70b-versatile` | Asistente I+D principal | 0.4 | ~4096 |
+| `llama-3.1-8b-instant` | Decisión de chart type para PDF | 0.1 | ~256 |
 
-La siguiente tabla resume en qué módulo conviene recopilar datos, tecnologías y herramientas según su función dentro del observatorio:
+### Estructura del system prompt
 
-| Módulo | Qué datos / activos recopila o gestiona | Tecnologías / herramientas asociadas | Estado actual |
-|--------|------------------------------------------|--------------------------------------|---------------|
-| Vigilancia y Prospección Tecnológica | Publicaciones, patentes, tendencias, actores, señales emergentes, normativa, taxonomías temáticas y fuentes externas de vigilancia | OpenAlex, CrossRef, Lens.org, arXiv RSS, IAEA INIS, Semantic Scholar, spaCy, BERTopic, GitHub Actions | Parcial |
-| Inteligencia Aplicada | Indicadores, rankings, benchmarking, análisis bibliométrico, mapas de actores, dashboards, reportes y productos analíticos | Python, pandas, Plotly, Streamlit, DuckDB, Groq/LLM, reportlab, Power BI o Metabase (objetivo) | Activo (TRL 4) |
-| Difusión y Divulgación | Boletines, newsletters, micrositios, data stories, contenidos audiovisuales, métricas de alcance e impacto comunicacional | Mailchimp, Brevo, GitHub Pages, Altmetric API, plantillas LLM | Pendiente |
-| Repositorio de Datos | Datasets raw y curados, CSVs, tablas, metadatos, scripts, fichas metodológicas, evidencias, snapshots y documentación técnica | Supabase/PostgreSQL, DuckDB, GitHub, Zenodo, Supabase Storage, Data Lake local en `Data/` | En desarrollo |
-| Transferencia y Codiseño | Inventario de tecnologías CCHEN, activos con TRL 6-9, acuerdos de colaboración, propiedad intelectual, bitácoras y carpetas compartidas por proyecto | Plataformas colaborativas con trazabilidad, control de versiones, gestión documental legal, DMDA/MTA digitales | Pendiente |
-| Colaboración Ecosistémica | Convenios, acuerdos institucionales, perfiles ORCID, conectores con ANID/CORFO/universidades, indicadores exportables y datos interoperables | API REST, FastAPI o Django REST, CERIF, CASRAI, EuroCRIS, conectores institucionales | Inicial |
-| Gobernanza de Datos | Catálogo de fuentes, frecuencia de actualización, reglas de calidad, responsables, permisos, trazabilidad, auditoría, metadatos y políticas de resguardo | `Database/data_quality.py`, validaciones automáticas, logging, backups, Dublin Core, DCAT, ORCID | Inicial |
+El prompt del asistente inyecta, en orden:
 
-### Lectura práctica
+1. **Identidad y rol** — quién es el asistente y para qué sirve
+2. **Contexto de producción científica** — total papers, citas, h-index, top 10 papers más citados
+3. **Áreas temáticas** — top-8 áreas por frecuencia en publicaciones
+4. **Top investigadores** — top-25 investigadores CCHEN con N° papers
+5. **Financiamiento ANID** — todos los proyectos con monto e instrumento
+6. **Capital humano** — composición por modalidad, centros, universidades
+7. **Convocatorias abiertas y próximas** — hasta 6 de cada tipo
+8. **Matching institucional** — tabla de oportunidades priorizadas con score
+9. **Portafolio tecnológico** — activos TRL con potencial de transferencia
+10. **Entidades canónicas** — personas, proyectos, convocatorias y enlaces
+11. **Convenios y acuerdos** — contrapartes principales
+12. **Financiamiento complementario** — fuentes no-ANID
+13. **Papers relevantes (RAG)** — top-5 por búsqueda semántica sobre la consulta actual
 
-- Si el objetivo es **capturar información externa** sobre publicaciones, patentes, tendencias o actores, el módulo principal es **Vigilancia y Prospección Tecnológica**.
-- Si el objetivo es **almacenar y organizar datasets, tablas, metadatos y scripts**, corresponde al **Repositorio de Datos**.
-- Si el objetivo es **convertir datos en indicadores, visualizaciones o reportes**, corresponde a **Inteligencia Aplicada**.
-- Si el objetivo es **intercambiar datos con otras instituciones o exponer APIs**, corresponde a **Colaboración Ecosistémica**.
-- Si el objetivo es **asegurar calidad, trazabilidad y estándares**, corresponde a **Gobernanza de Datos**.
-- Si el objetivo es **ordenar tecnologías transferibles, PI y codiseño con terceros**, corresponde a **Transferencia y Codiseño**.
-- Si el objetivo es **publicar hallazgos para públicos internos o externos**, corresponde a **Difusión y Divulgación**.
+### Decisión de gráficos (modelo auxiliar)
 
-### Matriz operativa por módulo
-
-La siguiente matriz traduce cada módulo a una lógica operativa de entradas, procesos, salidas y herramientas:
-
-| Módulo | Entradas principales | Procesos clave | Salidas esperadas | Herramientas / stack |
-|--------|----------------------|----------------|-------------------|----------------------|
-| Vigilancia y Prospección Tecnológica | APIs científicas, portales de patentes, repositorios abiertos, RSS, taxonomías temáticas | Extracción vía API, limpieza, desduplicación, clasificación temática con BERTopic, monitoreo periódico | Alertas, bases de vigilancia, mapeos de tendencias, señales emergentes, datasets fuente | OpenAlex, CrossRef, Lens.org, arXiv RSS, IAEA INIS, Semantic Scholar, BERTopic, GitHub Actions |
-| Inteligencia Aplicada | Datos curados desde vigilancia, repositorio y fuentes internas CCHEN | Integración analítica, modelamiento descriptivo, cálculo de KPIs, benchmarking, visualización y redacción de reportes | Dashboards, reportes PDF, rankings, mapas de actores, análisis bibliométricos, indicadores estratégicos | Python, pandas, DuckDB, Plotly, Streamlit, Groq/LLM, reportlab, Power BI o Metabase |
-| Difusión y Divulgación | Insights, figuras, reportes, dashboards, documentos del observatorio | Curaduría editorial, adaptación de lenguaje, generación LLM, publicación multicanal, distribución | Boletines HTML/PDF semanales, newsletter, GitHub Pages, métricas de difusión | Mailchimp, Brevo, GitHub Pages, Altmetric API, plantillas LLM |
-| Repositorio de Datos | CSVs raw, tablas curadas, scripts, reportes, metadatos, snapshots, documentación técnica | Versionado, almacenamiento, catalogación, normalización, preservación, consulta y publicación controlada | Data lake local, warehouse curado, tablas analíticas, datasets reproducibles, evidencia documental | Supabase/PostgreSQL, DuckDB, GitHub, Zenodo, Supabase Storage, carpeta `Data/` |
-| Transferencia y Codiseño | Inventario de tecnologías, resultados transferibles, acuerdos, necesidades de socios, documentos de PI | Clasificación por TRL, gestión documental, trazabilidad de colaboración, resguardo legal, codiseño con actores externos | Catálogo de tecnologías, carpetas de proyecto, acuerdos digitales, bitácoras de transferencia | Plataformas colaborativas, control de versiones, gestores documentales, DMDA/MTA digitales |
-| Colaboración Ecosistémica | Convenios, acuerdos, perfiles ORCID, fuentes externas interoperables, indicadores exportables | Integración interinstitucional, exposición de datos, conexión mediante estándares, intercambio de indicadores | API pública/privada, exportaciones, paneles interoperables, conectores con ecosistemas I+D+i | FastAPI o Django REST, CERIF, CASRAI, EuroCRIS, conectores institucionales |
-| Gobernanza de Datos | Catálogo de fuentes, reglas de negocio, políticas de acceso, logs, metadatos, responsables de datos | Validación de calidad, auditoría, control de permisos, trazabilidad, respaldo, estandarización y monitoreo | Reportes de calidad, catálogos de datos, trazabilidad de actualizaciones, políticas de resguardo | `Database/data_quality.py`, logging, backups, Dublin Core, DCAT, ORCID |
-
-### Convocatorias Abiertas
-
-Las convocatorias abiertas deben tratarse como un subproducto específico del módulo de **Vigilancia y Prospección Tecnológica**, pero su visualización útil para usuarios finales corresponde a **Inteligencia Aplicada**.
-
-- **Captura:** calendario oficial de ANID, fichas concursales oficiales y portales institucionales serios de cooperación o grants internacionales.
-- **Curaduría:** clasificación por `estado`, `perfil objetivo`, `relevancia para CCHEN` y separación explícita entre `convocatoria abierta/próxima` versus `portal estratégico`.
-- **Salida recomendada:** una sección dentro de `Financiamiento I+D` que priorice académicos, postdocs, doctorados, consorcios científicos e innovación/transferencia.
-- **No recomendado:** mezclar noticias RSS o notas de prensa con convocatorias postulables.
-
-### Prioridades implementadas sobre el dashboard
-
-Tomando la lectura modular del observatorio, las prioridades más útiles para la fase actual quedaron implementadas de esta forma:
-
-| Prioridad | Producto implementado | Fuente o archivo base | Propósito |
-|-----------|-----------------------|------------------------|-----------|
-| Convocatorias + matching con perfiles CCHEN | Sección `Convocatorias y Matching` | `Data/Vigilancia/convocatorias_curadas.csv`, `Data/Vigilancia/convocatorias_matching_rules.csv`, `Data/Vigilancia/convocatorias_matching_institucional.csv` | Convierte el radar de oportunidades en una mesa institucional con scoring formal, elegibilidad explícita, unidad responsable y acción recomendada. |
-| Portafolio tecnológico / transferencia | Sección `Transferencia y Portafolio` | `Data/Transferencia/portafolio_tecnologico_semilla.csv` | Ordena capacidades observables y deja una base inicial para validación de `TRL`, unidad responsable y potencial de transferencia. |
-| Modelo unificado de entidades + gobernanza | Sección `Modelo y Gobernanza` | `Data/Gobernanza/entity_registry_personas.csv`, `entity_registry_proyectos.csv`, `entity_registry_convocatorias.csv` y `entity_links.csv` | Estabiliza entidades críticas, relaciones y prioridades de gobierno para futuras integraciones, RLS y recuperación contextual del asistente. |
-
-### Asistente del observatorio
-
-El `Asistente I+D` debe entenderse como una capa de **Inteligencia Aplicada** alimentada por el repositorio y por productos derivados de vigilancia y gobernanza. En su estado actual, además de publicaciones, ANID y capital humano, ya debe consumir:
-
-- convocatorias curadas abiertas y próximas,
-- matching institucional formal con `score_total`, `eligibility_status`, `readiness_status` y `owner_unit`,
-- portafolio tecnológico semilla,
-- convenios nacionales y acuerdos internacionales,
-- perfiles ORCID,
-- financiamiento complementario e `IAEA TC`,
-- el registro institucional `ROR`,
-- y los registros canónicos de personas, proyectos, convocatorias y enlaces.
-
-Restricción metodológica:
-
-- cuando una capa esté incompleta, el asistente debe declararlo explícitamente;
-- el portafolio tecnológico actual debe presentarse como **semilla analítica por validar**;
-- y la ausencia de patentes integradas no debe interpretarse como inexistencia institucional, sino como una brecha del repositorio actual.
-
-### Integración institucional con ROR
-
-Se incorporó una primera capa de normalización institucional basada en `ROR` para fortalecer el módulo de **Colaboración Ecosistémica** y la gobernanza de entidades.
-
-- `CCHEN` queda fijada como institución ancla con `ROR ID https://ror.org/03hv95d67`.
-- El registro derivado se genera desde:
-  - `OpenAlex authorships` para instituciones colaboradoras con `institution_ror`,
-  - `ORCID` para empleadores observados,
-  - `convenios nacionales` para contrapartes institucionales,
-  - una semilla manual en `Data/Institutional/ror_seed_institutions.csv`,
-  - y aliases curados en `Data/Institutional/ror_manual_aliases.csv`.
-- Producto generado: `Data/Institutional/cchen_institution_registry.csv`.
-- Cola de curaduría generada: `Data/Institutional/ror_pending_review.csv`.
-- Script de regeneración: `Scripts/build_ror_registry.py`.
-- Estado operativo fase 1: `0` filas con prioridad `Alta`; la cola restante se reclasifica solo como `manual_selectivo` o `api_candidate_future`.
-
-Utilidad práctica:
-
-- mejora la trazabilidad de colaboraciones institucionales,
-- reduce ambigüedad en nombres de instituciones dentro del asistente,
-- deja una cola priorizada para revisión manual antes de automatizar búsquedas externas,
-- y prepara al observatorio para una futura conexión directa con la API de `ROR` y luego con `DataCite`.
-
-### Outputs de investigación vía DataCite
-
-Se incorporó una primera capa de outputs no-paper asociados a `CCHEN`, útil para fortalecer **Transferencia y Codiseño**, **Repositorio de Datos** e **Inteligencia Aplicada**.
-
-- Fuente: `DataCite API`, filtrada por `ROR https://ror.org/03hv95d67`.
-- Productos generados:
-  - `Data/ResearchOutputs/cchen_datacite_outputs.csv`
-  - `Data/ResearchOutputs/datacite_state.json`
-- Script de regeneración: `Scripts/fetch_datacite_outputs.py`.
-
-Utilidad práctica:
-
-- incorpora `datasets` y otros outputs DOI que no siempre aparecen bien representados como papers;
-- permite conectar producción científica con activos de datos y repositorios;
-- y alimenta tanto el dashboard como el asistente con evidencia adicional para transferencia y portafolio.
-
-### Outputs complementarios vía OpenAIRE Graph
-
-Se añadió una capa inicial basada en `OpenAIRE Graph` para complementar publicaciones y datasets con una visión centrada en investigadores `CCHEN` que ya tienen `ORCID` cargado.
-
-- Fuente: `OpenAIRE Graph API`, consultada por `authorOrcid`.
-- Productos generados:
-  - `Data/ResearchOutputs/cchen_openaire_outputs.csv`
-  - `Data/ResearchOutputs/openaire_state.json`
-- Script de regeneración: `Scripts/fetch_openaire_outputs.py`.
-
-Utilidad práctica:
-
-- ayuda a identificar outputs que no siempre quedan bien consolidados solo con `OpenAlex`;
-- diferencia si el vínculo con `CCHEN` aparece por organización o solo por autor;
-- y mejora el módulo de **Transferencia y Codiseño** al relacionar outputs, autores, repositorios y potenciales proyectos asociados.
-
-### a. Vigilancia y Prospección Tecnológica
-**Función:** Monitoreo automatizado de tendencias globales en áreas estratégicas de CCHEN
-**Estado:** Parcial — recolección implementada; clasificación temática con BERTopic e IAEA INIS pendientes
-**Tecnologías implementadas:**
-- APIs directas: OpenAlex, CrossRef, arXiv RSS, Semantic Scholar, IAEA INIS (pendiente)
-- NLP/Tópicos: BERTopic (cruzar papers arXiv con tópicos institucionales)
-- Automatización: GitHub Actions (lunes 08:00 UTC)
-**Próximo paso:** integrar IAEA INIS como fuente de vigilancia nuclear especializada
-
-### b. Inteligencia Aplicada
-**Función:** Transformar datos en indicadores, reportes y dashboards interactivos
-**Estado:** Activo (TRL 4) — Dashboard Streamlit + Asistente IA
-**Tecnologías:** Python, Streamlit, Plotly, Groq/LLM, reportlab
-**Próximos pasos:** Migrar a Angular+Django, integrar Power BI/Metabase
-
-### c. Difusión y Divulgación
-**Función:** Comunicar hallazgos del observatorio a públicos diversos
-**Estado:** Parcial — boletín HTML generado por `Scripts/generar_boletin.py`, distribución pendiente
-**Tecnologías implementadas / planificadas:**
-- Boletín semanal: `Scripts/generar_boletin.py` → HTML en `Data/Boletines/` (GitHub Actions)
-- Newsletter: Mailchimp API (gratis hasta 500 contactos) o Brevo
-- Publicación estática: GitHub Pages (sin servidor adicional requerido)
-- Altmetric API (por DOI) para medir impacto de divulgación
-**Próximo paso:** configurar envío automático vía Mailchimp al finalizar el GitHub Action semanal
-
-### d. Repositorio de Datos
-**Función:** Almacenar, clasificar, preservar y disponibilizar datos y evidencia
-**Estado:** En desarrollo (este documento)
-**Stack implementado:** Supabase (PostgreSQL) + DuckDB + GitHub + Zenodo
-**Ver:** `Database/schema.sql` y `Database/migrate_to_supabase.py`
-
-### e. Transferencia y Codiseño
-**Función:** Espacios colaborativos para transferencia tecnológica e IP
-**Estado:** Pendiente — requiere inventario de tecnologías CCHEN (TRL 6-9) previo
-**Tecnologías requeridas:** Plataforma colaborativa con trazabilidad, gestión de PI, DMDA/MTA digitales
-**Prerequisito institucional:** Catálogo de tecnologías clasificadas por TRL
-
-### f. Colaboración Ecosistémica
-**Función:** Conectar CCHEN con el ecosistema científico-tecnológico nacional e internacional
-**Estado:** Inicial — convenios y acuerdos institucionales cargados
-**Tecnologías requeridas:** API REST pública (FastAPI o Django REST), estándares CERIF/CASRAI
-**Datos disponibles:** 84 convenios nacionales, 41 acuerdos internacionales, 48 perfiles ORCID
-
-### g. Gobernanza de Datos (vertical transversal)
-**Función:** Asegurar calidad, trazabilidad y seguridad de todos los datos
-**Estado:** Inicial
-**Ver:** `Database/data_quality.py`
-**Estándares a adoptar:** Dublin Core (metadatos), DCAT (catálogo), ORCID (identidad)
+Antes de generar el PDF, se llama a `llama-3.1-8b-instant` con un prompt estructurado para decidir:
+- Tipo de gráfico apropiado (`production`, `investigators`, `funding`, `collaboration`, `quality`, `human_capital`)
+- Investigadores específicos a destacar (si aplica)
+- Rango de años relevante
+- Keyword clave de la consulta
 
 ---
 
-## 6. Roadmap TRL
+## 7. Generación de PDF — generate_pdf_report()
+
+La función `generate_pdf_report()` en `Dashboard/sections/shared.py` genera un PDF con:
+
+### Estructura del documento
 
 ```
-TRL 3 ──→ TRL 4 ──→ TRL 5 ──→ TRL 6 ──→ TRL 7
-  ↑           ↑          ↑
-(datos)    (dash)     AHORA
-                     (modular
-                      + citas
-                      + patentes)
+CCHEN — Observatorio Tecnológico I+D+i+Tt    ← Título azul institucional
+Fecha generación · Modelo Groq              ← Metadatos
+────────────────────────────────────         ← Línea roja
+[GRÁFICOS CONTEXTUALES]                      ← 1–2 charts matplotlib según topic
+────────────────────────────────────
+Consulta:
+  [Texto de la pregunta del usuario]         ← Fondo azul claro
 
-TRL 3: Prototipos funcionales validados en entorno controlado
-TRL 4: Tecnología operando en entorno relevante (✓ alcanzado)
-TRL 5: Integración parcial + productos para decisiones estratégicas (actual)
-TRL 6: Integración completa + operación regular
-TRL 7: Sistema en entorno real con conectividad estable
+Respuesta del Asistente:
+  [Respuesta del LLM, parseada línea a línea]
+  - # → Heading2 (azul, 11pt)
+  - "- " / "* " → Bullet (•, sangría 14pt)
+  - "  - " → Sub-bullet (◦, sangría doble)
+  - Resto → Body (10pt, leading 15pt)
+────────────────────────────────────
+Observatorio CCHEN · CORFO CCHEN 360       ← Footer gris 8pt
+```
+
+### Topics y gráficos asociados
+
+| Topic detectado | Gráficos generados |
+|----------------|-------------------|
+| `production` | Barras papers/año + línea citas; Top 8 revistas |
+| `investigators` | Barras horizontales top-15 investigadores; Citas por investigador |
+| `funding` | Barras proyectos por instrumento; Proyectos adjudicados por año |
+| `human_capital` | Pie por modalidad; Barras personas/año |
+| `collaboration` | Top-12 instituciones colaboradoras; Colaboración por país |
+| `quality` | Distribución cuartiles SJR; Pie acceso abierto/cerrado |
+
+### Márgenes y tipografía
+
+| Elemento | Valor |
+|---------|-------|
+| Márgenes izquierdo/derecho | 2.5 cm |
+| Márgenes top/bottom | 2 cm |
+| Ancho de contenido útil | 16 cm (PAGE_W) |
+| Título | 16pt, azul CCHEN (#003B6F) |
+| H2 / secciones | 11pt, azul CCHEN, spaceAfter=4pt |
+| Body | 10pt, leading=16pt, spaceAfter=6pt |
+| Bullets | 10pt, leading=14pt, leftIndent=14pt, spaceAfter=3pt |
+| Sub-bullets | 10pt, leading=14pt, leftIndent=28pt |
+| Metadata/footer | 8–9pt, gris (#666666) |
+
+---
+
+## 8. Grafo de citas (pyvis)
+
+El grafo de citas visualiza la red de impacto científico de CCHEN usando pyvis para generar HTML interactivo embebido en Streamlit.
+
+### Datos del grafo
+
+| Métrica | Valor (marzo 2026) |
+|--------|-------------------|
+| Papers CCHEN con datos de citas | 714 |
+| Citas totales acumuladas | 9.840 |
+| Papers externos citantes | 8.499 |
+| Instituciones citantes identificadas | >200 |
+
+### Fuente de datos
+
+```
+Scripts/fetch_openalex_citations.py
+    ↓ Para cada paper CCHEN:
+    ↓ GET /works/{id}?select=cited_by_count,referenced_works,citing_works
+    ↓ Sleep 0.15s entre requests (polite pool OpenAlex: 10 req/s)
+    ↓ Guarda hasta 50 citing_works por paper CCHEN
+
+→ Data/Publications/cchen_citation_graph.csv
+    openalex_id | doi | year | cited_by_count | referenced_works_count | referenced_ids_sample
+
+→ Data/Publications/cchen_citing_papers.csv
+    citing_id | cited_cchen_id | citing_doi | citing_title | citing_year | citing_institutions
+
+→ Database/migrate_citing_papers.py → Supabase: citing_papers (8.499 filas)
+```
+
+---
+
+## 9. Integración EuroPMC
+
+EuroPMC complementa OpenAlex para literatura biomédica (medicina nuclear, radiofarmacia, dosimetría médica).
+
+### Queries de búsqueda
+
+```
+AFF:"Comision Chilena de Energia Nuclear"
+AFF:"CCHEN" AND (COUNTRY:CL)
+AFF:"Comisión Chilena de Energía Nuclear"
+```
+
+### Datos capturados
+
+| Campo | Descripción |
+|-------|-------------|
+| `pmid` | PubMed ID |
+| `pmcid` | PubMed Central ID |
+| `source_id` | EuroPMC source identifier |
+| `doi` | DOI del paper |
+| `title`, `authors`, `journal` | Metadatos bibliográficos |
+| `year`, `pub_date` | Fecha de publicación |
+| `cited_by_count` | Citas en EuroPMC |
+| `is_open_access` | Estado OA |
+| `europmc_url` | URL directa al paper |
+
+### Estado actual
+
+- 74 papers CCHEN verificados con PMID o PMCID
+- Cubre principalmente: medicina nuclear, radiofarmacia, dosimetría médica, biofísica
+- No requiere API key (rate limit ~10 req/s respetado con sleep 0.5s)
+
+---
+
+## 10. Módulos del observatorio y estado
+
+Según la Memoria Metodológica (Sept. 2025), el observatorio tiene 7 módulos funcionales:
+
+| Módulo | Estado | Stack implementado |
+|--------|--------|-------------------|
+| a. Vigilancia y Prospección | Parcial | OpenAlex, CrossRef, arXiv, EuroPMC, Semantic Scholar, IAEA INIS |
+| b. Inteligencia Aplicada | Activo (TRL 5) | Streamlit, Plotly, Groq LLM, reportlab |
+| c. Difusión y Divulgación | Parcial | `generar_boletin.py`, GitHub Actions (pendiente envío) |
+| d. Repositorio de Datos | En desarrollo | Supabase, DuckDB, GitHub, Zenodo (objetivo) |
+| e. Transferencia y Codiseño | Inicial | Portafolio semilla, DataCite, OpenAIRE |
+| f. Colaboración Ecosistémica | Inicial | ROR, convenios, acuerdos, ORCID |
+| g. Gobernanza de Datos | Inicial | data_quality.py, entity_registry, timestamps |
+
+---
+
+## 11. Configuración de entornos
+
+### Variables de entorno / secrets
+
+```toml
+# Dashboard/.streamlit/secrets.toml
+GROQ_API_KEY = "gsk_..."          # Groq LLM — gratis en console.groq.com
+
+[supabase]
+url         = "https://xxxx.supabase.co"
+anon_key    = "eyJ..."            # Anon key (lectura pública)
+data_source = "auto"              # auto | local | supabase_public
+# data_root = "/ruta/absoluta/a/Data"  # solo si Data/ no está junto a Dashboard/
+```
+
+```bash
+# Database/.env (solo para scripts de migración)
+SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_KEY=eyJ...               # service_role key (escribe datos, bypasses RLS)
+```
+
+### Modos de fuente de datos
+
+```
+OBSERVATORIO_DATA_SOURCE=auto          (default)
+    → Supabase disponible: usa tablas remotas
+    → Supabase no disponible: fallback a CSVs locales
+
+OBSERVATORIO_DATA_SOURCE=local
+    → Solo CSVs locales, sin intentar Supabase
+
+OBSERVATORIO_DATA_SOURCE=supabase_public
+    → Fuerza Supabase, falla si no está disponible
+    → Recomendado en Streamlit Cloud (producción)
+```
+
+### Tokens de APIs externas
+
+| API | Token | Requerido para |
+|-----|-------|---------------|
+| Groq API | Sí (gratis) | Asistente I+D completo |
+| Supabase | Anon key (gratis) | Lectura remota |
+| Supabase | Service role key (privado) | Migración de datos |
+| Altmetric | Sí (free tier) | `fetch_altmetric.py` |
+| PatentsView | Sí (gratis con registro) | `fetch_patentsview_patents.py` |
+| OpenAlex | No (polite email recomendado) | Todos los scripts OpenAlex |
+| EuroPMC | No | `fetch_europmc.py` |
+| CrossRef | No (email recomendado) | Notebooks CrossRef |
+| ORCID | No (público read) | Notebook ORCID |
+
+---
+
+## 12. Pipeline de migración a Supabase
+
+`Database/migrate_to_supabase.py` realiza migración **idempotente** (upsert):
+
+### Orden de ejecución (por dependencias FK)
+
+```
+1.  publications                  (tabla base, sin dependencias)
+2.  publications_enriched         (FK → publications.openalex_id)
+3.  authorships                   (FK → publications.openalex_id)
+4.  crossref_data                 (FK via publications.doi)
+5.  concepts                      (FK → publications.openalex_id)
+6.  patents                       (independiente)
+7.  anid_projects                 (independiente)
+8.  funding_complementario        (independiente)
+9.  capital_humano                (independiente)
+10. researchers_orcid             (independiente)
+11. institution_registry          (independiente)
+12. institution_registry_pending_review (independiente)
+13. entity_registry_personas      (independiente)
+14. entity_registry_proyectos     (independiente)
+15. entity_registry_convocatorias (independiente)
+16. entity_links                  (FK → entity_registry_*)
+17. convocatorias_matching_institucional (FK → entity_registry_convocatorias)
+18. datacite_outputs              (independiente)
+19. openaire_outputs              (independiente)
+20. convenios_nacionales          (independiente)
+21. acuerdos_internacionales      (independiente)
+```
+
+Seguido de `Database/migrate_citing_papers.py` para la tabla `citing_papers` (8.499 filas, migración separada por tamaño).
+
+### Parámetros de migración
+
+- `CHUNK_SIZE = 500` filas por batch (recomendado Supabase ≤1000)
+- Modo `upsert` con `on_conflict` por clave primaria
+- Limpieza de NaN/NaT/inf → `None` (para Supabase NULL)
+- Tipos numpy → Python nativo (`.item()` para compatibilidad JSON)
+
+---
+
+## 13. Automatización con GitHub Actions
+
+`.github/workflows/arxiv_monitor.yml` ejecuta cada lunes 08:00 UTC:
+
+```yaml
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - python Scripts/arxiv_monitor.py       # arXiv RSS nuclear
+      - python Scripts/news_monitor.py        # Google News CCHEN
+      - python Scripts/convocatorias_monitor.py  # ANID + fondos (continue-on-error: true)
+      - python Scripts/generar_boletin.py     # Boletín HTML semanal
+```
+
+Salidas:
+- `Data/Vigilancia/arxiv_monitor.csv` + `arxiv_state.json`
+- `Data/Vigilancia/news_monitor.csv` + `news_state.json`
+- `Data/Vigilancia/convocatorias_curadas.csv`
+- `Data/Boletines/boletin_YYYYMMDD.html`
+
+---
+
+## 14. Roadmap TRL
+
+```
+TRL 3 ──► TRL 4 ──► TRL 5 ──► TRL 6 ──► TRL 7
+  ↑           ↑         ↑ actual
+(datos)   (dash v0.1)  (modular + Supabase
+                        + citas + patentes
+                        + EuroPMC + RAG
+                        + entidades canónicas)
+
+TRL 3: Prototipos funcionales en entorno controlado
+TRL 4: Dashboard operativo, datos integrados (alcanzado 2024)
+TRL 5: Modularización completa, RAG, Supabase, EuroPMC, matching (actual)
+TRL 6: Integración completa + operación regular + usuarios externos
+TRL 7: Sistema en entorno real con conectividad estable institucional
 ```
 
 ### Hitos alcanzados en TRL 5 (marzo 2026)
 
-- Dashboard modularizado en `Dashboard/sections/` (10 módulos independientes)
-- Script `fetch_openalex_citations.py` — grafo de citas para 877 papers
-- Script `fetch_inapi_patents.py` — búsqueda en INAPI Chile
-- Semantic Scholar: 877/877 papers procesados con métricas de impacto
-- 6 correcciones de calidad de código (vectorización, JSON robusto, logging, fallback LLM)
+- Dashboard modularizado en 11 secciones independientes
+- Supabase con 22 tablas y paginación completa implementada
+- Grafo de citas OpenAlex: 714 papers × 9.840 citas × 8.499 papers citantes
+- EuroPMC: 74 papers con PMID/PMCID integrados
+- RAG con sentence-transformers multilingüe
+- Registro institucional ROR: 697 instituciones con ancla `https://ror.org/03hv95d67`
+- Entidades canónicas: 604 personas, 24 proyectos, 26 convocatorias, 657 enlaces
+- Matching institucional formal con scoring en 6 dimensiones
+- DataCite + OpenAIRE outputs integrados
 
 ---
 
-## 7. Decisiones técnicas y justificación
+## 15. Decisiones de diseño y justificación
 
 | Decisión | Alternativa descartada | Razón |
 |----------|----------------------|-------|
-| Supabase como BD | MongoDB, Firebase | PostgreSQL compatible con stack Django futuro; gratis tier generoso |
-| DuckDB para análisis | Spark, BigQuery | Sin servidor, integra con Python/pandas nativo, excelente para el tamaño actual |
-| Groq como LLM API | OpenAI, Anthropic | Gratis en tier actual; llama-3.3-70b supera rendimiento necesario |
-| Streamlit (no Angular) | React, Vue | Prototipado rápido; el equipo es 1 persona; migrar a Angular cuando haya financiamiento |
-| GitHub para versionado | GitLab, Bitbucket | Integración con GitHub Actions para ETL automatizado futuro |
-| Zenodo para publicación | Figshare, OSF | Integrado con CERN, reconocido académicamente, DOI gratuito |
+| Streamlit | React, Angular, Flask | Prototipado rápido; 1 desarrollador; migrar cuando haya presupuesto |
+| Supabase | MongoDB, Firebase, RDS | PostgreSQL compatible con Django futuro; gratis tier generoso; API REST autogenerada |
+| DuckDB | Spark, dask | Sin servidor, integra nativo con pandas, excelente para escala actual (<1M filas) |
+| Groq (Llama 3.3) | OpenAI GPT-4, Anthropic | Gratis en tier actual; llama-3.3-70b supera el rendimiento requerido |
+| sentence-transformers | OpenAI embeddings, Cohere | Sin costo, ejecutable offline, multilingüe (español nativo) |
+| GitHub | GitLab, Bitbucket | GitHub Actions para ETL automatizado; ecosistema familiar |
+| Data/ gitignoreado | Subir datos al repo | Datos institucionales sensibles; tamaño excede límites GitHub |
+| service_role key | anon key | Bypassa RLS para lectura en producción sin configurar políticas complejas |
+| Paginación manual | Supabase SDK helper | Control explícito sobre el proceso; logging de progreso; gestión de errores |
 
 ---
 
-## 8. Configuración de entornos
-
-### Variables de entorno requeridas
-
-```toml
-# Dashboard/.streamlit/secrets.toml
-GROQ_API_KEY = "gsk_..."          # Groq (LLM) — gratis en console.groq.com
-
-[supabase]
-url        = "https://xxxx.supabase.co"
-anon_key   = "eyJ..."
-data_source = "auto"              # auto | local | supabase_public
-data_root  = "/ruta/absoluta/a/Data"  # solo si Data/ no está junto a Dashboard/
-```
-
-`CCHEN_DATA_ROOT` también puede configurarse como variable de entorno del sistema:
-
-```bash
-export CCHEN_DATA_ROOT="/ruta/absoluta/a/Data"
-```
-
-Si no se define, el dashboard infiere automáticamente `../Data` relativo a `Dashboard/data_loader.py`.
-
-```bash
-# Database/.env (para scripts de migración)
-SUPABASE_URL=https://xxxx.supabase.co
-SUPABASE_KEY=eyJ...               # anon key (pública) o service_role key (privada)
-```
-
-### Configuración del dashboard: fuente de datos
-
-El dashboard Streamlit puede operar en tres modos:
-
-- `local`: usa únicamente CSVs/Excel locales en `Data/`.
-- `auto`: intenta leer tablas públicas desde Supabase y, si falla, vuelve a archivos locales.
-- `supabase_public`: fuerza lectura remota para las tablas públicas ya migradas.
-
-Configuración sugerida en `Dashboard/.streamlit/secrets.toml`:
-
-```toml
-[supabase]
-url = "https://xxxx.supabase.co"
-anon_key = "eyJ..."
-data_source = "auto"   # auto | local | supabase_public
-```
-
-En la implementación actual, las tablas públicas soportadas por lectura remota son:
-
-- `publications`
-- `publications_enriched`
-- `authorships`
-- `crossref_data`
-- `concepts`
-- `anid_projects`
-- `researchers_orcid`
-- `convenios_nacionales`
-- `acuerdos_internacionales`
-
-Las tablas sensibles o derivadas siguen locales en esta fase:
-
-- `capital_humano`
-- `funding_complementario`
-- `dian_publications`
-- `publications_with_concepts`
-- `grants_openalex`
-- `patents`
-
-### Tokens de APIs externas (opcional, para actualizar datos)
-
-```python
-# Notebooks/01_Download_publications.ipynb
-# No requiere token — OpenAlex es abierta
-
-# Notebooks/05_Download_patents.ipynb
-LENS_TOKEN = "..."                # lens.org — gratis académico
-PATENTSVIEW_API_KEY = "..."       # PatentsView/USPTO — gratis con registro
-```
-
----
-
-## 9. Contactos y referencias
+## 16. Contactos y referencias
 
 - **Gestor Tecnológico:** Rodrigo Núñez G. (autor de la propuesta de implementación)
 - **Analista de Datos:** Bastián Ayala Inostroza (implementación del prototipo)
 - **Proyecto CORFO:** CCHEN 360 — Plan de Fortalecimiento de Aplicaciones Nucleares
+- **Institución:** Comisión Chilena de Energía Nuclear (https://www.cchen.cl)
+- **ROR institucional:** https://ror.org/03hv95d67
+- **Dashboard:** https://cchen-observatorio.streamlit.app
+- **Repositorio:** https://github.com/Bastian963/cchen-observatorio
 - **Propuesta técnica:** `Docs/design/Propuesta_implementacion.pdf`
 - **Diseño metodológico:** `Docs/design/Memoria_metodologica.pdf`
-- **Bitácora de trabajo:** `Docs/reports/Bitacora_BA.pdf`
+- **Bitácora:** `Docs/reports/Bitacora_BA.pdf`

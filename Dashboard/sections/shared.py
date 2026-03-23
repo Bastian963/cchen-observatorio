@@ -539,17 +539,27 @@ def generate_pdf_report(question: str, answer: str,
                                 rightMargin=2.5*cm, leftMargin=2.5*cm,
                                 topMargin=2*cm, bottomMargin=2*cm)
         styles = getSampleStyleSheet()
-        s_title  = ParagraphStyle("ct",  parent=styles["Title"],    textColor=BLUE_RL, fontSize=16, spaceAfter=4)
-        s_meta   = ParagraphStyle("cm",  parent=styles["Normal"],   textColor=GREY_RL, fontSize=9,  spaceAfter=10)
-        s_h2     = ParagraphStyle("ch",  parent=styles["Heading2"], textColor=BLUE_RL, fontSize=11, spaceAfter=4)
+        s_title  = ParagraphStyle("ct",  parent=styles["Title"],    textColor=BLUE_RL, fontSize=16,
+                                  spaceAfter=6, spaceBefore=0, leading=20)
+        s_meta   = ParagraphStyle("cm",  parent=styles["Normal"],   textColor=GREY_RL, fontSize=9,
+                                  spaceAfter=12, leading=13)
+        s_h2     = ParagraphStyle("ch",  parent=styles["Heading2"], textColor=BLUE_RL, fontSize=11,
+                                  spaceAfter=6, spaceBefore=10, leading=15)
         s_ctx    = ParagraphStyle("cc",  parent=styles["Heading3"], textColor=GREY_RL, fontSize=9,
-                                  spaceAfter=6, spaceBefore=8)
+                                  spaceAfter=6, spaceBefore=8, leading=12)
         s_q      = ParagraphStyle("cq",  parent=styles["Normal"],   textColor=BLUE_RL, fontSize=10,
-                                  leftIndent=8, backColor=BG_RL, borderPad=6, leading=15, spaceAfter=10)
-        s_body   = ParagraphStyle("cb",  parent=styles["Normal"],   fontSize=10, leading=15, spaceAfter=4)
-        s_bullet = ParagraphStyle("cbu", parent=styles["Normal"],   fontSize=10, leading=13,
-                                  leftIndent=14, spaceAfter=2)
-        s_footer = ParagraphStyle("cf",  parent=styles["Normal"],   textColor=GREY_RL, fontSize=8)
+                                  leftIndent=10, rightIndent=10, backColor=BG_RL,
+                                  borderPad=8, leading=16, spaceAfter=12, spaceBefore=4)
+        s_body   = ParagraphStyle("cb",  parent=styles["Normal"],   fontSize=10, leading=16,
+                                  spaceAfter=6, spaceBefore=0, wordWrap="CJK")
+        s_bullet = ParagraphStyle("cbu", parent=styles["Normal"],   fontSize=10, leading=15,
+                                  leftIndent=18, firstLineIndent=0, spaceAfter=3, spaceBefore=1,
+                                  wordWrap="CJK")
+        s_sub_bullet = ParagraphStyle("csbu", parent=styles["Normal"], fontSize=10, leading=15,
+                                  leftIndent=32, firstLineIndent=0, spaceAfter=2, spaceBefore=0,
+                                  wordWrap="CJK")
+        s_footer = ParagraphStyle("cf",  parent=styles["Normal"],   textColor=GREY_RL, fontSize=8,
+                                  leading=11, spaceAfter=0)
 
         def _esc(t):
             t = t.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
@@ -829,34 +839,45 @@ def generate_pdf_report(question: str, answer: str,
 
         if chart_imgs:
             story.append(Paragraph(f"Datos de contexto \u2014 {_topic_labels[topic]}:", s_h2))
-            story.append(Spacer(1, 0.15*cm))
+            story.append(Spacer(1, 0.20*cm))
             for (ib, w, h) in chart_imgs:
+                # Clamp width to PAGE_W and keep aspect ratio to prevent overflow
+                _max_w = PAGE_W
+                if w > _max_w:
+                    h = h * (_max_w / w)
+                    w = _max_w
                 story.append(RLImage(ib, width=w, height=h))
-                story.append(Spacer(1, 0.2*cm))
+                story.append(Spacer(1, 0.30*cm))
             story.append(HRFlowable(width="100%", thickness=1,
-                                    color=colors.HexColor("#CCCCCC"), spaceAfter=8))
+                                    color=colors.HexColor("#CCCCCC"), spaceAfter=10))
+            story.append(Spacer(1, 0.15*cm))
 
         story.append(Paragraph("<b>Consulta:</b>", s_h2))
+        story.append(Spacer(1, 0.10*cm))
         story.append(Paragraph(_esc(question), s_q))
-        story.append(Spacer(1, 0.3*cm))
+        story.append(Spacer(1, 0.35*cm))
         story.append(Paragraph("<b>Respuesta del Asistente:</b>", s_h2))
-        story.append(Spacer(1, 0.15*cm))
+        story.append(Spacer(1, 0.20*cm))
 
         for line in answer.split("\n"):
             line = line.rstrip()
             if not line:
-                story.append(Spacer(1, 0.18*cm)); continue
+                story.append(Spacer(1, 0.20*cm)); continue
             esc = _esc(line)
-            if   line.startswith("### "):                 story.append(Paragraph(esc[4:], s_h2))
-            elif line.startswith("## "):                  story.append(Paragraph(esc[3:], s_h2))
-            elif line.startswith("# "):                   story.append(Paragraph(esc[2:], s_h2))
-            elif line.startswith(("- ","* ","\u2022 ")):  story.append(Paragraph("\u2022 " + esc[2:], s_bullet))
-            elif line.startswith(("  - ","  * ")):        story.append(Paragraph("  \u25e6 " + esc[4:], s_bullet))
-            else:                                         story.append(Paragraph(esc, s_body))
+            if   line.startswith("### "):                  story.append(Paragraph(esc[4:],       s_h2))
+            elif line.startswith("## "):                   story.append(Paragraph(esc[3:],       s_h2))
+            elif line.startswith("# "):                    story.append(Paragraph(esc[2:],       s_h2))
+            elif line.startswith(("- ","* ","\u2022 ")):   story.append(Paragraph("\u2022 " + esc[2:],   s_bullet))
+            elif line.startswith(("  - ","  * ","   - ")): story.append(Paragraph("\u25e6 " + esc.lstrip(" -* "), s_sub_bullet))
+            elif line.startswith(("    - ","    * ")):     story.append(Paragraph("\u25e6 " + esc.lstrip(" -* "), s_sub_bullet))
+            elif line.startswith(("**", "__")) and line.rstrip("* _:").endswith(("**", "__", ":")):
+                story.append(Paragraph(esc, s_h2))
+            else:                                          story.append(Paragraph(esc,            s_body))
 
-        story.append(Spacer(1, 0.5*cm))
+        story.append(Spacer(1, 0.60*cm))
         story.append(HRFlowable(width="100%", thickness=1,
-                                color=colors.HexColor("#CCCCCC"), spaceAfter=5))
+                                color=colors.HexColor("#CCCCCC"), spaceAfter=8))
+        story.append(Spacer(1, 0.10*cm))
         story.append(Paragraph(
             "Observatorio Tecnol\u00f3gico Virtual CCHEN \u00b7 "
             "Proyecto CORFO CCHEN 360 \u00b7 Beta v0.2", s_footer))
