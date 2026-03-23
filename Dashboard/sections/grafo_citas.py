@@ -74,22 +74,16 @@ def render(ctx: dict) -> None:
 
 
 def _render_interactive_network(cg: pd.DataFrame, cp: pd.DataFrame, pub: pd.DataFrame) -> None:
-    """Red interactiva de citas usando pyvis."""
+    """Red interactiva de citas usando plotly + networkx."""
+    import networkx as nx
+    import plotly.graph_objects as go
+
     sec("Red interactiva de citas CCHEN")
-
-    try:
-        from pyvis.network import Network
-    except ImportError:
-        st.warning("pyvis no instalado. Ejecuta: `pip install pyvis`")
-        return
-
-    import streamlit.components.v1 as components
-    import tempfile, os
 
     st.markdown(
         "Visualización de los **top papers CCHEN** y sus relaciones de cita. "
-        "Nodos azules = papers CCHEN. Nodos grises = papers externos citantes. "
-        "Usa filtros para ajustar el tamaño del grafo."
+        "**Azul** = papers CCHEN · **Gris** = papers externos citantes. "
+        "Hover para detalles, scroll para zoom."
     )
 
     col1, col2 = st.columns(2)
@@ -102,86 +96,109 @@ def _render_interactive_network(cg: pd.DataFrame, cp: pd.DataFrame, pub: pd.Data
         st.info("Sin datos de grafo. Ejecuta `fetch_openalex_citations.py`.")
         return
 
-    # Seleccionar top N papers CCHEN
     top_papers = cg.nlargest(top_n, "cited_by_count")
 
-    # Enriquecer con títulos
     if not pub.empty and "openalex_id" in pub.columns and "title" in pub.columns:
-        top_papers = top_papers.merge(pub[["openalex_id","title"]], on="openalex_id", how="left")
+        top_papers = top_papers.merge(pub[["openalex_id", "title"]], on="openalex_id", how="left")
     if "title" not in top_papers.columns:
         top_papers["title"] = top_papers["openalex_id"]
 
-    net = Network(height="550px", width="100%", bgcolor="#0f172a", font_color="#e2e8f0",
-                  directed=True)
-    net.set_options("""
-    {
-      "physics": {
-        "forceAtlas2Based": {
-          "gravitationalConstant": -50,
-          "centralGravity": 0.01,
-          "springLength": 100,
-          "springConstant": 0.08
-        },
-        "maxVelocity": 50,
-        "solver": "forceAtlas2Based",
-        "timestep": 0.35,
-        "stabilization": {"iterations": 150}
-      },
-      "edges": {"color": {"opacity": 0.5}, "smooth": {"type": "continuous"}},
-      "interaction": {"hover": true, "tooltipDelay": 200}
-    }
-    """)
+    G = nx.DiGraph()
+    cchen_ids: set = set()
+    node_info: dict = {}
 
-    # Añadir nodos CCHEN
-    cchen_ids = set()
     for _, row in top_papers.iterrows():
         nid = str(row["openalex_id"])
         cchen_ids.add(nid)
-        label = str(row.get("title", nid))[:40] + "…"
         cites = int(row.get("cited_by_count", 0))
-        size = max(10, min(50, 10 + cites // 20))
-        net.add_node(nid, label=label,
-                     title=f"{str(row.get('title',''))[:80]}\nAño: {row.get('year','')}\nCitas: {cites}",
-                     color="#3b82f6", size=size, shape="dot")
+        G.add_node(nid, node_type="cchen")
+        node_info[nid] = {
+            "hover": f"<b>{str(row.get('title', ''))[:80]}</b><br>Año: {row.get('year', '')}<br>Citas: {cites}",
+            "label": str(row.get("title", nid))[:45] + "…",
+            "color": "#3b82f6",
+            "size": max(12, min(40, 10 + cites // 20)),
+        }
 
-    # Añadir nodos y aristas de papers citantes
     if not cp.empty and "citing_id" in cp.columns and "cited_cchen_id" in cp.columns:
-        # Filtrar solo los que citan a los top papers
-        cp_filtered = cp[cp["cited_cchen_id"].isin(cchen_ids)]
-        # Limitar citantes por paper
-        cp_filtered = (
-            cp_filtered.groupby("cited_cchen_id")
-            .head(max_citing)
+        cp_filt = (
+            cp[cp["cited_cchen_id"].isin(cchen_ids)]
+            .groupby("cited_cchen_id").head(max_citing)
             .reset_index(drop=True)
         )
-        ext_added = set()
-        for _, erow in cp_filtered.iterrows():
+        for _, erow in cp_filt.iterrows():
             eid = str(erow["citing_id"])
             cited = str(erow["cited_cchen_id"])
-            if eid not in ext_added:
-                ext_label = str(erow.get("citing_title", eid))[:30] + "…"
-                ext_title = f"{str(erow.get('citing_title',''))[:80]}\nAño: {erow.get('citing_year','')}\nInst: {str(erow.get('citing_institutions',''))[:60]}"
-                net.add_node(eid, label=ext_label, title=ext_title,
-                             color="#64748b", size=8, shape="dot")
-                ext_added.add(eid)
-            net.add_edge(eid, cited, color="#94a3b8", width=1)
+            if eid not in node_info:
+                G.add_node(eid, node_type="external")
+                node_info[eid] = {
+                    "hover": f"{str(erow.get('citing_title', ''))[:80]}<br>Año: {erow.get('citing_year', '')}<br>Inst: {str(erow.get('citing_institutions', ''))[:60]}",
+                    "label": "",
+                    "color": "#64748b",
+                    "size": 7,
+                }
+            G.add_edge(eid, cited)
     else:
-        st.caption("Sin datos de papers citantes externos. Ejecuta `fetch_openalex_citations.py --citing`.")
+        st.caption("Sin datos de papers citantes externos.")
 
-    # Guardar y renderizar
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp:
-        tmp_path = tmp.name
-    net.save_graph(tmp_path)
-    with open(tmp_path, "r", encoding="utf-8") as f:
-        html_content = f.read()
-    os.unlink(tmp_path)
+    if len(G.nodes) == 0:
+        st.info("Sin nodos para mostrar.")
+        return
 
-    components.html(html_content, height=570, scrolling=False)
+    pos = nx.spring_layout(G, seed=42, k=2.0 / max(len(G.nodes) ** 0.5, 1))
+
+    edge_x, edge_y = [], []
+    for u, v in G.edges():
+        if u in pos and v in pos:
+            x0, y0 = pos[u]
+            x1, y1 = pos[v]
+            edge_x += [x0, x1, None]
+            edge_y += [y0, y1, None]
+
+    traces = [go.Scatter(
+        x=edge_x, y=edge_y, mode="lines",
+        line=dict(width=0.5, color="#475569"),
+        hoverinfo="none", showlegend=False,
+    )]
+
+    for ntype, name in [("cchen", "Papers CCHEN"), ("external", "Papers citantes")]:
+        nodes = [n for n, d in G.nodes(data=True) if d.get("node_type") == ntype and n in pos]
+        if not nodes:
+            continue
+        traces.append(go.Scatter(
+            x=[pos[n][0] for n in nodes],
+            y=[pos[n][1] for n in nodes],
+            mode="markers+text" if ntype == "cchen" else "markers",
+            marker=dict(
+                size=[node_info[n]["size"] for n in nodes],
+                color=[node_info[n]["color"] for n in nodes],
+                line=dict(width=1, color="white"),
+            ),
+            text=[node_info[n]["label"] for n in nodes] if ntype == "cchen" else None,
+            textposition="top center",
+            textfont=dict(size=8, color="#e2e8f0"),
+            hovertext=[node_info[n]["hover"] for n in nodes],
+            hoverinfo="text",
+            name=name,
+        ))
+
+    fig = go.Figure(
+        data=traces,
+        layout=go.Layout(
+            paper_bgcolor="#0f172a", plot_bgcolor="#0f172a",
+            font=dict(color="#e2e8f0"),
+            legend=dict(bgcolor="#1e293b", bordercolor="#334155", x=0.01, y=0.99),
+            hovermode="closest",
+            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            height=560,
+            margin=dict(l=10, r=10, t=10, b=10),
+        ),
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
     st.caption(
-        f"Nodos azules: {len(cchen_ids)} papers CCHEN más citados. "
-        f"Nodos grises: papers externos citantes (máx. {max_citing} por paper). "
-        "Arrastra para explorar, scroll para zoom, hover para detalles."
+        f"**{len(cchen_ids)}** papers CCHEN (azul) · "
+        f"hasta {max_citing} citantes externos por paper (gris)."
     )
 
 

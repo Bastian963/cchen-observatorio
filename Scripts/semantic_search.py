@@ -60,8 +60,9 @@ def _search_supabase(query: str, top_k: int) -> pd.DataFrame:
         if not url or not key:
             try:
                 import streamlit as st
-                url = st.secrets.get("SUPABASE_URL", url)
-                key = st.secrets.get("SUPABASE_KEY", key)
+                _sb_cfg = st.secrets.get("supabase", {})
+                url = url or _sb_cfg.get("url", "")
+                key = key or _sb_cfg.get("anon_key", "") or _sb_cfg.get("service_role_key", "")
             except Exception:
                 pass
         if not url or not key:
@@ -114,7 +115,8 @@ def is_available() -> bool:
         if url:
             return True
         import streamlit as st
-        return bool(st.secrets.get("SUPABASE_URL"))
+        _sb_cfg = st.secrets.get("supabase", {})
+        return bool(_sb_cfg.get("url"))
     except Exception:
         return False
 

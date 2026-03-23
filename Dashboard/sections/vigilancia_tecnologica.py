@@ -20,8 +20,9 @@ def render(ctx: dict) -> None:
     """Render the Vigilancia Tecnológica section."""
     from data_loader import BASE
 
-    _VT_BASE = BASE / "Publications"
-    _VT_VIG  = BASE / "Vigilancia"
+    _VT_BASE     = BASE / "Publications"
+    _VT_VIG      = BASE / "Vigilancia"
+    _bt_viz_path = BASE.parent / "Notebooks" / "analysis"
 
     _arxiv_data = ctx.get("arxiv_monitor", __import__("pandas").DataFrame())
     _news_data  = ctx.get("news_monitor",  __import__("pandas").DataFrame())

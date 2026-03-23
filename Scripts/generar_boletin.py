@@ -13,6 +13,7 @@ Uso:
 
 import datetime
 import argparse
+import sys
 import pandas as pd
 from pathlib import Path
 
@@ -22,14 +23,24 @@ DATA_VIG = BASE / "Data" / "Vigilancia"
 OUT_DIR  = BASE / "Data" / "Boletines"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
+# Allow importing data_loader from Dashboard folder as fallback
+sys.path.insert(0, str(BASE / "Dashboard"))
+
 
 # ── Carga de datos ─────────────────────────────────────────────────────────────
 
 def load_news(weeks_back=1):
     path = DATA_VIG / "news_monitor.csv"
-    if not path.exists():
-        return pd.DataFrame()
-    df = pd.read_csv(path)
+    if path.exists():
+        df = pd.read_csv(path)
+    else:
+        try:
+            import data_loader
+            df = data_loader.load_news_monitor()
+        except Exception:
+            return pd.DataFrame()
+    if df.empty:
+        return df
     df["dt"] = pd.to_datetime(df["published"], errors="coerce", utc=True).dt.tz_localize(None)
     df = df.drop_duplicates(subset=["news_id"])
     if weeks_back > 0:
@@ -38,19 +49,25 @@ def load_news(weeks_back=1):
     return df.sort_values("dt", ascending=False)
 
 
-
 def load_cchen_papers(n=5):
     oa_path = DATA_PUB / "cchen_openalex_works.csv"
     we_path = DATA_PUB / "cchen_works_enriched.csv"
-    if not oa_path.exists():
-        return pd.DataFrame()
-    df = pd.read_csv(oa_path, low_memory=False)
-    if we_path.exists():
-        we = pd.read_csv(we_path, low_memory=False)
-        df = df.merge(
-            we[["work_id", "publication_date"]].rename(columns={"work_id": "openalex_id"}),
-            on="openalex_id", how="left"
-        )
+    if oa_path.exists():
+        df = pd.read_csv(oa_path, low_memory=False)
+        if we_path.exists():
+            we = pd.read_csv(we_path, low_memory=False)
+            df = df.merge(
+                we[["work_id", "publication_date"]].rename(columns={"work_id": "openalex_id"}),
+                on="openalex_id", how="left"
+            )
+    else:
+        try:
+            import data_loader
+            df = data_loader.load_publications()
+        except Exception:
+            return pd.DataFrame()
+    if df.empty:
+        return df
     df["pub_dt"] = pd.to_datetime(df.get("publication_date", pd.Series()), errors="coerce")
     return df.sort_values("pub_dt", ascending=False).head(n)
 

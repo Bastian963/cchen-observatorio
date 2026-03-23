@@ -158,7 +158,7 @@ def _text_or_empty(value) -> str:
     return "" if pd.isna(value) else str(value).strip()
 
 
-_HTML_TAG_RE = re.compile(r"<[^>]+>")
+_HTML_TAG_RE = re.compile(r"<[^<>]*>?")  # handles malformed tags without closing >
 _HTML_ATTR_RE = re.compile(r"(href|target)\s*=\s*\"[^\"]*\"?", re.IGNORECASE)
 _URL_RE = re.compile(r"https?://\S+")
 
@@ -169,8 +169,9 @@ def _clean_html_text(value) -> str:
     text = re.sub(r"<a\b[^>]*", " ", text, flags=re.IGNORECASE)
     text = _HTML_ATTR_RE.sub(" ", text)
     text = _URL_RE.sub(" ", text)
-    text = text.replace("<a", " ").replace("</a", " ").replace(">", " ")
+    text = text.replace("<a", " ").replace("</a", " ")
     text = _HTML_TAG_RE.sub(" ", text)
+    text = text.replace("<", " ").replace(">", " ")  # catch any remaining angle brackets
     text = re.sub(r"\s+", " ", text).strip(" -\n\t")
     return text
 

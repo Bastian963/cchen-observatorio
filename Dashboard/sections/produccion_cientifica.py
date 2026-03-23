@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 
 from .shared import (
     BLUE, RED, GREEN, AMBER, PURPLE, PALETTE,
-    kpi, kpi_row, sec, make_csv, calc_hindex, _ISO2_ISO3,
+    kpi, kpi_row, sec, make_csv, calc_hindex, _ISO2_ISO3, _clean_html_text,
 )
 
 
@@ -51,6 +51,7 @@ def render(ctx: dict) -> None:
                                   help="Las áreas provienen de Scimago/SJR vía OpenAlex")
 
     df = pub[pub["year"].between(*yr_range)].copy()
+    df["title"] = df["title"].apply(_clean_html_text)
     if tipo_sel != "Todos":  df = df[df["type"] == tipo_sel]
     if oa_sel == "Sí":       df = df[df["is_oa"] == True]
     elif oa_sel == "No":     df = df[df["is_oa"] == False]
