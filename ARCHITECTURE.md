@@ -16,7 +16,7 @@ El Observatorio Tecnológico CCHEN es un sistema de inteligencia de datos con **
 │  Streamlit Dashboard (11 secciones modulares)                   │
 │  Asistente I+D (RAG + Groq LLM)                                 │
 │  Reportes PDF (reportlab + matplotlib)                          │
-│  Grafo de citas interactivo (pyvis)                             │
+│  Grafo de citas interactivo (plotly + networkx)                 │
 ├─────────────────────────────────────────────────────────────────┤
 │  CAPA 2 — LÓGICA Y ANÁLISIS                                     │
 │  data_loader.py — carga unificada Supabase ↔ CSV local          │
@@ -39,12 +39,12 @@ El Observatorio Tecnológico CCHEN es un sistema de inteligencia de datos con **
 | Dataframes | pandas | 2.3.3 | Carga principal de datos |
 | Visualización | plotly | 6.6.0 | Gráficos interactivos |
 | Álgebra lineal | numpy | 2.0.2 | Embeddings semánticos |
-| Base de datos | Supabase (PostgreSQL) | supabase-py 2.28.3 | 33 tablas operativas, RLS habilitado |
+| Base de datos | Supabase (PostgreSQL) | supabase-py 2.28.3 | 34 tablas operativas, RLS habilitado |
 | Query local | DuckDB | — | Fallback y consultas analíticas |
 | LLM principal | Groq (llama-3.3-70b-versatile) | groq>=0.11.0 | Asistente I+D |
 | LLM auxiliar | Groq (llama-3.1-8b-instant) | groq>=0.11.0 | Decisión de gráficos PDF |
 | Embeddings | sentence-transformers | 5.1.2 | paraphrase-multilingual-MiniLM-L12-v2 |
-| Grafo visual | pyvis | 0.3.2 | Red de citas interactiva HTML |
+| Grafo visual | plotly + networkx | 6.6.0 / 3.x | Red de citas interactiva (nodos + aristas via scatter) |
 | Reportes | reportlab + matplotlib | — | PDF con gráficos contextuales |
 | Patrones sklearn | scikit-learn | 1.6.1 | Auxiliar en análisis |
 
@@ -118,7 +118,7 @@ Scimago SJR (CSV anual)
                                 ▼
 ┌───────────────────────────────────────────────────────┐
 │  SUPABASE (PostgreSQL 15)                             │
-│  33 tablas operativas, relaciones FK y vistas         │
+│  34 tablas operativas, relaciones FK y vistas         │
 │  API REST autogenerada con autenticación JWT          │
 │  RLS habilitado: políticas públicas y autenticadas    │
 │  Lectura: anon key para público; service_role para    │
@@ -265,7 +265,7 @@ con.execute(f"SELECT * FROM read_csv_auto('{path}', HEADER=TRUE, SAMPLE_SIZE=-1)
 
 ## 4. Esquema de tablas Supabase
 
-El DDL completo está en `Database/schema.sql`. La base actual contiene **33 tablas operativas**, distribuidas en **29 tablas públicas** y **4 tablas sensibles**.
+El DDL completo está en `Database/schema.sql`. La base actual contiene **34 tablas operativas**, distribuidas en **30 tablas públicas** y **4 tablas sensibles**.
 
 ### Distribución por módulos
 
@@ -489,9 +489,9 @@ Observatorio CCHEN · CORFO CCHEN 360       ← Footer gris 8pt
 
 ---
 
-## 8. Grafo de citas (pyvis)
+## 8. Grafo de citas (plotly + networkx)
 
-El grafo de citas visualiza la red de impacto científico de CCHEN usando pyvis para generar HTML interactivo embebido en Streamlit.
+El grafo de citas visualiza la red de impacto científico de CCHEN usando **plotly scatter + networkx spring_layout**. Reemplazó pyvis (incompatible con Streamlit Cloud por dependencia de IPython) en marzo 2026. El resultado es un gráfico interactivo con hover, zoom y pan, sin dependencias adicionales.
 
 ### Datos del grafo
 
@@ -569,6 +569,7 @@ Cada script es **idempotente** (upsert por clave primaria) y lee desde los CSVs 
 | `migrate_bertopic.py` | `bertopic_topics`, `bertopic_topic_info` | 358 / 23 | Modelado de tópicos BERTopic |
 | `migrate_convocatorias.py` | `convocatorias`, `convocatorias_matching_rules` | 26 / 6 | Convocatorias curadas manualmente |
 | `migrate_embeddings.py` | `paper_embeddings` | 877 × 384 dims | Vectores pgvector para búsqueda semántica |
+| `migrate_dian.py` | `dian_publications` | 133 | Registro interno DIAN CCHEN (Excel → Supabase) |
 
 ### Patrón de migración
 
@@ -794,7 +795,7 @@ TRL 7: Sistema en entorno real con conectividad estable institucional
 ### Hitos alcanzados en TRL 5 (marzo 2026)
 
 - Dashboard modularizado en 11 secciones independientes
-- Supabase con 33 tablas operativas, paginación completa y RLS aplicado
+- Supabase con 34 tablas operativas, paginación completa y RLS aplicado
 - Grafo de citas OpenAlex: 714 papers × 9.840 citas × 8.499 papers citantes
 - EuroPMC: 74 papers con PMID/PMCID integrados
 - RAG con sentence-transformers multilingüe

@@ -219,7 +219,7 @@
     \faCalendar\quad \textbf{Fecha:}   & Marzo 2026 \\[4pt]
     \faUser\quad \textbf{Autor:}          & Bastián Ayala Inostroza \\[4pt]
     \faCode\quad \textbf{TRL actual:}     & 5 (validación en entorno relevante) \\[4pt]
-    \faDatabase\quad \textbf{Tablas Supabase:} & 33 tablas operativas · RLS habilitado \\[4pt]
+    \faDatabase\quad \textbf{Tablas Supabase:} & 34 tablas operativas · RLS habilitado \\[4pt]
     \faRobot\quad \textbf{LLM:}           & Groq API (llama-3.3-70b) + pgvector RAG \\
   \end{tabular}
 
@@ -264,7 +264,7 @@ El \textbf{Observatorio Tecnológico CCHEN 360°} es un sistema de inteligencia 
 
 \bigskip
 
-El sistema integra \textbf{15+ APIs públicas}, \textbf{15 scripts de automatización + migración}, una \textbf{base de datos PostgreSQL} en Supabase con \textbf{33 tablas} (RLS habilitado, pgvector activado), y un \textbf{dashboard interactivo} con 11 secciones, login beta privado, carga lazy por sección y asistente RAG (Groq/LLM + búsqueda semántica).
+El sistema integra \textbf{15+ APIs públicas}, \textbf{15 scripts de automatización + migración}, una \textbf{base de datos PostgreSQL} en Supabase con \textbf{34 tablas} (RLS habilitado, pgvector activado), y un \textbf{dashboard interactivo} con 11 secciones, login beta privado, carga lazy por sección y asistente RAG (Groq/LLM + búsqueda semántica).
 
 \section*{KPIs del sistema}
 
@@ -404,7 +404,7 @@ Unpaywall API (OA status)
 
 +-------------------------------------------+
 |  DATA WAREHOUSE (curado)                  |
-|  Supabase (PostgreSQL 15) -- 33 tablas   |
+|  Supabase (PostgreSQL 15) -- 34 tablas   |
 |  API REST autogenerada + RLS habilitado   |
 |  pgvector: paper_embeddings (877 x 384)  |
 +-------------------------------------------+
@@ -444,7 +444,7 @@ Unpaywall API (OA status)
   \multirow{2}{*}{IA / LLM} & Modelo principal & Groq API: \texttt{llama-3.3-70b-versatile} \\
                               & Modelo ligero & Groq API: \texttt{llama-3.1-8b-instant} \\
   \midrule
-  \multirow{2}{*}{Visualización red} & Grafo de citas & pyvis 0.3.2 (HTML interactivo) \\
+  \multirow{2}{*}{Visualización red} & Grafo de citas & plotly + networkx (scatter interactivo) \\
                                       & Análisis de red & NetworkX $\geq$ 3.0 \\
   \midrule
   \multirow{3}{*}{Autenticación} & Login beta privado & \texttt{internal\_auth} (secrets.toml + HMAC) \\
@@ -546,7 +546,7 @@ Motor analítico central: dashboard interactivo, reportes bibliométricos, asist
   \item Perfiles individuales de investigador (H-index, papers, evolución)
   \item Análisis de capital humano (trayectorias, cohortes, cumplimiento documental)
   \item Asistente IA con RAG (búsqueda semántica pgvector + Groq LLM streaming)
-  \item Grafo de citas interactivo pyvis (877 CCHEN $\leftrightarrow$ 8.499 citantes)
+  \item Grafo de citas interactivo (plotly + networkx) (877 CCHEN $\leftrightarrow$ 8.499 citantes)
   \item Login beta privado con roles y datasets sensibles por permiso
   \item Franja operativa con estado en tiempo real de fuentes (Supabase / fallback / no disponible)
   \item Carga lazy por sección --- solo se leen los datasets necesarios para la vista activa
@@ -566,7 +566,7 @@ Generación automática de boletines científicos semanales en HTML.
 \section{Módulo D --- Repositorio de Datos}
 \textbf{Estado:} \bactive \quad \textbf{TRL:} 5
 
-Data lake local (CSV) + data warehouse curado en Supabase (33 tablas, RLS habilitado, pgvector activado). Migración completa con 7 scripts idempotentes especializados (\file{Database/migrate\_*.py}). Paginación automática de 1.000 filas/request para tablas grandes.
+Data lake local (CSV) + data warehouse curado en Supabase (34 tablas, RLS habilitado, pgvector activado). Migración completa con 8 scripts idempotentes especializados (\file{Database/migrate\_*.py}). Paginación automática de 1.000 filas/request para tablas grandes.
 
 \section{Módulo E --- Transferencia y Codiseño}
 \textbf{Estado:} \bpending \quad \textbf{TRL:} 1--2
@@ -987,12 +987,12 @@ Supabase provee una base de datos PostgreSQL 15 totalmente gestionada con:
 \begin{itemize}
   \item API REST autogenerada (PostgREST)
   \item Autenticación integrada (JWT)
-  \item Row-Level Security (RLS) habilitado en las 33 tablas operativas
+  \item Row-Level Security (RLS) habilitado en las 34 tablas operativas
   \item Extensión \texttt{pgvector} para búsqueda semántica por similitud coseno
   \item Dashboard web de administración + backups automáticos diarios
 \end{itemize}
 
-\section{Tablas operativas (33 tablas)}
+\section{Tablas operativas (34 tablas)}
 
 \begin{longtable}{L{4.2cm} R{1.8cm} L{3cm} L{3.5cm}}
   \toprule
@@ -1006,6 +1006,9 @@ Supabase provee una base de datos PostgreSQL 15 totalmente gestionada con:
   \texttt{crossref\_data} & 764 & \texttt{doi} & CrossRef API \\
   \texttt{concepts} & 21{,}348 & \texttt{id} (serial) & OpenAlex API \\
   \texttt{europmc\_works} & 74 & \texttt{source\_id} & EuroPMC REST \\
+  \midrule
+  \multicolumn{4}{l}{\textbf{Registro DIAN}} \\
+  \texttt{dian\_publications} & 133 & \texttt{dian\_id} & DIAN CCHEN (Excel) \\
   \midrule
   \multicolumn{4}{l}{\textbf{Financiamiento e investigadores}} \\
   \texttt{anid\_projects} & 24 & \texttt{proyecto} & ANID \\
@@ -1078,7 +1081,7 @@ institution_registry (normalized_key)
 
 \section{Migración CSV $\to$ Supabase}
 
-El ecosistema de migración consta de 7 scripts especializados, todos idempotentes (upsert por PK):
+El ecosistema de migración consta de 8 scripts especializados, todos idempotentes (upsert por PK):
 
 \begin{longtable}{L{5cm} L{8cm}}
   \toprule
@@ -1092,6 +1095,7 @@ El ecosistema de migración consta de 7 scripts especializados, todos idempotent
   \file{migrate\_bertopic.py} & \texttt{bertopic\_topics} + \texttt{bertopic\_topic\_info} (BERTopic NLP) \\
   \file{migrate\_convocatorias.py} & \texttt{convocatorias} + \texttt{convocatorias\_matching\_rules} \\
   \file{migrate\_embeddings.py} & \texttt{paper\_embeddings}: 877 vectores \texttt{vector(384)} para pgvector \\
+  \file{migrate\_dian.py} & \texttt{dian\_publications}: 133 registros internos DIAN CCHEN (Excel $\to$ Supabase) \\
   \bottomrule
 \end{longtable}
 

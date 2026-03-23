@@ -1156,3 +1156,37 @@ CREATE POLICY "auth_read_entity_links"      ON entity_links             FOR SELE
 
 -- Escritura solo para service_role (scripts de migración)
 -- (las políticas de escritura usan service_role key, que bypasea RLS)
+
+-- ============================================================
+-- TABLA: dian_publications
+-- Registro interno DIAN CCHEN de publicaciones científicas
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS dian_publications (
+    dian_id             SERIAL PRIMARY KEY,
+    numero              INTEGER,
+    unidad              TEXT,
+    titulo              TEXT NOT NULL,
+    autores             TEXT,
+    revista             TEXT,
+    fecha_envio         DATE,
+    fecha_aceptacion    DATE,
+    fecha_publicacion   DATE,
+    doi                 TEXT,
+    cuartil             TEXT CHECK (cuartil IN ('Q1','Q2','Q3','Q4') OR cuartil IS NULL),
+    participacion_drtec TEXT,
+    anio                INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_dian_unidad  ON dian_publications(unidad);
+CREATE INDEX IF NOT EXISTS idx_dian_anio    ON dian_publications(anio);
+CREATE INDEX IF NOT EXISTS idx_dian_cuartil ON dian_publications(cuartil);
+
+COMMENT ON TABLE dian_publications IS
+    'Registro interno DIAN CCHEN de publicaciones científicas. '
+    'Fuente: Publicaciones DIAN.xlsx (hoja Consolidado). 133 registros (2022–2025).';
+
+-- RLS: lectura pública (datos bibliográficos, no sensibles)
+ALTER TABLE dian_publications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "public_read_dian" ON dian_publications;
+CREATE POLICY "public_read_dian" ON dian_publications FOR SELECT USING (TRUE);

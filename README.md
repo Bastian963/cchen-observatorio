@@ -79,7 +79,7 @@ El dashboard está desplegado en Streamlit Cloud con acceso beta privado:
 | LLM principal | Groq API — llama-3.3-70b-versatile | Asistente I+D conversacional |
 | LLM auxiliar | Groq API — llama-3.1-8b-instant | Decisiones de gráficos en PDF |
 | Embeddings | sentence-transformers (paraphrase-multilingual-MiniLM-L12-v2) | Búsqueda semántica RAG |
-| Grafo de citas | pyvis 0.3.2 | Red interactiva de citas OpenAlex |
+| Grafo de citas | plotly + networkx | Red interactiva de citas OpenAlex (reemplazó pyvis por incompatibilidad con Cloud) |
 | Reportes | reportlab + matplotlib | Generación de PDF con gráficos |
 | Fuente ciencias vida | EuroPMC REST API | 74 papers CCHEN con PMID/PMCID |
 | Fuente patentes | INAPI Chile + PatentsView | Vigilancia de propiedad intelectual |

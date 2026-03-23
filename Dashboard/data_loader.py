@@ -452,7 +452,23 @@ def load_ch_participacion_tipo_anio():
 # ─── Publicaciones DIAN ───────────────────────────────────────────────────────
 
 def load_dian_publications():
-    """Carga el registro interno de publicaciones DIAN CCHEN (Excel Consolidado)."""
+    """Carga el registro interno de publicaciones DIAN CCHEN.
+    Prioridad: Supabase → Excel local → DataFrame vacío.
+    """
+    # 1. Intentar Supabase (tabla dian_publications)
+    try:
+        sb = _supabase_client()
+        if sb is not None:
+            resp = sb.table("dian_publications").select("*").execute()
+            if resp.data:
+                df = pd.DataFrame(resp.data)
+                if "anio" in df.columns:
+                    df["anio"] = pd.to_numeric(df["anio"], errors="coerce").astype("Int64")
+                return df[df["titulo"].notna()].copy()
+    except Exception:
+        pass
+
+    # 2. Excel local
     p = BASE / "Publicaciones DIAN CCHEN" / "Publicaciones DIAN.xlsx"
     if not p.exists():
         return pd.DataFrame()
@@ -460,7 +476,6 @@ def load_dian_publications():
         df = pd.read_excel(p, sheet_name="Consolidado", header=0, engine="openpyxl")
         df = df.dropna(how="all").dropna(axis=1, how="all")
         df.columns = [str(c).strip() for c in df.columns]
-        # Normalizar columnas clave
         col_map = {
             "Nombre del Artículo": "titulo",
             "Autores": "autores",
@@ -476,7 +491,6 @@ def load_dian_publications():
             df["anio"] = pd.to_datetime(df["fecha_publicacion"], errors="coerce").dt.year
         if "anio" in df.columns:
             df["anio"] = pd.to_numeric(df["anio"], errors="coerce").astype("Int64")
-        # Normalizar cuartil
         if "cuartil" in df.columns:
             df["cuartil"] = df["cuartil"].astype(str).str.extract(r"(Q[1-4])", expand=False)
         return df[df["titulo"].notna()].copy()
