@@ -14,13 +14,14 @@ from dotenv import load_dotenv
 ROOT    = Path(__file__).resolve().parents[1]
 EXCEL   = ROOT / "Data" / "Publicaciones DIAN CCHEN" / "Publicaciones DIAN.xlsx"
 
+load_dotenv(ROOT / "Database" / ".env")
 load_dotenv(ROOT / ".env")
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or os.getenv("SUPABASE_KEY", "")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 
 if not SUPABASE_URL or not SUPABASE_KEY:
-    sys.exit("[ERROR] Define SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en .env")
+    sys.exit("[ERROR] Define SUPABASE_URL y SUPABASE_KEY como variables de entorno")
 if not EXCEL.exists():
     sys.exit(f"[ERROR] No se encontró: {EXCEL}")
 
@@ -78,13 +79,16 @@ if "numero" in df.columns:
 records = df.where(df.notna(), other=None).to_dict(orient="records")
 print(f"[INFO] {len(records)} registros DIAN a migrar.")
 
-# ── Upsert en lotes ─────────────────────────────────────────────────────────────
+# ── Truncate + Insert (idempotente) ─────────────────────────────────────────────
+print("[INFO] Limpiando tabla dian_publications...")
+client.table("dian_publications").delete().neq("dian_id", 0).execute()
+
 BATCH = 50
 errors = 0
 for i in range(0, len(records), BATCH):
     batch = records[i:i + BATCH]
     try:
-        client.table("dian_publications").upsert(batch, on_conflict="titulo").execute()
+        client.table("dian_publications").insert(batch).execute()
         print(f"  Batch {i // BATCH + 1}/{(len(records) - 1) // BATCH + 1} OK ({len(batch)} filas)")
     except Exception as e:
         print(f"  [ERROR] Batch {i // BATCH + 1}: {e}")
