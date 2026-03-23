@@ -91,7 +91,7 @@ El dashboard está desplegado en Streamlit Cloud con acceso beta privado:
 El dashboard está organizado en 11 secciones, accesibles desde la barra lateral:
 
 ### 1. Panel de Indicadores
-Vista ejecutiva consolidada con KPIs principales: total de publicaciones, citas acumuladas, porcentaje en Q1/Q2, financiamiento ANID total, personas formadas. Incluye franja operativa con estado de cada fuente de datos.
+Vista ejecutiva consolidada con KPIs principales: total de publicaciones, citas acumuladas, porcentaje en Q1/Q2, financiamiento ANID total, personas formadas. Incluye franja operativa con estado de sesión: datasets remotos, fallbacks locales activos, datasets no disponibles y snapshot local más reciente.
 
 ### 2. Producción Científica
 Análisis bibliométrico completo: evolución temporal, distribución por cuartil SJR, revistas de publicación, acceso abierto, conceptos temáticos OpenAlex, publicaciones DIAN internas y comparación con registros EuroPMC. Soporta filtros por año, tipo, cuartil y área temática.
@@ -294,6 +294,13 @@ El dashboard soporta tres modos configurables via `data_source` en secrets.toml:
 | `auto` (recomendado) | Intenta leer tablas públicas desde Supabase; si falla, usa CSVs locales. Las tablas sensibles usan `service_role_key` si está disponible |
 | `local` | Solo usa archivos locales en `Data/` (sin Supabase) |
 | `supabase_public` | Fuerza lectura remota de tablas públicas; falla si Supabase no está disponible. Las tablas sensibles siguen requiriendo `service_role_key` |
+
+### Franja operativa y frescura
+
+- La franja superior del dashboard resume el estado de carga de la sesión actual usando el registro runtime `TABLE_LOAD_STATUS`.
+- Expone, por dataset instrumentado, si la lectura efectiva fue `Supabase pública`, `Supabase privada`, `Fallback local`, `Local` o `No disponible`.
+- Muestra además el snapshot local más reciente detectado en `Data/`, útil para distinguir entre conectividad remota y respaldo disponible en el host.
+- Cuando `data_source != local`, la fecha mostrada corresponde al respaldo local conocido, no necesariamente al último sync remoto de Supabase.
 
 ### Despliegue en Streamlit Cloud
 

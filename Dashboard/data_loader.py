@@ -524,11 +524,18 @@ def load_patents():
         try:
             remote = _fetch_supabase_table("patents")
             if not remote.empty or mode == "supabase_public":
+                _record_table_load_status("patents", "supabase_public", "patents")
                 return _normalize_patents_frame(remote)
         except Exception:
             if mode == "supabase_public":
                 raise
-    return _load_patents_local()
+    local = _load_patents_local()
+    if not local.empty:
+        source = "local_only" if mode == "local" else "local_fallback"
+        _record_table_load_status("patents", source, str(BASE_PAT))
+        return local
+    _record_table_load_status("patents", "unavailable", str(BASE_PAT))
+    return local
 
 
 # ─── CrossRef enrichment ──────────────────────────────────────────────────────

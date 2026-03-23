@@ -213,6 +213,18 @@ modo "auto"            → intenta service_role; si falla y existe CSV → fallb
 modo "supabase_public" → intenta service_role; si falla y no hay CSV → error
 ```
 
+### TABLE_LOAD_STATUS y observabilidad operativa
+
+Cada carga instrumentada registra su resultado en `TABLE_LOAD_STATUS`, con un snapshot por tabla en la sesión actual:
+
+- `supabase_public` → lectura pública remota exitosa
+- `supabase_private` → lectura sensible remota con `service_role`
+- `local_fallback` → caída controlada a CSV local
+- `local_only` → modo local explícito
+- `unavailable` → no hubo lectura remota ni respaldo local utilizable
+
+`Dashboard/app.py` consume este registro para construir la franja operativa superior y el inspector de datasets. Así, el usuario ve en tiempo real si la sesión está trabajando contra Supabase, contra respaldos locales o con datasets ausentes.
+
 ### _fetch_supabase_table(table_name, use_service_role=False)
 
 Implementa **paginación completa** de Supabase:

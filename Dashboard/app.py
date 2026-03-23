@@ -7,6 +7,7 @@ import os
 import hashlib
 import ast
 import re
+import datetime as dt
 from html import unescape as html_unescape
 from pathlib import Path
 import matplotlib
@@ -780,6 +781,12 @@ def _dataset_catalog() -> dict:
             "table_name": "capital_humano",
             "sensitive": True,
         },
+        "Patentes": {
+            "df": patents,
+            "source": "Data/Patents/cchen_patents_uspto.csv",
+            "table_name": "patents",
+            "sensitive": False,
+        },
         "CrossRef": {
             "df": crossref,
             "source": "Data/Publications/cchen_crossref_enriched.csv",
@@ -883,9 +890,51 @@ def _dataset_catalog() -> dict:
             "sensitive": False,
         },
         "Monitor IAEA INIS": {
-            "df": load_iaea_inis(),
+            "df": iaea_inis,
             "source": "Data/Vigilancia/iaea_inis_monitor.csv",
             "table_name": "iaea_inis_monitor",
+            "sensitive": False,
+        },
+        "Monitor arXiv": {
+            "df": arxiv_monitor,
+            "source": "Data/Vigilancia/arxiv_monitor.csv",
+            "table_name": "arxiv_monitor",
+            "sensitive": False,
+        },
+        "Monitor noticias": {
+            "df": news_monitor,
+            "source": "Data/Vigilancia/news_monitor.csv",
+            "table_name": "news_monitor",
+            "sensitive": False,
+        },
+        "Citation graph": {
+            "df": citation_graph,
+            "source": "Data/Publications/cchen_citation_graph.csv",
+            "table_name": "citation_graph",
+            "sensitive": False,
+        },
+        "Papers citantes": {
+            "df": citing_papers,
+            "source": "Data/Publications/cchen_citing_papers.csv",
+            "table_name": "citing_papers",
+            "sensitive": False,
+        },
+        "EuroPMC": {
+            "df": europmc,
+            "source": "Data/Publications/cchen_europmc_works.csv",
+            "table_name": "europmc_works",
+            "sensitive": False,
+        },
+        "BERTopic topics": {
+            "df": bertopic_topics,
+            "source": "Data/Publications/cchen_bertopic_topics.csv",
+            "table_name": "bertopic_topics",
+            "sensitive": False,
+        },
+        "BERTopic topic info": {
+            "df": bertopic_topic_info,
+            "source": "Data/Publications/cchen_bertopic_topic_info.csv",
+            "table_name": "bertopic_topic_info",
             "sensitive": False,
         },
     }
@@ -896,36 +945,178 @@ def _describe_dataset_read_source(meta: dict) -> tuple[str, str]:
     status = get_table_load_status().get(table_name, {}) if table_name else {}
     source = status.get("source", "")
     detail = status.get("detail", "")
+    source_path = str(meta.get("source") or "").strip()
+    has_local_backup = False
+    if source_path.startswith("Data/"):
+        parts = Path(source_path).parts
+        rel_parts = parts[1:] if parts and parts[0] == "Data" else parts
+        has_local_backup = bool(rel_parts) and BASE.joinpath(*rel_parts).exists()
 
     if source == "supabase_public":
         return "Supabase pública", table_name
+    if source == "supabase_private":
+        return "Supabase privada", table_name
     if source == "local_fallback":
         return "Fallback local", detail or meta.get("source", "CSV local")
     if source == "local_only":
         if table_name and table_name in _PUBLIC_TABLE_CONFIG:
             return "Local", detail or meta.get("source", "CSV local")
         return "Solo local / autenticado", detail or meta.get("source", "CSV local")
+    if source == "unavailable":
+        return "No disponible", detail or "sin respaldo local disponible"
+    if has_local_backup:
+        return "Local", detail or meta.get("source", "CSV local")
     if table_name and table_name in _PUBLIC_TABLE_CONFIG:
         return "Remoto habilitado", table_name
     return "Solo local / autenticado", meta.get("source", "CSV local")
+
+
+def _catalog_local_path(meta: dict) -> Path | None:
+    source = str(meta.get("source") or "").strip()
+    if not source.startswith("Data/"):
+        return None
+    parts = Path(source).parts
+    rel_parts = parts[1:] if parts and parts[0] == "Data" else parts
+    if not rel_parts:
+        return None
+    return BASE.joinpath(*rel_parts)
+
+
+def _dataset_snapshot_info(meta: dict) -> tuple[str, int | None]:
+    path = _catalog_local_path(meta)
+    if path is None or not path.exists():
+        return "—", None
+    try:
+        modified = dt.datetime.fromtimestamp(path.stat().st_mtime)
+    except OSError:
+        return "—", None
+    age_days = max((dt.datetime.now() - modified).days, 0)
+    return modified.strftime("%d/%m/%Y"), age_days
+
+
+def _format_dataset_names(names: list[str], limit: int = 4) -> str:
+    if not names:
+        return "—"
+    visible = names[:limit]
+    hidden = len(names) - len(visible)
+    if hidden > 0:
+        return f"{', '.join(visible)} y {hidden} más"
+    return ", ".join(visible)
+
+
+def _build_runtime_dataset_status() -> pd.DataFrame:
+    access = _access_context()
+    status_map = get_table_load_status()
+    rows = []
+
+    for dataset_name, meta in _dataset_catalog().items():
+        table_name = str(meta.get("table_name") or "").strip()
+        status = status_map.get(table_name, {}) if table_name else {}
+        read_source, read_detail = _describe_dataset_read_source(meta)
+        snapshot_label, snapshot_age_days = _dataset_snapshot_info(meta)
+        is_sensitive = bool(meta.get("sensitive"))
+        if is_sensitive and not access["can_view_sensitive"]:
+            row_count = "Restringido"
+        else:
+            df = meta.get("df", pd.DataFrame())
+            row_count = f"{len(df):,}" if hasattr(df, "__len__") else "—"
+
+        rows.append(
+            {
+                "dataset": dataset_name,
+                "table_name": table_name or "—",
+                "sensitive": "Sí" if is_sensitive else "No",
+                "source_code": status.get("source") or ("local_only" if snapshot_age_days is not None else "unknown"),
+                "read_source": read_source,
+                "read_detail": read_detail,
+                "rows": row_count,
+                "snapshot": snapshot_label,
+                "snapshot_age_days": snapshot_age_days,
+            }
+        )
+
+    if not rows:
+        return pd.DataFrame()
+    return pd.DataFrame(rows).sort_values(["read_source", "dataset"]).reset_index(drop=True)
+
+
+def _summarize_runtime_dataset_status(status_df: pd.DataFrame) -> dict:
+    if status_df.empty:
+        return {
+            "dataset_count": 0,
+            "remote_count": 0,
+            "fallback_count": 0,
+            "local_only_count": 0,
+            "unavailable_count": 0,
+            "fallback_names": [],
+            "unavailable_names": [],
+            "freshest_snapshot": "—",
+            "freshest_snapshot_age_days": None,
+        }
+
+    source_counts = status_df["source_code"].value_counts()
+    snapshot_df = status_df[status_df["snapshot_age_days"].notna()].sort_values(
+        ["snapshot_age_days", "dataset"]
+    )
+    freshest_snapshot = "—"
+    freshest_snapshot_age_days = None
+    if not snapshot_df.empty:
+        freshest_snapshot = str(snapshot_df.iloc[0]["snapshot"])
+        freshest_snapshot_age_days = int(snapshot_df.iloc[0]["snapshot_age_days"])
+
+    return {
+        "dataset_count": int(len(status_df)),
+        "remote_count": int(source_counts.get("supabase_public", 0) + source_counts.get("supabase_private", 0)),
+        "fallback_count": int(source_counts.get("local_fallback", 0)),
+        "local_only_count": int(source_counts.get("local_only", 0)),
+        "unavailable_count": int(source_counts.get("unavailable", 0) + source_counts.get("unknown", 0)),
+        "fallback_names": status_df.loc[status_df["source_code"] == "local_fallback", "dataset"].tolist(),
+        "unavailable_names": status_df.loc[
+            status_df["source_code"].isin(["unavailable", "unknown"]), "dataset"
+        ].tolist(),
+        "freshest_snapshot": freshest_snapshot,
+        "freshest_snapshot_age_days": freshest_snapshot_age_days,
+    }
 
 
 @_dialog("Inspector de datasets", width="large")
 def open_dataset_inspector():
     access = _access_context()
     catalog = _dataset_catalog()
+    runtime_df = _build_runtime_dataset_status()
+    runtime_summary = _summarize_runtime_dataset_status(runtime_df)
     dataset_name = st.selectbox("Dataset", list(catalog.keys()), index=0)
     meta = catalog[dataset_name]
     df = meta["df"]
     read_source, read_detail = _describe_dataset_read_source(meta)
+    snapshot_label, snapshot_age_days = _dataset_snapshot_info(meta)
+
+    with st.expander("Estado operativo de la sesión", expanded=False):
+        st.caption(
+            f"Datasets instrumentados: {runtime_summary['dataset_count']} · "
+            f"remotos: {runtime_summary['remote_count']} · "
+            f"fallback: {runtime_summary['fallback_count']} · "
+            f"solo local: {runtime_summary['local_only_count']} · "
+            f"no disponibles: {runtime_summary['unavailable_count']}"
+        )
+        st.dataframe(
+            runtime_df[["dataset", "read_source", "rows", "snapshot", "sensitive"]],
+            use_container_width=True,
+            height=320,
+            hide_index=True,
+        )
 
     st.caption(f"Fuente: `{meta['source']}`")
     st.caption(f"Lectura efectiva: `{read_source}` · `{read_detail}`")
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Filas", f"{len(df):,}")
+    row_metric = "Restringido" if meta["sensitive"] and not access["can_view_sensitive"] else f"{len(df):,}"
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("Filas", row_metric)
     c2.metric("Columnas", f"{len(df.columns):,}" if hasattr(df, "columns") else "—")
     c3.metric("Sensibilidad", "Restringido" if meta["sensitive"] else "Público")
     c4.metric("Origen", read_source)
+    c5.metric("Snapshot local", snapshot_label)
+    if snapshot_age_days is not None:
+        st.caption(f"Respaldo local disponible de `{dataset_name}`: {snapshot_label} ({snapshot_age_days} días).")
 
     if meta["sensitive"] and not access["can_view_sensitive"]:
         st.warning(
@@ -949,24 +1140,56 @@ def open_dataset_inspector():
 def render_operational_strip():
     access = _access_context()
     engine_label = _backend["engine"].upper()
-    # Abreviar para que no se trunque en pantallas pequeñas
     engine_short = engine_label[:6] if len(engine_label) > 6 else engine_label
-    acceso_short  = "Sí" if access["can_view_sensitive"] else "No"
-    c1, c2, c3, c4, c5 = st.columns([1.1, 1.1, 1.0, 0.9, 2.2])
+    acceso_short = "Sí" if access["can_view_sensitive"] else "No"
+    runtime_df = _build_runtime_dataset_status()
+    runtime_summary = _summarize_runtime_dataset_status(runtime_df)
+    c1, c2, c3, c4, c5, c6 = st.columns([1.0, 0.9, 0.9, 0.9, 1.1, 0.9])
     c1.metric("Motor datos", engine_short)
-    c2.metric("Fuente", _backend.get("source_mode", "auto"))
-    c3.metric("Datasets", f"{len(_dataset_catalog())}")
-    c4.metric("Acceso sens.", acceso_short)
-    with c5:
-        st.caption(_backend["detail"])
-        b1, b2 = st.columns(2)
-        with b1:
-            if st.button("🔍 Datasets", key="btn_open_dataset_inspector", use_container_width=True):
-                open_dataset_inspector()
-        with b2:
-            if st.button("♻ Limpiar caché", key="btn_clear_dashboard_cache", use_container_width=True):
-                st.cache_data.clear()
-                st.rerun()
+    c2.metric("Modo", _backend.get("source_mode", "auto"))
+    c3.metric("Remoto", f"{runtime_summary['remote_count']}")
+    c4.metric("Fallback", f"{runtime_summary['fallback_count']}")
+    c5.metric("Snapshot", runtime_summary["freshest_snapshot"])
+    c6.metric("Acceso sens.", acceso_short)
+
+    st.caption(_backend["detail"])
+    st.caption(
+        f"Sesión actual: {runtime_summary['dataset_count']} datasets instrumentados · "
+        f"{runtime_summary['local_only_count']} solo local · "
+        f"{runtime_summary['unavailable_count']} no disponibles."
+    )
+    if runtime_summary["freshest_snapshot_age_days"] is not None:
+        st.caption(
+            "Respaldo local más reciente: "
+            f"{runtime_summary['freshest_snapshot']} ({runtime_summary['freshest_snapshot_age_days']} días)."
+        )
+    if _backend.get("source_mode") != "local":
+        st.caption(
+            "La frescura mostrada corresponde al respaldo local disponible en este host; "
+            "no necesariamente al último sync remoto en Supabase."
+        )
+
+    if runtime_summary["fallback_count"] > 0:
+        st.warning(
+            "Fallback local activo en: "
+            f"{_format_dataset_names(runtime_summary['fallback_names'])}."
+        )
+    elif runtime_summary["unavailable_count"] > 0:
+        st.info(
+            "Datasets no disponibles en esta sesión: "
+            f"{_format_dataset_names(runtime_summary['unavailable_names'])}."
+        )
+    else:
+        st.caption("Sin fallbacks activos en la sesión actual.")
+
+    b1, b2 = st.columns(2)
+    with b1:
+        if st.button("🔍 Datasets", key="btn_open_dataset_inspector", use_container_width=True):
+            open_dataset_inspector()
+    with b2:
+        if st.button("♻ Limpiar caché", key="btn_clear_dashboard_cache", use_container_width=True):
+            st.cache_data.clear()
+            st.rerun()
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
