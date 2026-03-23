@@ -454,11 +454,11 @@ def render(ctx: dict) -> None:
 - No inventes cifras que no estén arriba. Si algo no está en los datos, dilo explícitamente.
 """
 
-    # ── API Key (Groq) ──
-    api_key = os.environ.get("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY", "")
+    # ── API Key (Anthropic) ──
+    api_key = os.environ.get("ANTHROPIC_API_KEY") or st.secrets.get("ANTHROPIC_API_KEY", "")
     if not api_key:
-        st.warning("⚠️ Configura tu `GROQ_API_KEY` en `.streamlit/secrets.toml` para activar el asistente. Obtén una clave gratis en console.groq.com")
-        st.code('GROQ_API_KEY = "gsk_..."', language="toml")
+        st.warning("⚠️ Configura tu `ANTHROPIC_API_KEY` en los secrets de Streamlit Cloud para activar el asistente.")
+        st.code('ANTHROPIC_API_KEY = "sk-ant-..."', language="toml")
         st.stop()
 
     # ── Prompts rápidos ──
@@ -533,21 +533,19 @@ def render(ctx: dict) -> None:
             reply = None
             client = None
             try:
-                from groq import Groq as _Groq
-                client = _Groq(api_key=api_key)
-                _stream = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+                import anthropic as _anthropic
+                client = _anthropic.Anthropic(api_key=api_key)
+                _messages = [
+                    {"role": m["role"], "content": m["content"]}
+                    for m in st.session_state.messages
+                ]
+                with client.messages.stream(
+                    model="claude-haiku-4-5-20251001",
                     max_tokens=2048,
-                    stream=True,
-                    messages=[{"role": "system", "content": _system_prompt + _rag_context}] +
-                             [{"role": m["role"], "content": m["content"]}
-                              for m in st.session_state.messages],
-                )
-                reply = st.write_stream(
-                    (chunk.choices[0].delta.content or "")
-                    for chunk in _stream
-                    if chunk.choices
-                )
+                    system=_system_prompt + _rag_context,
+                    messages=_messages,
+                ) as _stream:
+                    reply = st.write_stream(_stream.text_stream)
             except Exception as e:
                 # Fallback: respuesta basada en el contexto sin LLM
                 _q = user_input.lower()
@@ -574,7 +572,7 @@ def render(ctx: dict) -> None:
                     )
                 else:
                     reply = (
-                        f"⚠️ El servicio LLM (Groq) no está disponible en este momento: `{e}`\n\n"
+                        f"⚠️ El servicio LLM (Anthropic) no está disponible en este momento: `{e}`\n\n"
                         f"Puedes explorar los datos directamente en las secciones del panel lateral."
                     )
                 st.markdown(reply)
@@ -604,13 +602,13 @@ def render(ctx: dict) -> None:
                         "Para 'keyword': palabra clave del tema (ej: 'plasma', 'nuclear', 'dosimetría'). Usa null si es general.\n"
                         "Para 'start_year' y 'end_year': rango temporal mencionado o null si no aplica."
                     )
-                    _dec_resp = client.chat.completions.create(
-                        model="llama-3.1-8b-instant",
+                    _dec_resp = client.messages.create(
+                        model="claude-haiku-4-5-20251001",
                         max_tokens=200,
-                        temperature=0,
+                        system="Responde SOLO con JSON válido, sin texto adicional.",
                         messages=[{"role": "user", "content": _decision_prompt}],
                     )
-                    _dec_text = _dec_resp.choices[0].message.content.strip()
+                    _dec_text = _dec_resp.content[0].text.strip()
                     _chart_decision = {}
                     try:
                         _chart_decision = _json.loads(_dec_text)

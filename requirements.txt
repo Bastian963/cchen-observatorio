@@ -9,3 +9,4 @@ pyvis==0.3.2
 scikit-learn==1.6.1
 requests==2.32.5
 openpyxl==3.1.5
+anthropic>=0.40.0
