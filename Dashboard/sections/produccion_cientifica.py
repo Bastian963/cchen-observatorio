@@ -532,7 +532,7 @@ def render(ctx: dict) -> None:
 
             # Build display table using only columns that actually exist
             _epmc_desired = ["title", "year", "pmid", "pmcid", "europmc_url",
-                             "doi", "journal_title", "cited_by_count"]
+                             "doi", "journal", "cited_by_count"]
             _epmc_cols = [c for c in _epmc_desired if c in europmc.columns]
             _epmc_show = europmc[_epmc_cols].copy()
 
@@ -543,13 +543,13 @@ def render(ctx: dict) -> None:
             # Build column config for link/special columns
             _epmc_cfg = {}
             _epmc_rename = {
-                "title":         "Título",
-                "year":          "Año",
-                "pmid":          "PMID",
-                "pmcid":         "PMCID",
-                "europmc_url":   "EuroPMC",
-                "doi":           "DOI",
-                "journal_title": "Revista",
+                "title":          "Título",
+                "year":           "Año",
+                "pmid":           "PMID",
+                "pmcid":          "PMCID",
+                "europmc_url":    "EuroPMC",
+                "doi":            "DOI",
+                "journal":        "Revista",
                 "cited_by_count": "Citas",
             }
             _epmc_show = _epmc_show.rename(columns={k: v for k, v in _epmc_rename.items() if k in _epmc_show.columns})
