@@ -571,7 +571,7 @@ def _render_beta_access_gate() -> None:
         with st.form("observatorio_internal_login", clear_on_submit=False):
             username = st.text_input("Usuario", placeholder="tu.usuario")
             password = st.text_input("Clave", type="password")
-            submit = st.form_submit_button("Ingresar al observatorio", use_container_width=True)
+            submit = st.form_submit_button("Ingresar al observatorio", width="stretch")
         if submit:
             ok, message = _internal_auth_login(username, password)
             if ok:
@@ -1183,7 +1183,7 @@ def open_dataset_inspector():
         )
         st.dataframe(
             runtime_df[["dataset", "read_source", "rows", "snapshot", "sensitive"]],
-            use_container_width=True,
+            width="stretch",
             height=320,
             hide_index=True,
         )
@@ -1209,7 +1209,7 @@ def open_dataset_inspector():
 
     sample_size = st.slider("Filas de muestra", min_value=5, max_value=100, value=20, step=5)
     preview = df.head(sample_size).copy()
-    st.dataframe(preview, use_container_width=True, height=420)
+    st.dataframe(preview, width="stretch", height=420)
     st.download_button(
         "Exportar muestra CSV",
         make_csv(preview),
@@ -1267,10 +1267,10 @@ def render_operational_strip():
 
     b1, b2 = st.columns(2)
     with b1:
-        if st.button("🔍 Datasets", key="btn_open_dataset_inspector", use_container_width=True):
+        if st.button("🔍 Datasets", key="btn_open_dataset_inspector", width="stretch"):
             open_dataset_inspector()
     with b2:
-        if st.button("♻ Limpiar caché", key="btn_clear_dashboard_cache", use_container_width=True):
+        if st.button("♻ Limpiar caché", key="btn_clear_dashboard_cache", width="stretch"):
             st.cache_data.clear()
             st.rerun()
 
@@ -2058,7 +2058,7 @@ with st.sidebar:
             _icon = "·" if fecha != "—" else "—"
             st.caption(f"{_icon} **{fuente}**: {fecha}")
         st.caption("Fecha de última modificación del archivo.")
-        if st.button("Inspector datasets", key="sidebar_open_dataset_inspector", use_container_width=True):
+        if st.button("Inspector datasets", key="sidebar_open_dataset_inspector", width="stretch"):
             open_dataset_inspector()
     with st.expander("Acceso y permisos", expanded=False):
         if access.get("auth_mode") == "internal":
@@ -2072,7 +2072,7 @@ with st.sidebar:
                     st.caption("Acceso a datasets internos habilitado.")
                 else:
                     st.warning("Tu usuario no tiene acceso a vistas sensibles.")
-                if st.button("Cerrar sesión", key="sidebar_logout_internal", use_container_width=True):
+                if st.button("Cerrar sesión", key="sidebar_logout_internal", width="stretch"):
                     _internal_auth_logout()
                     st.rerun()
             else:
@@ -2091,11 +2091,11 @@ with st.sidebar:
                     st.warning("Tu cuenta está autenticada, pero no está autorizada para vistas sensibles.")
                 elif access["can_view_sensitive"]:
                     st.caption("Acceso sensible habilitado.")
-                if st.button("Cerrar sesión", key="sidebar_logout", use_container_width=True):
+                if st.button("Cerrar sesión", key="sidebar_logout", width="stretch"):
                     st.logout()
             else:
                 st.caption("Inicia sesión para habilitar vistas sensibles y alinear el acceso con RLS.")
-                if st.button("Iniciar sesión", key="sidebar_login", use_container_width=True):
+                if st.button("Iniciar sesión", key="sidebar_login", width="stretch"):
                     st.login()
     st.markdown("---")
     st.caption("Beta v0.2  ·  CORFO CCHEN 360")
@@ -2208,7 +2208,7 @@ if False and seccion == "Panel de Indicadores":
             yaxis=dict(title="N° Papers"), yaxis2=dict(title="Citas", overlaying="y", side="right"),
             legend=dict(orientation="h", y=1.08), margin=dict(t=10,b=30,l=40,r=60), height=310,
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         sec("Calidad de publicaciones: cuartiles SJR")
@@ -2222,7 +2222,7 @@ if False and seccion == "Panel de Indicadores":
                       height=310)
         fig2.update_traces(textposition="outside")
         fig2.update_layout(showlegend=False, margin=dict(t=10,b=30))
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
     col3, col4 = st.columns(2)
 
@@ -2240,7 +2240,7 @@ if False and seccion == "Panel de Indicadores":
             yaxis=dict(title="N° Proyectos"), yaxis2=dict(title="MM CLP", overlaying="y", side="right"),
             legend=dict(orientation="h", y=1.08), margin=dict(t=10,b=30,l=40,r=60), height=310,
         )
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, width="stretch")
 
     with col4:
         sec("Formación capital humano por tipo (2022–2025)")
@@ -2249,7 +2249,7 @@ if False and seccion == "Panel de Indicadores":
         fig4 = px.bar(tc.sort_values("N"), x="N", y="Tipo", orientation="h",
                       color="Tipo", color_discrete_sequence=PALETTE, text="N", height=310)
         fig4.update_layout(showlegend=False, margin=dict(t=10,b=10))
-        st.plotly_chart(fig4, use_container_width=True)
+        st.plotly_chart(fig4, width="stretch")
 
     # Alerta riesgo documental
     if ch_adv:
@@ -2347,7 +2347,7 @@ elif False and seccion == "Producción Científica":
                         mode="lines+markers", marker_color=RED, yaxis="y2")
         fig.update_layout(yaxis=dict(title="Papers"), yaxis2=dict(title="Citas", overlaying="y", side="right"),
                           legend=dict(orientation="h", y=1.1), margin=dict(t=10,b=30,l=40,r=60), height=330)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         sec("Tendencia Q1-Q2 por año")
@@ -2361,7 +2361,7 @@ elif False and seccion == "Producción Científica":
                          mode="lines+markers", marker_color=GREEN, yaxis="y2")
         fig2.update_layout(yaxis=dict(title="N° papers"), yaxis2=dict(title="%", overlaying="y", side="right"),
                            legend=dict(orientation="h", y=1.1), margin=dict(t=10,b=30,l=40,r=60), height=330)
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
     col3, col4 = st.columns(2)
 
@@ -2376,7 +2376,7 @@ elif False and seccion == "Producción Científica":
                       height=280)
         fig3.update_traces(textposition="outside")
         fig3.update_layout(showlegend=False, margin=dict(t=10,b=30))
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, width="stretch")
 
     with col4:
         sec("Colaboración internacional vs. solo CCHEN")
@@ -2394,7 +2394,7 @@ elif False and seccion == "Producción Científica":
                       height=280)
         fig4.update_traces(textposition="inside", textinfo="percent+label")
         fig4.update_layout(margin=dict(t=10,b=10))
-        st.plotly_chart(fig4, use_container_width=True)
+        st.plotly_chart(fig4, width="stretch")
 
     # ── OA breakdown + H-index por investigador ──────────────────────────────
     col_oa, col_hinv = st.columns(2)
@@ -2416,7 +2416,7 @@ elif False and seccion == "Producción Científica":
             fig_oa.update_traces(textposition="inside", textinfo="percent+label")
             fig_oa.update_layout(margin=dict(t=10, b=10), showlegend=True,
                                  legend=dict(orientation="h", y=-0.15))
-            st.plotly_chart(fig_oa, use_container_width=True)
+            st.plotly_chart(fig_oa, width="stretch")
         else:
             st.info("Campo oa_status no disponible en este dataset.")
         # Unpaywall enrichment note
@@ -2449,7 +2449,7 @@ elif False and seccion == "Producción Científica":
             height=300, labels={"author_name": ""},
         )
         fig_hinv.update_layout(showlegend=False, margin=dict(t=10, b=10))
-        st.plotly_chart(fig_hinv, use_container_width=True)
+        st.plotly_chart(fig_hinv, width="stretch")
 
     # ── Mapa de colaboración internacional ────────────────────────────────────
     sec("Mapa de colaboración internacional")
@@ -2480,7 +2480,7 @@ elif False and seccion == "Producción Científica":
             marker=dict(size=8, color=RED, symbol="star"),
             hoverinfo="text", text=["CCHEN (Chile)"], showlegend=False,
         )
-        st.plotly_chart(fig_map, use_container_width=True)
+        st.plotly_chart(fig_map, width="stretch")
         # Top 10 países como complemento
         _top10_paises = _country_cnt.head(10)
         st.caption(f"Top 10 países: " + " · ".join(
@@ -2498,7 +2498,7 @@ elif False and seccion == "Producción Científica":
         fig5 = px.bar(top_j.sort_values("N"), x="N", y="Journal", orientation="h",
                       color_discrete_sequence=[BLUE], text="N", height=300)
         fig5.update_layout(showlegend=False, margin=dict(t=10,b=10))
-        st.plotly_chart(fig5, use_container_width=True)
+        st.plotly_chart(fig5, width="stretch")
 
     with col6:
         sec("Áreas temáticas (papers con cuartil)")
@@ -2513,7 +2513,7 @@ elif False and seccion == "Producción Científica":
         fig6 = px.bar(area_df.sort_values("N"), x="N", y="Área", orientation="h",
                       color_discrete_sequence=[GREEN], text="N", height=300)
         fig6.update_layout(showlegend=False, margin=dict(t=10,b=10))
-        st.plotly_chart(fig6, use_container_width=True)
+        st.plotly_chart(fig6, width="stretch")
 
     # Top investigadores CCHEN
     sec("🔬 Top investigadores CCHEN por producción (afiliación verificada OpenAlex)")
@@ -2527,7 +2527,7 @@ elif False and seccion == "Producción Científica":
                      orientation="h", color_discrete_sequence=[BLUE], text="Papers",
                      height=400, labels={"Papers": "N° papers"})
     fig_inv.update_layout(showlegend=False, margin=dict(t=10, b=10))
-    st.plotly_chart(fig_inv, use_container_width=True)
+    st.plotly_chart(fig_inv, width="stretch")
 
     # Tabla
     sec(f"Tabla de publicaciones — {len(df)} resultados")
@@ -2564,7 +2564,7 @@ elif False and seccion == "Producción Científica":
         "cited_by_count":"Citas","is_oa":"OA",
     }).sort_values("Año", ascending=False)
 
-    st.dataframe(df_show, use_container_width=True, height=400,
+    st.dataframe(df_show, width="stretch", height=400,
                  column_config={
                      "OA": st.column_config.CheckboxColumn("OA"),
                      "Enlace": st.column_config.LinkColumn("Enlace", display_text="🔗"),
@@ -2625,7 +2625,7 @@ elif False and seccion == "Producción Científica":
             margin=dict(t=10, b=10, l=10, r=10),
             plot_bgcolor="white",
         )
-        st.plotly_chart(_fig_net, use_container_width=True)
+        st.plotly_chart(_fig_net, width="stretch")
         if _edges:
             st.caption(f"{len(_edges)} pares de co-autoría detectados entre los top {_TOP_N} investigadores CCHEN. "
                        f"Grosor del enlace = frecuencia de co-autoría.")
@@ -2653,7 +2653,7 @@ elif False and seccion == "Producción Científica":
                 title="Áreas temáticas principales (OpenAlex L0-L1)",
             )
             fig_concepts.update_layout(margin=dict(t=30, b=0, l=0, r=0), height=400)
-            st.plotly_chart(fig_concepts, use_container_width=True)
+            st.plotly_chart(fig_concepts, width="stretch")
 
             # Level 2 breakdown
             sub_concepts = (
@@ -2672,7 +2672,7 @@ elif False and seccion == "Producción Científica":
                 title="Sub-áreas más frecuentes (OpenAlex L2)",
             )
             fig_sub.update_layout(showlegend=False, height=450, margin=dict(t=30, b=0))
-            st.plotly_chart(fig_sub, use_container_width=True)
+            st.plotly_chart(fig_sub, width="stretch")
 
     # ── Investigadores CCHEN con perfil ORCID ─────────────────────────────────
     if not orcid.empty:
@@ -2698,7 +2698,7 @@ elif False and seccion == "Producción Científica":
                 _col_cfg["Perfil ORCID"] = st.column_config.LinkColumn("Perfil ORCID")
             st.dataframe(
                 _orcid_display,
-                use_container_width=True,
+                width="stretch",
                 column_config=_col_cfg,
                 height=350,
             )
@@ -2731,7 +2731,7 @@ elif False and seccion == "Producción Científica":
                                     height=250, title="Cuartiles DIAN")
                     fig_dq.update_traces(textposition="outside")
                     fig_dq.update_layout(showlegend=False, margin=dict(t=30, b=10))
-                    st.plotly_chart(fig_dq, use_container_width=True)
+                    st.plotly_chart(fig_dq, width="stretch")
                 with _dcol2:
                     if "unidad" in dian.columns:
                         _du = dian["unidad"].value_counts().reset_index()
@@ -2740,7 +2740,7 @@ elif False and seccion == "Producción Científica":
                                         orientation="h", color_discrete_sequence=[PURPLE],
                                         text="N", height=250, title="Por unidad CCHEN")
                         fig_du.update_layout(showlegend=False, margin=dict(t=30, b=10))
-                        st.plotly_chart(fig_du, use_container_width=True)
+                        st.plotly_chart(fig_du, width="stretch")
 
             # Tabla
             _dian_cols = [c for c in ["anio","titulo","autores","revista","cuartil","unidad","doi"] if c in dian.columns]
@@ -2754,7 +2754,7 @@ elif False and seccion == "Producción Científica":
                 _dian_cfg = {"Enlace": st.column_config.LinkColumn("Enlace")}
             else:
                 _dian_cfg = {}
-            st.dataframe(_dian_show, use_container_width=True, height=320, column_config=_dian_cfg)
+            st.dataframe(_dian_show, width="stretch", height=320, column_config=_dian_cfg)
             st.download_button("Exportar DIAN CSV", make_csv(_dian_show),
                                "publicaciones_dian_cchen.csv", "text/csv")
 
@@ -2834,7 +2834,7 @@ elif False and seccion == "Producción Científica":
                 legend=dict(orientation="h", y=1.1),
                 margin=dict(t=10, b=10, l=0, r=0),
             )
-            st.plotly_chart(fig_inv_yr, use_container_width=True)
+            st.plotly_chart(fig_inv_yr, width="stretch")
 
         with _ip2:
             sec("Revistas más frecuentes")
@@ -2846,7 +2846,7 @@ elif False and seccion == "Producción Científica":
             fig_inv_src.update_traces(textposition="outside")
             fig_inv_src.update_layout(yaxis_title="", plot_bgcolor="#F8FAFC",
                                       margin=dict(t=5, b=5, l=5, r=30))
-            st.plotly_chart(fig_inv_src, use_container_width=True)
+            st.plotly_chart(fig_inv_src, width="stretch")
 
         # Top colaboradores
         sec("Principales colaboradores")
@@ -2863,7 +2863,7 @@ elif False and seccion == "Producción Científica":
             fig_col.update_traces(textposition="outside")
             fig_col.update_layout(yaxis_title="", xaxis_title="Papers en coautoría",
                                   plot_bgcolor="#F8FAFC", margin=dict(t=5,b=5,l=5,r=30))
-            st.plotly_chart(fig_col, use_container_width=True)
+            st.plotly_chart(fig_col, width="stretch")
 
         st.divider()
         sec(f"Todos los papers de {_inv_sel} ({_inv_n})")
@@ -2879,7 +2879,7 @@ elif False and seccion == "Producción Científica":
         _inv_show["DOI"] = _inv_show["DOI"].apply(
             lambda d: f"https://doi.org/{d}" if pd.notna(d) and d else None
         )
-        st.dataframe(_inv_show, use_container_width=True, height=340,
+        st.dataframe(_inv_show, width="stretch", height=340,
                      hide_index=True, column_config=_inv_cfg)
 
 
@@ -2999,7 +2999,7 @@ elif False and seccion == "Redes y Colaboración":
                     "convenios_count": "Convenios",
                     "ror_id": "ROR",
                 }),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=320,
                 column_config={"ROR": st.column_config.LinkColumn("ROR")},
@@ -3032,7 +3032,7 @@ elif False and seccion == "Redes y Colaboración":
                         "signal_total": "Señal total",
                         "source_evidence": "Evidencia",
                     }),
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                     height=320,
                 )
@@ -3082,7 +3082,7 @@ elif False and seccion == "Redes y Colaboración":
                          coastlinecolor="#BBBBBB", landcolor="#F0F0F0",
                          bgcolor="#F8FAFC"),
             )
-            st.plotly_chart(fig_map, use_container_width=True)
+            st.plotly_chart(fig_map, width="stretch")
 
         with bar_col:
             _top10c = _country_counts.sort_values("N", ascending=False).head(12)
@@ -3097,7 +3097,7 @@ elif False and seccion == "Redes y Colaboración":
                 margin=dict(t=5, b=5, l=5, r=30),
                 plot_bgcolor="#F8FAFC",
             )
-            st.plotly_chart(fig_topc, use_container_width=True)
+            st.plotly_chart(fig_topc, width="stretch")
     else:
         st.info("Sin datos de país para el período seleccionado.")
 
@@ -3169,13 +3169,13 @@ elif False and seccion == "Redes y Colaboración":
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             plot_bgcolor="#F8FAFC",
         )
-        st.plotly_chart(fig_net, use_container_width=True)
+        st.plotly_chart(fig_net, width="stretch")
         st.caption("🔴 CCHEN   🔵 Instituciones colaboradoras")
 
         # Top 15 instituciones por conexiones
         _deg_df = pd.DataFrame(sorted(G_sub.degree(), key=lambda x: -x[1])[:15],
                                columns=["Institución", "Conexiones"])
-        st.dataframe(_deg_df, use_container_width=True, hide_index=True, height=280)
+        st.dataframe(_deg_df, width="stretch", hide_index=True, height=280)
 
     except ImportError:
         st.warning("Instala networkx: `pip install networkx`")
@@ -3285,7 +3285,7 @@ elif False and seccion == "Redes y Colaboración":
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             plot_bgcolor="#F8FAFC",
         )
-        st.plotly_chart(fig_au_net, use_container_width=True)
+        st.plotly_chart(fig_au_net, width="stretch")
         st.caption("🔴 Autores con afiliación CCHEN   🔵 Colaboradores externos   Tamaño = nº de papers")
 
         # Tabla top 20 autores más conectados
@@ -3298,7 +3298,7 @@ elif False and seccion == "Redes y Colaboración":
             }
             for n, _ in sorted(G_au.degree(), key=lambda x: -x[1])[:20]
         ])
-        st.dataframe(_au_top_df, use_container_width=True, hide_index=True, height=320)
+        st.dataframe(_au_top_df, width="stretch", hide_index=True, height=320)
 
     except ImportError:
         st.warning("Instala networkx: `pip install networkx`")
@@ -3333,7 +3333,7 @@ elif False and seccion == "Redes y Colaboración":
             margin=dict(t=10, b=30, l=40, r=20), height=280,
             plot_bgcolor="#F8FAFC",
         )
-        st.plotly_chart(fig_h, use_container_width=True)
+        st.plotly_chart(fig_h, width="stretch")
 
     with h_col2:
         st.markdown(f"""
@@ -3368,7 +3368,7 @@ elif False and seccion == "Redes y Colaboración":
     fig_inst.update_traces(textposition="outside")
     fig_inst.update_layout(yaxis_title="", margin=dict(t=0, b=0, l=10, r=30),
                            plot_bgcolor="#F8FAFC")
-    st.plotly_chart(fig_inst, use_container_width=True)
+    st.plotly_chart(fig_inst, width="stretch")
 
     st.download_button(
         "Exportar instituciones colaboradoras CSV",
@@ -3447,7 +3447,7 @@ elif False and seccion == "Vigilancia Tecnológica":
                     _last_doi = _last.get("doi")
                     if pd.notna(_last_doi) and _last_doi:
                         st.link_button("Ver DOI →", f"https://doi.org/{_last_doi}",
-                                       use_container_width=True)
+                                       width="stretch")
                     _last_cites = _last.get("cited_by_count", 0)
                     st.metric("Citaciones", int(_last_cites) if pd.notna(_last_cites) else 0)
                     _last_oa = _last.get("is_oa", False)
@@ -3507,7 +3507,7 @@ elif False and seccion == "Vigilancia Tecnológica":
                         f"Últimos 30 días disponibles en la base: "
                         f"{_start_date.strftime('%d %b %Y')} → {_end_date.strftime('%d %b %Y')}"
                     )
-                    st.plotly_chart(fig_last, use_container_width=True)
+                    st.plotly_chart(fig_last, width="stretch")
 
                 with _cal_tabs[1]:
                     _year_sel = st.selectbox(
@@ -3541,7 +3541,7 @@ elif False and seccion == "Vigilancia Tecnológica":
                         yaxis_title="Publicaciones",
                         xaxis_title="",
                     )
-                    st.plotly_chart(fig_year, use_container_width=True)
+                    st.plotly_chart(fig_year, width="stretch")
 
                 with _cal_tabs[2]:
                     _z = []
@@ -3576,7 +3576,7 @@ elif False and seccion == "Vigilancia Tecnológica":
                         yaxis=dict(autorange="reversed", tickfont=dict(size=11)),
                         margin=dict(t=50, b=10, l=60, r=10),
                     )
-                    st.plotly_chart(fig_cal, use_container_width=True)
+                    st.plotly_chart(fig_cal, width="stretch")
 
             # Nota: papers sin fecha exacta
             _no_date = _pub["publication_date"].isna().sum()
@@ -3702,7 +3702,7 @@ elif False and seccion == "Vigilancia Tecnológica":
                 fig_tc.update_traces(textposition="outside")
                 fig_tc.update_layout(yaxis_title="", showlegend=False,
                                      plot_bgcolor="#F8FAFC", margin=dict(t=5,b=5,l=5,r=30))
-                st.plotly_chart(fig_tc, use_container_width=True)
+                st.plotly_chart(fig_tc, width="stretch")
 
             with _gc2:
                 sec("Principales medios")
@@ -3713,7 +3713,7 @@ elif False and seccion == "Vigilancia Tecnológica":
                 fig_sc.update_traces(textposition="outside")
                 fig_sc.update_layout(yaxis_title="", plot_bgcolor="#F8FAFC",
                                      margin=dict(t=5,b=5,l=5,r=30))
-                st.plotly_chart(fig_sc, use_container_width=True)
+                st.plotly_chart(fig_sc, width="stretch")
 
             # Línea de tiempo mensual
             _news_ts = _news.copy()
@@ -3727,7 +3727,7 @@ elif False and seccion == "Vigilancia Tecnológica":
                                 labels={"ym": "", "n": "Noticias"},
                                 height=200)
                 fig_ts.update_layout(plot_bgcolor="#F8FAFC", margin=dict(t=5,b=5))
-                st.plotly_chart(fig_ts, use_container_width=True)
+                st.plotly_chart(fig_ts, width="stretch")
 
             st.divider()
 
@@ -3754,7 +3754,7 @@ elif False and seccion == "Vigilancia Tecnológica":
                     if _nsnip:
                         st.write(_nsnip[:350])
                     if _nlink:
-                        st.link_button("Leer noticia completa →", _nlink, use_container_width=False)
+                        st.link_button("Leer noticia completa →", _nlink, width="content")
 
             st.divider()
             st.download_button("Exportar noticias CSV", make_csv(_news),
@@ -3779,7 +3779,7 @@ elif False and seccion == "Vigilancia Tecnológica":
         with _bc2:
             _bol_npub = st.slider("N° publicaciones CCHEN recientes", 3, 10, 5)
 
-        if st.button("⚡ Generar boletín ahora", type="primary", use_container_width=True):
+        if st.button("⚡ Generar boletín ahora", type="primary", width="stretch"):
             with st.spinner("Generando boletín..."):
                 import subprocess, sys
                 _bol_script = BASE.parent / "Scripts" / "generar_boletin.py"
@@ -3820,7 +3820,7 @@ elif False and seccion == "Vigilancia Tecnológica":
                     file_name=_bf.name,
                     mime="text/html",
                     key=f"dl_{_bf.stem}",
-                    use_container_width=True,
+                    width="stretch",
                 )
 
             # Preview del boletín más reciente
@@ -3862,7 +3862,7 @@ elif False and seccion == "Vigilancia Tecnológica":
                 fig_area.update_traces(textposition="outside")
                 fig_area.update_layout(yaxis_title="", plot_bgcolor="#F8FAFC",
                                        margin=dict(t=5,b=5,l=5,r=30))
-                st.plotly_chart(fig_area, use_container_width=True)
+                st.plotly_chart(fig_area, width="stretch")
 
             with vc2:
                 sec("Relevancia para CCHEN")
@@ -3874,7 +3874,7 @@ elif False and seccion == "Vigilancia Tecnológica":
                                  color_discrete_map=_colors_rel, height=280)
                 fig_rel.update_traces(textposition="inside", textinfo="percent+label")
                 fig_rel.update_layout(margin=dict(t=5,b=5))
-                st.plotly_chart(fig_rel, use_container_width=True)
+                st.plotly_chart(fig_rel, width="stretch")
 
             st.divider()
             sec("Papers de alta relevancia")
@@ -3929,7 +3929,7 @@ elif False and seccion == "Vigilancia Tecnológica":
                     fig_ia.update_traces(textposition="outside")
                     fig_ia.update_layout(yaxis_title="", plot_bgcolor="#F8FAFC",
                                          margin=dict(t=5, b=5, l=5, r=30))
-                    st.plotly_chart(fig_ia, use_container_width=True)
+                    st.plotly_chart(fig_ia, width="stretch")
 
             with _ic2:
                 if "relevance_flag" in _inis_df.columns:
@@ -3942,7 +3942,7 @@ elif False and seccion == "Vigilancia Tecnológica":
                                     color_discrete_map=_colors_rel_inis, height=320)
                     fig_ir.update_traces(textposition="inside", textinfo="percent+label")
                     fig_ir.update_layout(margin=dict(t=5, b=5))
-                    st.plotly_chart(fig_ir, use_container_width=True)
+                    st.plotly_chart(fig_ir, width="stretch")
 
             st.divider()
             sec("Documentos INIS de alta relevancia para CCHEN")
@@ -4003,7 +4003,7 @@ elif False and seccion == "Vigilancia Tecnológica":
             fig_bt.update_traces(textposition="outside")
             fig_bt.update_layout(yaxis_title="", plot_bgcolor="#F8FAFC",
                                  margin=dict(t=5,b=5,l=5,r=30))
-            st.plotly_chart(fig_bt, use_container_width=True)
+            st.plotly_chart(fig_bt, width="stretch")
 
             with st.expander("Ver términos representativos por tema"):
                 _topic_terms = _bt_real.copy()
@@ -4014,7 +4014,7 @@ elif False and seccion == "Vigilancia Tecnológica":
                 _topic_terms["Términos representativos"] = _topic_terms["Representation"].apply(_topic_terms_preview)
                 st.dataframe(
                     _topic_terms[["Tema", "Count", "Términos representativos"]].rename(columns={"Count": "Papers"}),
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                     height=320,
                 )
@@ -4042,7 +4042,7 @@ elif False and seccion == "Vigilancia Tecnológica":
                 _tema_papers = _bt_docs[_bt_docs["topic_id"] == _tema_sel][["title","year","abstract_best"]].rename(
                     columns={"abstract_best":"abstract"}
                 ) if "abstract_best" in _bt_docs.columns else _bt_docs[_bt_docs["topic_id"] == _tema_sel][["title","year"]]
-                st.dataframe(_tema_papers, use_container_width=True, hide_index=True, height=300)
+                st.dataframe(_tema_papers, width="stretch", hide_index=True, height=300)
 
 
 
@@ -4096,7 +4096,7 @@ elif False and seccion == "Financiamiento I+D":
                         mode="lines+markers", marker_color=RED, yaxis="y2")
         fig.update_layout(yaxis=dict(title="N° Proyectos"), yaxis2=dict(title="MM CLP", overlaying="y", side="right"),
                           legend=dict(orientation="h", y=1.1), margin=dict(t=10,b=30,l=40,r=60), height=320)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         sec("Distribución por programa")
@@ -4106,7 +4106,7 @@ elif False and seccion == "Financiamiento I+D":
                       color_discrete_sequence=PALETTE, height=320)
         fig2.update_traces(textposition="inside", textinfo="percent+label")
         fig2.update_layout(margin=dict(t=10,b=10))
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
     col3, col4 = st.columns(2)
 
@@ -4118,7 +4118,7 @@ elif False and seccion == "Financiamiento I+D":
         fig3 = px.bar(mi, x="Monto_MM", y="Instrumento", orientation="h",
                       color_discrete_sequence=[BLUE], text=mi["Monto_MM"].round(1), height=280)
         fig3.update_layout(showlegend=False, margin=dict(t=10,b=10), xaxis_title="MM CLP")
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, width="stretch")
 
     with col4:
         sec("Proyectos por instrumento")
@@ -4127,7 +4127,7 @@ elif False and seccion == "Financiamiento I+D":
         fig4 = px.bar(pi.sort_values("N"), x="N", y="Instrumento", orientation="h",
                       color_discrete_sequence=[RED], text="N", height=280)
         fig4.update_layout(showlegend=False, margin=dict(t=10,b=10))
-        st.plotly_chart(fig4, use_container_width=True)
+        st.plotly_chart(fig4, width="stretch")
 
     sec(f"Tabla de proyectos — {len(df_a)} resultados")
     show_cols = ["anio_concurso","titulo","programa_norm","instrumento_norm","autor","estado_full","monto_programa_num"]
@@ -4136,7 +4136,7 @@ elif False and seccion == "Financiamiento I+D":
         "instrumento_norm":"Instrumento","autor":"Investigador",
         "estado_full":"Estado","monto_programa_num":"Monto CLP"
     }).sort_values("Año", ascending=False)
-    st.dataframe(df_a_s, use_container_width=True, height=400,
+    st.dataframe(df_a_s, width="stretch", height=400,
                  column_config={"Monto CLP": st.column_config.NumberColumn(format="$ %,.0f")})
     st.download_button("Exportar proyectos CSV", make_csv(df_a_s),
                        "proyectos_anid_cchen.csv", "text/csv")
@@ -4161,7 +4161,7 @@ elif False and seccion == "Financiamiento I+D":
             title="Financiadores externos en publicaciones CCHEN",
         )
         fig_funders.update_layout(showlegend=False, height=450, margin=dict(t=30, b=10))
-        st.plotly_chart(fig_funders, use_container_width=True)
+        st.plotly_chart(fig_funders, width="stretch")
 
         n_with_funder = (
             crossref["crossref_funders"].notna() &
@@ -4178,7 +4178,7 @@ elif False and seccion == "Financiamiento I+D":
     if not iaea_tc.empty:
         sec("Cooperación Técnica IAEA (Chile)")
         st.dataframe(
-            iaea_tc, use_container_width=True,
+            iaea_tc, width="stretch",
             column_config={
                 "proyecto_tc": st.column_config.TextColumn("Código TC"),
                 "fuente":      st.column_config.TextColumn("Fuente"),
@@ -4188,7 +4188,7 @@ elif False and seccion == "Financiamiento I+D":
     # ── Financiamiento adicional ──────────────────────────────────────────────
     if not funding_plus.empty and len(funding_plus) > 0:
         sec("Financiamiento complementario (CORFO, FIC, IAEA)")
-        st.dataframe(funding_plus, use_container_width=True, height=300)
+        st.dataframe(funding_plus, width="stretch", height=300)
 
     # ── Convenios y Acuerdos Institucionales ──────────────────────────────────
     _has_conv = not convenios.empty
@@ -4215,7 +4215,7 @@ elif False and seccion == "Financiamiento I+D":
                                            "DURACIÓN", "FECHA RESOLUCIÓN"] if c in convenios.columns]
                 if not _conv_cols:
                     _conv_cols = convenios.columns.tolist()
-                st.dataframe(convenios[_conv_cols], use_container_width=True, height=320)
+                st.dataframe(convenios[_conv_cols], width="stretch", height=320)
                 st.download_button(
                     "Exportar convenios CSV", make_csv(convenios[_conv_cols]),
                     "convenios_nacionales_cchen.csv", "text/csv",
@@ -4236,7 +4236,7 @@ elif False and seccion == "Financiamiento I+D":
                                               title="Convenios nacionales por año")
                             fig_conv.update_traces(textposition="outside")
                             fig_conv.update_layout(showlegend=False, margin=dict(t=30, b=20))
-                            st.plotly_chart(fig_conv, use_container_width=True)
+                            st.plotly_chart(fig_conv, width="stretch")
                     except Exception:
                         pass
 
@@ -4248,7 +4248,7 @@ elif False and seccion == "Financiamiento I+D":
                                            "DESCRIPCIÓN", "FECHA"] if c in acuerdos.columns]
                 if not _acue_cols:
                     _acue_cols = acuerdos.columns.tolist()
-                st.dataframe(acuerdos[_acue_cols], use_container_width=True, height=320)
+                st.dataframe(acuerdos[_acue_cols], width="stretch", height=320)
                 st.download_button(
                     "Exportar acuerdos CSV", make_csv(acuerdos[_acue_cols]),
                     "acuerdos_internacionales_cchen.csv", "text/csv",
@@ -4268,7 +4268,7 @@ elif False and seccion == "Financiamiento I+D":
                             title="Acuerdos internacionales por país/región",
                         )
                         fig_pais.update_layout(showlegend=False, margin=dict(t=30, b=10))
-                        st.plotly_chart(fig_pais, use_container_width=True)
+                        st.plotly_chart(fig_pais, width="stretch")
                     except Exception:
                         pass
 
@@ -4434,7 +4434,7 @@ elif False and seccion == "Financiamiento I+D":
             })
             st.dataframe(
                 _conv_table,
-                use_container_width=True,
+                width="stretch",
                 height=360,
                 hide_index=True,
                 column_config={
@@ -4520,7 +4520,7 @@ elif False and seccion == "Convocatorias y Matching":
                     "oportunidades_destacadas": "Oportunidades destacadas",
                     "unidad_responsable": "Unidad responsable",
                 }),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=320,
             )
@@ -4572,7 +4572,7 @@ elif False and seccion == "Convocatorias y Matching":
                     "recommended_action": "Acción sugerida",
                     "url": "Ficha oficial",
                 }),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=320,
                 column_config={"Ficha oficial": st.column_config.LinkColumn("Ficha oficial")},
@@ -4614,7 +4614,7 @@ elif False and seccion == "Convocatorias y Matching":
                     "requiere_capacidad_instrumental": "Req. capacidad instrumental",
                     "notes": "Notas",
                 }),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=250,
             )
@@ -4698,7 +4698,7 @@ elif False and seccion == "Transferencia y Portafolio":
                 "potencial_transferencia": "Potencial de transferencia",
                 "proximo_paso": "Próximo paso",
             }),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             height=360,
         )
@@ -4730,7 +4730,7 @@ elif False and seccion == "Transferencia y Portafolio":
             height=340,
         )
         fig_sig.update_layout(showlegend=False, margin=dict(t=10, b=10))
-        st.plotly_chart(fig_sig, use_container_width=True)
+        st.plotly_chart(fig_sig, width="stretch")
 
     with _pt2:
         sec("Áreas científicas que alimentan el portafolio")
@@ -4746,7 +4746,7 @@ elif False and seccion == "Transferencia y Portafolio":
                 height=340,
             )
             fig_area.update_layout(showlegend=False, margin=dict(t=10, b=10))
-            st.plotly_chart(fig_area, use_container_width=True)
+            st.plotly_chart(fig_area, width="stretch")
         else:
             st.info("No hay áreas enriquecidas disponibles para este resumen.")
 
@@ -4788,7 +4788,7 @@ elif False and seccion == "Transferencia y Portafolio":
                 height=260,
             )
             fig_dc.update_layout(showlegend=False, margin=dict(t=10, b=10))
-            st.plotly_chart(fig_dc, use_container_width=True)
+            st.plotly_chart(fig_dc, width="stretch")
         with _dc2:
             _dc_show = _dc[[
                 "publication_year", "resource_type_general", "publisher",
@@ -4803,7 +4803,7 @@ elif False and seccion == "Transferencia y Portafolio":
             }).sort_values(["Año", "Tipo"], ascending=[False, True])
             st.dataframe(
                 _dc_show,
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=280,
                 column_config={"DOI": st.column_config.LinkColumn("DOI", display_text="abrir")},
@@ -4857,7 +4857,7 @@ elif False and seccion == "Transferencia y Portafolio":
                 height=260,
             )
             fig_oa_type.update_layout(showlegend=False, margin=dict(t=10, b=10))
-            st.plotly_chart(fig_oa_type, use_container_width=True)
+            st.plotly_chart(fig_oa_type, width="stretch")
         with _oa2:
             fig_oa_scope = px.bar(
                 _oa_scope.sort_values("N"),
@@ -4869,7 +4869,7 @@ elif False and seccion == "Transferencia y Portafolio":
                 height=260,
             )
             fig_oa_scope.update_layout(showlegend=False, margin=dict(t=10, b=10))
-            st.plotly_chart(fig_oa_scope, use_container_width=True)
+            st.plotly_chart(fig_oa_scope, width="stretch")
 
         _oa_show = _oa[[
             c for c in [
@@ -4887,7 +4887,7 @@ elif False and seccion == "Transferencia y Portafolio":
         }).sort_values(["Fecha", "N investigadores"], ascending=[False, False])
         st.dataframe(
             _oa_show.head(40),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             height=300,
         )
@@ -4955,7 +4955,7 @@ elif False and seccion == "Modelo y Gobernanza":
                 "estado_modelado": "Estado modelado",
                 "registros_observados": "Registros observados",
             }),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             height=340,
         )
@@ -4993,7 +4993,7 @@ elif False and seccion == "Modelo y Gobernanza":
                     "institution_name": "Institución",
                     "cchen_publications_count": "Papers CCHEN",
                 }),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=280,
             )
@@ -5014,7 +5014,7 @@ elif False and seccion == "Modelo y Gobernanza":
                     "estado": "Estado",
                     "strategic_profile_id": "Perfil estratégico",
                 }),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=280,
             )
@@ -5033,7 +5033,7 @@ elif False and seccion == "Modelo y Gobernanza":
                     "owner_unit": "Unidad responsable",
                     "relevancia_cchen": "Relevancia",
                 }),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=280,
             )
@@ -5051,7 +5051,7 @@ elif False and seccion == "Modelo y Gobernanza":
                     "source_evidence": "Evidencia",
                     "confidence": "Confianza",
                 }),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=280,
             )
@@ -5069,7 +5069,7 @@ elif False and seccion == "Modelo y Gobernanza":
                 "fuente_evidencia": "Fuente de evidencia",
                 "prioridad": "Prioridad",
             }),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             height=320,
         )
@@ -5097,7 +5097,7 @@ elif False and seccion == "Modelo y Gobernanza":
             "Impacto": "Hace que el asistente responda con más precisión y menos prompt manual.",
         },
     ])
-    st.dataframe(_gov, use_container_width=True, hide_index=True, height=220)
+    st.dataframe(_gov, width="stretch", hide_index=True, height=220)
 
     _g1, _g2, _g3, _g4 = st.columns(4)
     with _g1:
@@ -5190,7 +5190,7 @@ elif False and seccion == "Formación de Capacidades":
         fig1 = px.bar(tc.sort_values("N"), x="N", y="Tipo", orientation="h",
                       color="Tipo", color_discrete_sequence=PALETTE, text="N", height=300)
         fig1.update_layout(showlegend=False, margin=dict(t=10,b=10))
-        st.plotly_chart(fig1, use_container_width=True)
+        st.plotly_chart(fig1, width="stretch")
 
     with col2:
         sec("Evolución anual por modalidad")
@@ -5199,7 +5199,7 @@ elif False and seccion == "Formación de Capacidades":
                       color_discrete_sequence=PALETTE, barmode="stack", height=300,
                       labels={"anio_hoja":"Año","N":"Personas","tipo_norm":"Modalidad"})
         fig2.update_layout(margin=dict(t=10,b=30), legend=dict(orientation="h", y=1.1))
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
     col3, col4 = st.columns(2)
 
@@ -5210,7 +5210,7 @@ elif False and seccion == "Formación de Capacidades":
         fig3 = px.bar(cc.sort_values("N"), x="N", y="Centro", orientation="h",
                       color_discrete_sequence=[BLUE], text="N", height=340)
         fig3.update_layout(showlegend=False, margin=dict(t=10,b=10))
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, width="stretch")
 
     with col4:
         sec("Top 10 universidades de origen")
@@ -5219,7 +5219,7 @@ elif False and seccion == "Formación de Capacidades":
         fig4 = px.bar(uc.sort_values("N"), x="N", y="Universidad", orientation="h",
                       color_discrete_sequence=[RED], text="N", height=340)
         fig4.update_layout(showlegend=False, margin=dict(t=10,b=10))
-        st.plotly_chart(fig4, use_container_width=True)
+        st.plotly_chart(fig4, width="stretch")
 
     # Semáforo documental (datos precomputados)
     if not ch_cumpl.empty:
@@ -5260,7 +5260,7 @@ elif False and seccion == "Formación de Capacidades":
                 marker=dict(color=[BLUE, GREEN, AMBER, RED]),
             ))
             fig5.update_layout(margin=dict(t=10,b=10), height=280)
-            st.plotly_chart(fig5, use_container_width=True)
+            st.plotly_chart(fig5, width="stretch")
 
     with col6:
         sec("Transiciones observadas entre modalidades")
@@ -5270,7 +5270,7 @@ elif False and seccion == "Formación de Capacidades":
                           orientation="h", color_discrete_sequence=[PURPLE], text="transiciones",
                           height=280)
             fig6.update_layout(showlegend=False, margin=dict(t=10,b=10), xaxis_title="N° casos")
-            st.plotly_chart(fig6, use_container_width=True)
+            st.plotly_chart(fig6, width="stretch")
 
     # Concentración (HHI)
     if adv_c:
@@ -5303,7 +5303,7 @@ elif False and seccion == "Formación de Capacidades":
             "anio_hoja":"Año","nombre":"Nombre","tipo_norm":"Modalidad","centro_norm":"Centro",
             "universidad":"Universidad","duracion_dias":"Días","tutor":"Tutor/a","ad_honorem":"Ad honorem"
         }).sort_values("Año", ascending=False)
-        st.dataframe(df_cs, use_container_width=True, height=420,
+        st.dataframe(df_cs, width="stretch", height=420,
                      column_config={"Ad honorem": st.column_config.CheckboxColumn("Ad honorem")})
         st.download_button("Exportar registro CSV", make_csv(df_cs),
                            "capital_humano_cchen.csv", "text/csv")
@@ -5321,7 +5321,7 @@ elif False and seccion == "Formación de Capacidades":
             })
             .sort_values(["Año", "Registros"], ascending=[False, False])
         )
-        st.dataframe(df_cs, use_container_width=True, height=420)
+        st.dataframe(df_cs, width="stretch", height=420)
         st.download_button(
             "Exportar resumen CSV",
             make_csv(df_cs),
@@ -5708,27 +5708,27 @@ elif False and seccion == "Asistente I+D":
             unsafe_allow_html=True
         )
     with _cl_col:
-        if st.button("Limpiar chat", use_container_width=True):
+        if st.button("Limpiar chat", width="stretch"):
             st.session_state.messages = []
             st.rerun()
     q1,q2,q3,q4 = st.columns(4)
     prompt_rapido = ""
-    if q1.button("Producción científica", use_container_width=True):
+    if q1.button("Producción científica", width="stretch"):
         prompt_rapido = "Genera un informe técnico ejecutivo sobre la producción científica de CCHEN. Incluye: evolución temporal, calidad (cuartiles), áreas temáticas, colaboración internacional y comparación con el promedio latinoamericano en nuclear."
-    if q2.button("Financiamiento ANID", use_container_width=True):
+    if q2.button("Financiamiento ANID", width="stretch"):
         prompt_rapido = "Analiza el portafolio de financiamiento ANID de CCHEN. ¿Cuál es la estrategia de captación de fondos? ¿Qué oportunidades de mejora identificas para diversificar las fuentes?"
-    if q3.button("Capital humano I+D", use_container_width=True):
+    if q3.button("Capital humano I+D", width="stretch"):
         prompt_rapido = "Elabora un diagnóstico del capital humano I+D de CCHEN (2022–2025). Incluye composición por modalidad, concentración operativa (HHI), riesgos identificados y recomendaciones para fortalecer la formación."
-    if q4.button("Resumen ejecutivo", use_container_width=True):
+    if q4.button("Resumen ejecutivo", width="stretch"):
         prompt_rapido = "Redacta un resumen ejecutivo de 1 página del Observatorio Tecnológico Virtual de CCHEN para presentar a directivos. Incluye indicadores clave, estado actual y principales hallazgos."
     q5, q6, q7, q8 = st.columns(4)
-    if q5.button("Perfil de investigadores", use_container_width=True):
+    if q5.button("Perfil de investigadores", width="stretch"):
         prompt_rapido = "Describe el perfil de los investigadores más productivos de CCHEN según los datos del observatorio. ¿Quiénes son los líderes en producción científica? ¿En qué áreas temáticas se concentran? ¿Qué instituciones colaboran más frecuentemente?"
-    if q6.button("Colaboración internacional", use_container_width=True):
+    if q6.button("Colaboración internacional", width="stretch"):
         prompt_rapido = "Analiza la red de colaboración internacional de CCHEN. ¿Con qué instituciones y países colabora más? ¿Qué oportunidades estratégicas de colaboración identifica para fortalecer la posición internacional de CCHEN en energía nuclear?"
-    if q7.button("Convocatorias + matching", use_container_width=True):
+    if q7.button("Convocatorias + matching", width="stretch"):
         prompt_rapido = "Usando el matching institucional formal, identifica las oportunidades abiertas y próximas más relevantes para CCHEN. Organízalas por perfil, incluye score_total, eligibility_status, readiness_status, owner_unit y recommended_action, y explica por qué cada una calza o no con la evidencia interna."
-    if q8.button("Transferencia / portafolio", use_container_width=True):
+    if q8.button("Transferencia / portafolio", width="stretch"):
         prompt_rapido = "Con base en el portafolio tecnológico semilla, los proyectos ANID, publicaciones, convenios y financiamiento complementario, elabora un diagnóstico de transferencia para CCHEN. Distingue claramente entre capacidades observables, activos por validar y vacíos críticos como patentes o TRL."
 
     # ── Historial de chat ──
@@ -5866,7 +5866,7 @@ elif False and seccion == "Asistente I+D":
                     data=_pdf_bytes,
                     file_name=f"informe_cchen_{_fecha}.pdf",
                     mime="application/pdf",
-                    use_container_width=False,
+                    width="content",
                 )
             else:
                 st.caption("⚠️ No se pudo generar el PDF (reportlab no disponible).")

@@ -97,7 +97,7 @@ def render(ctx: dict) -> None:
             yaxis=dict(title="N° Papers"), yaxis2=dict(title="Citas", overlaying="y", side="right"),
             legend=dict(orientation="h", y=1.08), margin=dict(t=10,b=30,l=40,r=60), height=310,
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         sec("Calidad de publicaciones: cuartiles SJR")
@@ -111,7 +111,7 @@ def render(ctx: dict) -> None:
                       height=310)
         fig2.update_traces(textposition="outside")
         fig2.update_layout(showlegend=False, margin=dict(t=10,b=30))
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
     col3, col4 = st.columns(2)
 
@@ -129,7 +129,7 @@ def render(ctx: dict) -> None:
             yaxis=dict(title="N° Proyectos"), yaxis2=dict(title="MM CLP", overlaying="y", side="right"),
             legend=dict(orientation="h", y=1.08), margin=dict(t=10,b=30,l=40,r=60), height=310,
         )
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, width="stretch")
 
     with col4:
         sec("Formación capital humano por tipo (2022–2025)")
@@ -138,7 +138,7 @@ def render(ctx: dict) -> None:
         fig4 = px.bar(tc.sort_values("N"), x="N", y="Tipo", orientation="h",
                       color="Tipo", color_discrete_sequence=PALETTE, text="N", height=310)
         fig4.update_layout(showlegend=False, margin=dict(t=10,b=10))
-        st.plotly_chart(fig4, use_container_width=True)
+        st.plotly_chart(fig4, width="stretch")
 
     # Alerta riesgo documental
     if ch_adv:

@@ -84,7 +84,7 @@ def render(ctx: dict) -> None:
                     "oportunidades_destacadas": "Oportunidades destacadas",
                     "unidad_responsable": "Unidad responsable",
                 }),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=320,
             )
@@ -152,7 +152,7 @@ def render(ctx: dict) -> None:
                     "recommended_action": "Acción sugerida",
                     "url": "Ficha oficial",
                 }),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=320,
                 column_config={"Ficha oficial": st.column_config.LinkColumn("Ficha oficial")},
@@ -194,7 +194,7 @@ def render(ctx: dict) -> None:
                     "requiere_capacidad_instrumental": "Req. capacidad instrumental",
                     "notes": "Notas",
                 }),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=250,
             )

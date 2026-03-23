@@ -194,7 +194,7 @@ def _render_interactive_network(cg: pd.DataFrame, cp: pd.DataFrame, pub: pd.Data
             margin=dict(l=10, r=10, t=10, b=10),
         ),
     )
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     st.caption(
         f"**{len(cchen_ids)}** papers CCHEN (azul) · "
@@ -219,7 +219,7 @@ def _render_from_pub(pub: pd.DataFrame, pub_enr: pd.DataFrame) -> None:
             color_discrete_sequence=[BLUE],
         )
         fig.update_layout(height=300, margin=dict(t=40,b=20,l=10,r=10))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         top10 = pub.nlargest(10, "cited_by_count")[["title","year","cited_by_count"]].copy()
@@ -233,7 +233,7 @@ def _render_from_pub(pub: pd.DataFrame, pub_enr: pd.DataFrame) -> None:
             color_discrete_sequence=[RED],
         )
         fig2.update_layout(height=300, margin=dict(t=40,b=20,l=10,r=10))
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
 
 def _render_citation_distribution(cg: pd.DataFrame) -> None:
@@ -252,14 +252,14 @@ def _render_citation_distribution(cg: pd.DataFrame) -> None:
             log_y=True,
         )
         fig.update_layout(height=350, margin=dict(t=40,b=20,l=10,r=10))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     with col2:
         # Percentiles
         desc = cg["cited_by_count"].describe(percentiles=[.5,.75,.9,.95,.99])
         st.markdown("**Estadísticas de citas**")
         st.dataframe(
             desc.rename("valor").reset_index().rename(columns={"index": "percentil"}),
-            hide_index=True, use_container_width=True, height=220,
+            hide_index=True, width="stretch", height=220,
         )
 
 
@@ -287,7 +287,7 @@ def _render_citing_institutions(cp: pd.DataFrame) -> None:
         color_discrete_sequence=[GREEN],
     )
     fig.update_layout(height=500, margin=dict(t=40,b=20,l=10,r=10))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     st.download_button(
         "Descargar CSV instituciones citantes",
@@ -313,7 +313,7 @@ def _render_cites_by_year(cg: pd.DataFrame, cp: pd.DataFrame) -> None:
         color_discrete_sequence=[AMBER],
     )
     fig.update_layout(height=350, margin=dict(t=40,b=20,l=10,r=10))
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     if not cp.empty and "citing_year" in cp.columns:
         st.markdown("#### Año de los papers que citan a CCHEN")
@@ -330,7 +330,7 @@ def _render_cites_by_year(cg: pd.DataFrame, cp: pd.DataFrame) -> None:
             color_discrete_sequence=[PURPLE],
         )
         fig2.update_layout(height=300, margin=dict(t=40,b=20,l=10,r=10))
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
 
 def _render_top_cited(cg: pd.DataFrame, pub: pd.DataFrame) -> None:
@@ -362,7 +362,7 @@ def _render_top_cited(cg: pd.DataFrame, pub: pd.DataFrame) -> None:
             "referenced_works_count": "Referencias",
         }),
         hide_index=True,
-        use_container_width=True,
+        width="stretch",
         height=450,
     )
     st.download_button(

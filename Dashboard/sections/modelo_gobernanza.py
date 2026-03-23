@@ -80,7 +80,7 @@ def render(ctx: dict) -> None:
                 "estado_modelado": "Estado modelado",
                 "registros_observados": "Registros observados",
             }),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             height=340,
         )
@@ -118,7 +118,7 @@ def render(ctx: dict) -> None:
                     "institution_name": "Institución",
                     "cchen_publications_count": "Papers CCHEN",
                 }),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=280,
             )
@@ -139,7 +139,7 @@ def render(ctx: dict) -> None:
                     "estado": "Estado",
                     "strategic_profile_id": "Perfil estratégico",
                 }),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=280,
             )
@@ -158,7 +158,7 @@ def render(ctx: dict) -> None:
                     "owner_unit": "Unidad responsable",
                     "relevancia_cchen": "Relevancia",
                 }),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=280,
             )
@@ -176,7 +176,7 @@ def render(ctx: dict) -> None:
                     "source_evidence": "Evidencia",
                     "confidence": "Confianza",
                 }),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=280,
             )
@@ -194,7 +194,7 @@ def render(ctx: dict) -> None:
                 "fuente_evidencia": "Fuente de evidencia",
                 "prioridad": "Prioridad",
             }),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             height=320,
         )
@@ -222,7 +222,7 @@ def render(ctx: dict) -> None:
             "Impacto": "Hace que el asistente responda con más precisión y menos prompt manual.",
         },
     ])
-    st.dataframe(_gov, use_container_width=True, hide_index=True, height=220)
+    st.dataframe(_gov, width="stretch", hide_index=True, height=220)
 
     _g1, _g2, _g3, _g4 = st.columns(4)
     with _g1:

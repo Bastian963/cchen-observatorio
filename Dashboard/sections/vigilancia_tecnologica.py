@@ -99,7 +99,7 @@ def render(ctx: dict) -> None:
                     _last_doi = _last.get("doi")
                     if pd.notna(_last_doi) and _last_doi:
                         st.link_button("Ver DOI →", f"https://doi.org/{_last_doi}",
-                                       use_container_width=True)
+                                       width="stretch")
                     _last_cites = _last.get("cited_by_count", 0)
                     st.metric("Citaciones", int(_last_cites) if pd.notna(_last_cites) else 0)
                     _last_oa = _last.get("is_oa", False)
@@ -159,7 +159,7 @@ def render(ctx: dict) -> None:
                         f"Últimos 30 días disponibles en la base: "
                         f"{_start_date.strftime('%d %b %Y')} → {_end_date.strftime('%d %b %Y')}"
                     )
-                    st.plotly_chart(fig_last, use_container_width=True)
+                    st.plotly_chart(fig_last, width="stretch")
 
                 with _cal_tabs[1]:
                     _year_sel = st.selectbox(
@@ -193,7 +193,7 @@ def render(ctx: dict) -> None:
                         yaxis_title="Publicaciones",
                         xaxis_title="",
                     )
-                    st.plotly_chart(fig_year, use_container_width=True)
+                    st.plotly_chart(fig_year, width="stretch")
 
                 with _cal_tabs[2]:
                     _z = []
@@ -228,7 +228,7 @@ def render(ctx: dict) -> None:
                         yaxis=dict(autorange="reversed", tickfont=dict(size=11)),
                         margin=dict(t=50, b=10, l=60, r=10),
                     )
-                    st.plotly_chart(fig_cal, use_container_width=True)
+                    st.plotly_chart(fig_cal, width="stretch")
 
             # Nota: papers sin fecha exacta
             _no_date = _pub["publication_date"].isna().sum()
@@ -353,7 +353,7 @@ def render(ctx: dict) -> None:
                 fig_tc.update_traces(textposition="outside")
                 fig_tc.update_layout(yaxis_title="", showlegend=False,
                                      plot_bgcolor="#F8FAFC", margin=dict(t=5, b=5, l=5, r=30))
-                st.plotly_chart(fig_tc, use_container_width=True)
+                st.plotly_chart(fig_tc, width="stretch")
 
             with _gc2:
                 sec("Principales medios")
@@ -364,7 +364,7 @@ def render(ctx: dict) -> None:
                 fig_sc.update_traces(textposition="outside")
                 fig_sc.update_layout(yaxis_title="", plot_bgcolor="#F8FAFC",
                                      margin=dict(t=5, b=5, l=5, r=30))
-                st.plotly_chart(fig_sc, use_container_width=True)
+                st.plotly_chart(fig_sc, width="stretch")
 
             # Línea de tiempo mensual
             _news_ts = _news.copy()
@@ -378,7 +378,7 @@ def render(ctx: dict) -> None:
                                 labels={"ym": "", "n": "Noticias"},
                                 height=200)
                 fig_ts.update_layout(plot_bgcolor="#F8FAFC", margin=dict(t=5, b=5))
-                st.plotly_chart(fig_ts, use_container_width=True)
+                st.plotly_chart(fig_ts, width="stretch")
 
             st.divider()
 
@@ -405,7 +405,7 @@ def render(ctx: dict) -> None:
                     if _nsnip:
                         st.write(_nsnip[:350])
                     if _nlink:
-                        st.link_button("Leer noticia completa →", _nlink, use_container_width=False)
+                        st.link_button("Leer noticia completa →", _nlink, width="content")
 
             st.divider()
             st.download_button("Exportar noticias CSV", make_csv(_news),
@@ -430,7 +430,7 @@ def render(ctx: dict) -> None:
         with _bc2:
             _bol_npub = st.slider("N° publicaciones CCHEN recientes", 3, 10, 5, key="vt_bol_npub")
 
-        if st.button("⚡ Generar boletín ahora", type="primary", use_container_width=True):
+        if st.button("⚡ Generar boletín ahora", type="primary", width="stretch"):
             with st.spinner("Generando boletín..."):
                 _bol_script = BASE.parent / "Scripts" / "generar_boletin.py"
                 _now = _dtlib.datetime.now()
@@ -470,7 +470,7 @@ def render(ctx: dict) -> None:
                     file_name=_bf.name,
                     mime="text/html",
                     key=f"dl_{_bf.stem}",
-                    use_container_width=True,
+                    width="stretch",
                 )
 
             # Preview del boletín más reciente
@@ -511,7 +511,7 @@ def render(ctx: dict) -> None:
                 fig_area.update_traces(textposition="outside")
                 fig_area.update_layout(yaxis_title="", plot_bgcolor="#F8FAFC",
                                        margin=dict(t=5, b=5, l=5, r=30))
-                st.plotly_chart(fig_area, use_container_width=True)
+                st.plotly_chart(fig_area, width="stretch")
 
             with vc2:
                 sec("Relevancia para CCHEN")
@@ -523,7 +523,7 @@ def render(ctx: dict) -> None:
                                  color_discrete_map=_colors_rel, height=280)
                 fig_rel.update_traces(textposition="inside", textinfo="percent+label")
                 fig_rel.update_layout(margin=dict(t=5, b=5))
-                st.plotly_chart(fig_rel, use_container_width=True)
+                st.plotly_chart(fig_rel, width="stretch")
 
             st.divider()
             sec("Papers de alta relevancia")
@@ -579,7 +579,7 @@ def render(ctx: dict) -> None:
                     fig_ia.update_traces(textposition="outside")
                     fig_ia.update_layout(yaxis_title="", plot_bgcolor="#F8FAFC",
                                          margin=dict(t=5, b=5, l=5, r=30))
-                    st.plotly_chart(fig_ia, use_container_width=True)
+                    st.plotly_chart(fig_ia, width="stretch")
 
             with _ic2:
                 if "relevance_flag" in _inis_df.columns:
@@ -592,7 +592,7 @@ def render(ctx: dict) -> None:
                                     color_discrete_map=_colors_rel_inis, height=320)
                     fig_ir.update_traces(textposition="inside", textinfo="percent+label")
                     fig_ir.update_layout(margin=dict(t=5, b=5))
-                    st.plotly_chart(fig_ir, use_container_width=True)
+                    st.plotly_chart(fig_ir, width="stretch")
 
             st.divider()
             sec("Documentos INIS de alta relevancia para CCHEN")
@@ -650,7 +650,7 @@ def render(ctx: dict) -> None:
             fig_bt.update_traces(textposition="outside")
             fig_bt.update_layout(yaxis_title="", plot_bgcolor="#F8FAFC",
                                  margin=dict(t=5, b=5, l=5, r=30))
-            st.plotly_chart(fig_bt, use_container_width=True)
+            st.plotly_chart(fig_bt, width="stretch")
 
             with st.expander("Ver términos representativos por tema"):
                 _topic_terms = _bt_real.copy()
@@ -661,7 +661,7 @@ def render(ctx: dict) -> None:
                 _topic_terms["Términos representativos"] = _topic_terms["Representation"].apply(_topic_terms_preview)
                 st.dataframe(
                     _topic_terms[["Tema", "Count", "Términos representativos"]].rename(columns={"Count": "Papers"}),
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                     height=320,
                 )
@@ -693,4 +693,4 @@ def render(ctx: dict) -> None:
                     if "abstract_best" in _bt_docs.columns
                     else _bt_docs[_bt_docs["topic_id"] == _tema_sel][["title", "year"]]
                 )
-                st.dataframe(_tema_papers, use_container_width=True, hide_index=True, height=300)
+                st.dataframe(_tema_papers, width="stretch", hide_index=True, height=300)

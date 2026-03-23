@@ -110,7 +110,7 @@ def render(ctx: dict) -> None:
                         mode="lines+markers", marker_color=RED, yaxis="y2")
         fig.update_layout(yaxis=dict(title="Papers"), yaxis2=dict(title="Citas", overlaying="y", side="right"),
                           legend=dict(orientation="h", y=1.1), margin=dict(t=10,b=30,l=40,r=60), height=330)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         sec("Tendencia Q1-Q2 por año")
@@ -124,7 +124,7 @@ def render(ctx: dict) -> None:
                          mode="lines+markers", marker_color=GREEN, yaxis="y2")
         fig2.update_layout(yaxis=dict(title="N° papers"), yaxis2=dict(title="%", overlaying="y", side="right"),
                            legend=dict(orientation="h", y=1.1), margin=dict(t=10,b=30,l=40,r=60), height=330)
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
     col3, col4 = st.columns(2)
 
@@ -139,7 +139,7 @@ def render(ctx: dict) -> None:
                       height=280)
         fig3.update_traces(textposition="outside")
         fig3.update_layout(showlegend=False, margin=dict(t=10,b=30))
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, width="stretch")
 
     with col4:
         sec("Colaboración internacional vs. solo CCHEN")
@@ -156,7 +156,7 @@ def render(ctx: dict) -> None:
                       height=280)
         fig4.update_traces(textposition="inside", textinfo="percent+label")
         fig4.update_layout(margin=dict(t=10,b=10))
-        st.plotly_chart(fig4, use_container_width=True)
+        st.plotly_chart(fig4, width="stretch")
 
     # ── OA breakdown + H-index por investigador ──────────────────────────────
     col_oa, col_hinv = st.columns(2)
@@ -178,7 +178,7 @@ def render(ctx: dict) -> None:
             fig_oa.update_traces(textposition="inside", textinfo="percent+label")
             fig_oa.update_layout(margin=dict(t=10, b=10), showlegend=True,
                                  legend=dict(orientation="h", y=-0.15))
-            st.plotly_chart(fig_oa, use_container_width=True)
+            st.plotly_chart(fig_oa, width="stretch")
         else:
             st.info("Campo oa_status no disponible en este dataset.")
         # Unpaywall enrichment note
@@ -210,7 +210,7 @@ def render(ctx: dict) -> None:
             height=300, labels={"author_name": ""},
         )
         fig_hinv.update_layout(showlegend=False, margin=dict(t=10, b=10))
-        st.plotly_chart(fig_hinv, use_container_width=True)
+        st.plotly_chart(fig_hinv, width="stretch")
 
     # ── Mapa de colaboración internacional ────────────────────────────────────
     sec("Mapa de colaboración internacional")
@@ -240,7 +240,7 @@ def render(ctx: dict) -> None:
             marker=dict(size=8, color=RED, symbol="star"),
             hoverinfo="text", text=["CCHEN (Chile)"], showlegend=False,
         )
-        st.plotly_chart(fig_map, use_container_width=True)
+        st.plotly_chart(fig_map, width="stretch")
         _top10_paises = _country_cnt.head(10)
         st.caption(f"Top 10 países: " + " · ".join(
             f"{r.iso2} ({r.Papers})" for _, r in _top10_paises.iterrows()
@@ -257,7 +257,7 @@ def render(ctx: dict) -> None:
         fig5 = px.bar(top_j.sort_values("N"), x="N", y="Journal", orientation="h",
                       color_discrete_sequence=[BLUE], text="N", height=300)
         fig5.update_layout(showlegend=False, margin=dict(t=10,b=10))
-        st.plotly_chart(fig5, use_container_width=True)
+        st.plotly_chart(fig5, width="stretch")
 
     with col6:
         sec("Áreas temáticas (papers con cuartil)")
@@ -272,7 +272,7 @@ def render(ctx: dict) -> None:
         fig6 = px.bar(area_df.sort_values("N"), x="N", y="Área", orientation="h",
                       color_discrete_sequence=[GREEN], text="N", height=300)
         fig6.update_layout(showlegend=False, margin=dict(t=10,b=10))
-        st.plotly_chart(fig6, use_container_width=True)
+        st.plotly_chart(fig6, width="stretch")
 
     # Top investigadores CCHEN
     sec("🔬 Top investigadores CCHEN por producción (afiliación verificada OpenAlex)")
@@ -286,7 +286,7 @@ def render(ctx: dict) -> None:
                      orientation="h", color_discrete_sequence=[BLUE], text="Papers",
                      height=400, labels={"Papers": "N° papers"})
     fig_inv.update_layout(showlegend=False, margin=dict(t=10, b=10))
-    st.plotly_chart(fig_inv, use_container_width=True)
+    st.plotly_chart(fig_inv, width="stretch")
 
     # Tabla
     sec(f"Tabla de publicaciones — {len(df)} resultados")
@@ -333,7 +333,7 @@ def render(ctx: dict) -> None:
         "cited_by_count":"Citas","is_oa":"OA",
     }).sort_values("Año", ascending=False)
 
-    st.dataframe(df_show, use_container_width=True, height=400,
+    st.dataframe(df_show, width="stretch", height=400,
                  column_config={
                      "OA": st.column_config.CheckboxColumn("OA"),
                      "Enlace": st.column_config.LinkColumn("Enlace", display_text="🔗"),
@@ -393,7 +393,7 @@ def render(ctx: dict) -> None:
             margin=dict(t=10, b=10, l=10, r=10),
             plot_bgcolor="white",
         )
-        st.plotly_chart(_fig_net, use_container_width=True)
+        st.plotly_chart(_fig_net, width="stretch")
         if _edges:
             st.caption(f"{len(_edges)} pares de co-autoría detectados entre los top {_TOP_N} investigadores CCHEN. "
                        f"Grosor del enlace = frecuencia de co-autoría.")
@@ -420,7 +420,7 @@ def render(ctx: dict) -> None:
                 title="Áreas temáticas principales (OpenAlex L0-L1)",
             )
             fig_concepts.update_layout(margin=dict(t=30, b=0, l=0, r=0), height=400)
-            st.plotly_chart(fig_concepts, use_container_width=True)
+            st.plotly_chart(fig_concepts, width="stretch")
 
             sub_concepts = (
                 concepts[concepts["concept_level"] == 2]
@@ -438,7 +438,7 @@ def render(ctx: dict) -> None:
                 title="Sub-áreas más frecuentes (OpenAlex L2)",
             )
             fig_sub.update_layout(showlegend=False, height=450, margin=dict(t=30, b=0))
-            st.plotly_chart(fig_sub, use_container_width=True)
+            st.plotly_chart(fig_sub, width="stretch")
 
     # ── Investigadores CCHEN con perfil ORCID ─────────────────────────────────
     if not orcid.empty:
@@ -464,7 +464,7 @@ def render(ctx: dict) -> None:
                 _col_cfg["Perfil ORCID"] = st.column_config.LinkColumn("Perfil ORCID")
             st.dataframe(
                 _orcid_display,
-                use_container_width=True,
+                width="stretch",
                 column_config=_col_cfg,
                 height=350,
             )
@@ -497,7 +497,7 @@ def render(ctx: dict) -> None:
                                     height=250, title="Cuartiles DIAN")
                     fig_dq.update_traces(textposition="outside")
                     fig_dq.update_layout(showlegend=False, margin=dict(t=30, b=10))
-                    st.plotly_chart(fig_dq, use_container_width=True)
+                    st.plotly_chart(fig_dq, width="stretch")
                 with _dcol2:
                     if "unidad" in dian.columns:
                         _du = dian["unidad"].value_counts().reset_index()
@@ -506,7 +506,7 @@ def render(ctx: dict) -> None:
                                         orientation="h", color_discrete_sequence=[PURPLE],
                                         text="N", height=250, title="Por unidad CCHEN")
                         fig_du.update_layout(showlegend=False, margin=dict(t=30, b=10))
-                        st.plotly_chart(fig_du, use_container_width=True)
+                        st.plotly_chart(fig_du, width="stretch")
 
             _dian_cols = [c for c in ["anio","titulo","autores","revista","cuartil","unidad","doi"] if c in dian.columns]
             _dian_show = dian[_dian_cols].sort_values("anio", ascending=False) if "anio" in dian.columns else dian[_dian_cols]
@@ -519,7 +519,7 @@ def render(ctx: dict) -> None:
                 _dian_cfg = {"Enlace": st.column_config.LinkColumn("Enlace")}
             else:
                 _dian_cfg = {}
-            st.dataframe(_dian_show, use_container_width=True, height=320, column_config=_dian_cfg)
+            st.dataframe(_dian_show, width="stretch", height=320, column_config=_dian_cfg)
             st.download_button("Exportar DIAN CSV", make_csv(_dian_show),
                                "publicaciones_dian_cchen.csv", "text/csv")
 
@@ -565,7 +565,7 @@ def render(ctx: dict) -> None:
             if "Título" in _epmc_show.columns:
                 _epmc_cfg["Título"] = st.column_config.TextColumn("Título", width="large")
 
-            st.dataframe(_epmc_show, use_container_width=True, height=400,
+            st.dataframe(_epmc_show, width="stretch", height=400,
                          hide_index=True, column_config=_epmc_cfg)
             st.download_button(
                 "Exportar EuroPMC CSV",
@@ -649,7 +649,7 @@ def render(ctx: dict) -> None:
                 legend=dict(orientation="h", y=1.1),
                 margin=dict(t=10, b=10, l=0, r=0),
             )
-            st.plotly_chart(fig_inv_yr, use_container_width=True)
+            st.plotly_chart(fig_inv_yr, width="stretch")
 
         with _ip2:
             sec("Revistas más frecuentes")
@@ -661,7 +661,7 @@ def render(ctx: dict) -> None:
             fig_inv_src.update_traces(textposition="outside")
             fig_inv_src.update_layout(yaxis_title="", plot_bgcolor="#F8FAFC",
                                       margin=dict(t=5, b=5, l=5, r=30))
-            st.plotly_chart(fig_inv_src, use_container_width=True)
+            st.plotly_chart(fig_inv_src, width="stretch")
 
         sec("Principales colaboradores")
         _colabs = _auth_all[
@@ -677,7 +677,7 @@ def render(ctx: dict) -> None:
             fig_col.update_traces(textposition="outside")
             fig_col.update_layout(yaxis_title="", xaxis_title="Papers en coautoría",
                                   plot_bgcolor="#F8FAFC", margin=dict(t=5,b=5,l=5,r=30))
-            st.plotly_chart(fig_col, use_container_width=True)
+            st.plotly_chart(fig_col, width="stretch")
 
         st.divider()
         sec(f"Todos los papers de {_inv_sel} ({_inv_n})")
@@ -693,7 +693,7 @@ def render(ctx: dict) -> None:
         _inv_show["DOI"] = _inv_show["DOI"].apply(
             lambda d: f"https://doi.org/{d}" if pd.notna(d) and d else None
         )
-        st.dataframe(_inv_show, use_container_width=True, height=340,
+        st.dataframe(_inv_show, width="stretch", height=340,
                      hide_index=True, column_config=_inv_cfg)
 
     # ══════════════════════════════════════════════════════════════════════
@@ -752,7 +752,7 @@ def render(ctx: dict) -> None:
                 }
                 st.dataframe(
                     _sem_show[[title_col, "year", "score", "doi_link"]],
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                     height=min(40 + len(_sem_results) * 35, 420),
                     column_config=_sem_cfg,

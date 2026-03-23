@@ -74,7 +74,7 @@ def render(ctx: dict) -> None:
             margin=dict(t=10, b=30, l=40, r=60),
             height=320,
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
     with col2:
         sec("Distribución por programa")
@@ -84,7 +84,7 @@ def render(ctx: dict) -> None:
                       color_discrete_sequence=PALETTE, height=320)
         fig2.update_traces(textposition="inside", textinfo="percent+label")
         fig2.update_layout(margin=dict(t=10, b=10))
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
     col3, col4 = st.columns(2)
 
@@ -96,7 +96,7 @@ def render(ctx: dict) -> None:
         fig3 = px.bar(mi, x="Monto_MM", y="Instrumento", orientation="h",
                       color_discrete_sequence=[BLUE], text=mi["Monto_MM"].round(1), height=280)
         fig3.update_layout(showlegend=False, margin=dict(t=10, b=10), xaxis_title="MM CLP")
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, width="stretch")
 
     with col4:
         sec("Proyectos por instrumento")
@@ -105,7 +105,7 @@ def render(ctx: dict) -> None:
         fig4 = px.bar(pi.sort_values("N"), x="N", y="Instrumento", orientation="h",
                       color_discrete_sequence=[RED], text="N", height=280)
         fig4.update_layout(showlegend=False, margin=dict(t=10, b=10))
-        st.plotly_chart(fig4, use_container_width=True)
+        st.plotly_chart(fig4, width="stretch")
 
     sec(f"Tabla de proyectos — {len(df_a)} resultados")
     show_cols = ["anio_concurso", "titulo", "programa_norm", "instrumento_norm", "autor", "estado_full", "monto_programa_num"]
@@ -114,7 +114,7 @@ def render(ctx: dict) -> None:
         "instrumento_norm": "Instrumento", "autor": "Investigador",
         "estado_full": "Estado", "monto_programa_num": "Monto CLP"
     }).sort_values("Año", ascending=False)
-    st.dataframe(df_a_s, use_container_width=True, height=400,
+    st.dataframe(df_a_s, width="stretch", height=400,
                  column_config={"Monto CLP": st.column_config.NumberColumn(format="$ %,.0f")})
     st.download_button("Exportar proyectos CSV", make_csv(df_a_s),
                        "proyectos_anid_cchen.csv", "text/csv")
@@ -139,7 +139,7 @@ def render(ctx: dict) -> None:
             title="Financiadores externos en publicaciones CCHEN",
         )
         fig_funders.update_layout(showlegend=False, height=450, margin=dict(t=30, b=10))
-        st.plotly_chart(fig_funders, use_container_width=True)
+        st.plotly_chart(fig_funders, width="stretch")
 
         n_with_funder = (
             crossref["crossref_funders"].notna() &
@@ -156,7 +156,7 @@ def render(ctx: dict) -> None:
     if not iaea_tc.empty:
         sec("Cooperación Técnica IAEA (Chile)")
         st.dataframe(
-            iaea_tc, use_container_width=True,
+            iaea_tc, width="stretch",
             column_config={
                 "proyecto_tc": st.column_config.TextColumn("Código TC"),
                 "fuente":      st.column_config.TextColumn("Fuente"),
@@ -166,7 +166,7 @@ def render(ctx: dict) -> None:
     # ── Financiamiento adicional ──────────────────────────────────────────────
     if not funding_plus.empty and len(funding_plus) > 0:
         sec("Financiamiento complementario (CORFO, FIC, IAEA)")
-        st.dataframe(funding_plus, use_container_width=True, height=300)
+        st.dataframe(funding_plus, width="stretch", height=300)
 
     # ── Convenios y Acuerdos Institucionales ──────────────────────────────────
     _has_conv = not convenios.empty
@@ -192,7 +192,7 @@ def render(ctx: dict) -> None:
                                            "DURACIÓN", "FECHA RESOLUCIÓN"] if c in convenios.columns]
                 if not _conv_cols:
                     _conv_cols = convenios.columns.tolist()
-                st.dataframe(convenios[_conv_cols], use_container_width=True, height=320)
+                st.dataframe(convenios[_conv_cols], width="stretch", height=320)
                 st.download_button(
                     "Exportar convenios CSV", make_csv(convenios[_conv_cols]),
                     "convenios_nacionales_cchen.csv", "text/csv",
@@ -212,7 +212,7 @@ def render(ctx: dict) -> None:
                                               title="Convenios nacionales por año")
                             fig_conv.update_traces(textposition="outside")
                             fig_conv.update_layout(showlegend=False, margin=dict(t=30, b=20))
-                            st.plotly_chart(fig_conv, use_container_width=True)
+                            st.plotly_chart(fig_conv, width="stretch")
                     except Exception:
                         pass
 
@@ -224,7 +224,7 @@ def render(ctx: dict) -> None:
                                            "DESCRIPCIÓN", "FECHA"] if c in acuerdos.columns]
                 if not _acue_cols:
                     _acue_cols = acuerdos.columns.tolist()
-                st.dataframe(acuerdos[_acue_cols], use_container_width=True, height=320)
+                st.dataframe(acuerdos[_acue_cols], width="stretch", height=320)
                 st.download_button(
                     "Exportar acuerdos CSV", make_csv(acuerdos[_acue_cols]),
                     "acuerdos_internacionales_cchen.csv", "text/csv",
@@ -243,7 +243,7 @@ def render(ctx: dict) -> None:
                             title="Acuerdos internacionales por país/región",
                         )
                         fig_pais.update_layout(showlegend=False, margin=dict(t=30, b=10))
-                        st.plotly_chart(fig_pais, use_container_width=True)
+                        st.plotly_chart(fig_pais, width="stretch")
                     except Exception:
                         pass
 
@@ -409,7 +409,7 @@ def render(ctx: dict) -> None:
             })
             st.dataframe(
                 _conv_table,
-                use_container_width=True,
+                width="stretch",
                 height=360,
                 hide_index=True,
                 column_config={

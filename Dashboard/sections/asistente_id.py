@@ -472,27 +472,27 @@ def render(ctx: dict) -> None:
             unsafe_allow_html=True
         )
     with _cl_col:
-        if st.button("Limpiar chat", use_container_width=True):
+        if st.button("Limpiar chat", width="stretch"):
             st.session_state.messages = []
             st.rerun()
     q1, q2, q3, q4 = st.columns(4)
     prompt_rapido = ""
-    if q1.button("Producción científica", use_container_width=True):
+    if q1.button("Producción científica", width="stretch"):
         prompt_rapido = "Genera un informe técnico ejecutivo sobre la producción científica de CCHEN. Incluye: evolución temporal, calidad (cuartiles), áreas temáticas, colaboración internacional y comparación con el promedio latinoamericano en nuclear."
-    if q2.button("Financiamiento ANID", use_container_width=True):
+    if q2.button("Financiamiento ANID", width="stretch"):
         prompt_rapido = "Analiza el portafolio de financiamiento ANID de CCHEN. ¿Cuál es la estrategia de captación de fondos? ¿Qué oportunidades de mejora identificas para diversificar las fuentes?"
-    if q3.button("Capital humano I+D", use_container_width=True):
+    if q3.button("Capital humano I+D", width="stretch"):
         prompt_rapido = "Elabora un diagnóstico del capital humano I+D de CCHEN (2022–2025). Incluye composición por modalidad, concentración operativa (HHI), riesgos identificados y recomendaciones para fortalecer la formación."
-    if q4.button("Resumen ejecutivo", use_container_width=True):
+    if q4.button("Resumen ejecutivo", width="stretch"):
         prompt_rapido = "Redacta un resumen ejecutivo de 1 página del Observatorio Tecnológico Virtual de CCHEN para presentar a directivos. Incluye indicadores clave, estado actual y principales hallazgos."
     q5, q6, q7, q8 = st.columns(4)
-    if q5.button("Perfil de investigadores", use_container_width=True):
+    if q5.button("Perfil de investigadores", width="stretch"):
         prompt_rapido = "Describe el perfil de los investigadores más productivos de CCHEN según los datos del observatorio. ¿Quiénes son los líderes en producción científica? ¿En qué áreas temáticas se concentran? ¿Qué instituciones colaboran más frecuentemente?"
-    if q6.button("Colaboración internacional", use_container_width=True):
+    if q6.button("Colaboración internacional", width="stretch"):
         prompt_rapido = "Analiza la red de colaboración internacional de CCHEN. ¿Con qué instituciones y países colabora más? ¿Qué oportunidades estratégicas de colaboración identifica para fortalecer la posición internacional de CCHEN en energía nuclear?"
-    if q7.button("Convocatorias + matching", use_container_width=True):
+    if q7.button("Convocatorias + matching", width="stretch"):
         prompt_rapido = "Usando el matching institucional formal, identifica las oportunidades abiertas y próximas más relevantes para CCHEN. Organízalas por perfil, incluye score_total, eligibility_status, readiness_status, owner_unit y recommended_action, y explica por qué cada una calza o no con la evidencia interna."
-    if q8.button("Transferencia / portafolio", use_container_width=True):
+    if q8.button("Transferencia / portafolio", width="stretch"):
         prompt_rapido = "Con base en el portafolio tecnológico semilla, los proyectos ANID, publicaciones, convenios y financiamiento complementario, elabora un diagnóstico de transferencia para CCHEN. Distingue claramente entre capacidades observables, activos por validar y vacíos críticos como patentes o TRL."
 
     # ── Historial de chat ──
@@ -649,7 +649,7 @@ def render(ctx: dict) -> None:
                     data=_pdf_bytes,
                     file_name=f"informe_cchen_{_fecha}.pdf",
                     mime="application/pdf",
-                    use_container_width=False,
+                    width="content",
                 )
             else:
                 st.caption("⚠️ No se pudo generar el PDF (reportlab no disponible).")

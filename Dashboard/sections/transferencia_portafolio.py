@@ -77,7 +77,7 @@ def render(ctx: dict) -> None:
                 "potencial_transferencia": "Potencial de transferencia",
                 "proximo_paso": "Próximo paso",
             }),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             height=360,
         )
@@ -109,7 +109,7 @@ def render(ctx: dict) -> None:
             height=340,
         )
         fig_sig.update_layout(showlegend=False, margin=dict(t=10, b=10))
-        st.plotly_chart(fig_sig, use_container_width=True)
+        st.plotly_chart(fig_sig, width="stretch")
 
     with _pt2:
         sec("Áreas científicas que alimentan el portafolio")
@@ -125,7 +125,7 @@ def render(ctx: dict) -> None:
                 height=340,
             )
             fig_area.update_layout(showlegend=False, margin=dict(t=10, b=10))
-            st.plotly_chart(fig_area, use_container_width=True)
+            st.plotly_chart(fig_area, width="stretch")
         else:
             st.info("No hay áreas enriquecidas disponibles para este resumen.")
 
@@ -171,7 +171,7 @@ def render(ctx: dict) -> None:
                 height=260,
             )
             fig_dc.update_layout(showlegend=False, margin=dict(t=10, b=10))
-            st.plotly_chart(fig_dc, use_container_width=True)
+            st.plotly_chart(fig_dc, width="stretch")
         with _dc2:
             _dc_show = _dc[[
                 "publication_year", "resource_type_general", "publisher",
@@ -186,7 +186,7 @@ def render(ctx: dict) -> None:
             }).sort_values(["Año", "Tipo"], ascending=[False, True])
             st.dataframe(
                 _dc_show,
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=280,
                 column_config={"DOI": st.column_config.LinkColumn("DOI", display_text="abrir")},
@@ -248,7 +248,7 @@ def render(ctx: dict) -> None:
                 height=260,
             )
             fig_oa_type.update_layout(showlegend=False, margin=dict(t=10, b=10))
-            st.plotly_chart(fig_oa_type, use_container_width=True)
+            st.plotly_chart(fig_oa_type, width="stretch")
         with _oa2:
             fig_oa_scope = px.bar(
                 _oa_scope.sort_values("N"),
@@ -260,7 +260,7 @@ def render(ctx: dict) -> None:
                 height=260,
             )
             fig_oa_scope.update_layout(showlegend=False, margin=dict(t=10, b=10))
-            st.plotly_chart(fig_oa_scope, use_container_width=True)
+            st.plotly_chart(fig_oa_scope, width="stretch")
 
         _oa_show = _oa[[
             c for c in [
@@ -278,7 +278,7 @@ def render(ctx: dict) -> None:
         }).sort_values(["Fecha", "N investigadores"], ascending=[False, False])
         st.dataframe(
             _oa_show.head(40),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             height=300,
         )

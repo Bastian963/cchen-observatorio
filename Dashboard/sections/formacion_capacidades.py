@@ -79,7 +79,7 @@ def render(ctx: dict) -> None:
         fig1 = px.bar(tc.sort_values("N"), x="N", y="Tipo", orientation="h",
                       color="Tipo", color_discrete_sequence=PALETTE, text="N", height=300)
         fig1.update_layout(showlegend=False, margin=dict(t=10, b=10))
-        st.plotly_chart(fig1, use_container_width=True)
+        st.plotly_chart(fig1, width="stretch")
 
     with col2:
         sec("Evolución anual por modalidad")
@@ -88,7 +88,7 @@ def render(ctx: dict) -> None:
                       color_discrete_sequence=PALETTE, barmode="stack", height=300,
                       labels={"anio_hoja": "Año", "N": "Personas", "tipo_norm": "Modalidad"})
         fig2.update_layout(margin=dict(t=10, b=30), legend=dict(orientation="h", y=1.1))
-        st.plotly_chart(fig2, use_container_width=True)
+        st.plotly_chart(fig2, width="stretch")
 
     col3, col4 = st.columns(2)
 
@@ -99,7 +99,7 @@ def render(ctx: dict) -> None:
         fig3 = px.bar(cc.sort_values("N"), x="N", y="Centro", orientation="h",
                       color_discrete_sequence=[BLUE], text="N", height=340)
         fig3.update_layout(showlegend=False, margin=dict(t=10, b=10))
-        st.plotly_chart(fig3, use_container_width=True)
+        st.plotly_chart(fig3, width="stretch")
 
     with col4:
         sec("Top 10 universidades de origen")
@@ -108,7 +108,7 @@ def render(ctx: dict) -> None:
         fig4 = px.bar(uc.sort_values("N"), x="N", y="Universidad", orientation="h",
                       color_discrete_sequence=[RED], text="N", height=340)
         fig4.update_layout(showlegend=False, margin=dict(t=10, b=10))
-        st.plotly_chart(fig4, use_container_width=True)
+        st.plotly_chart(fig4, width="stretch")
 
     # Semáforo documental (datos precomputados)
     if not ch_cumpl.empty:
@@ -149,7 +149,7 @@ def render(ctx: dict) -> None:
                 marker=dict(color=[BLUE, GREEN, AMBER, RED]),
             ))
             fig5.update_layout(margin=dict(t=10, b=10), height=280)
-            st.plotly_chart(fig5, use_container_width=True)
+            st.plotly_chart(fig5, width="stretch")
 
     with col6:
         sec("Transiciones observadas entre modalidades")
@@ -159,7 +159,7 @@ def render(ctx: dict) -> None:
                           orientation="h", color_discrete_sequence=[PURPLE], text="transiciones",
                           height=280)
             fig6.update_layout(showlegend=False, margin=dict(t=10, b=10), xaxis_title="N° casos")
-            st.plotly_chart(fig6, use_container_width=True)
+            st.plotly_chart(fig6, width="stretch")
 
     # Concentración (HHI)
     if adv_c:
@@ -198,7 +198,7 @@ def render(ctx: dict) -> None:
             "centro_norm": "Centro", "universidad": "Universidad",
             "duracion_dias": "Días", "tutor": "Tutor/a", "ad_honorem": "Ad honorem"
         }).sort_values("Año", ascending=False)
-        st.dataframe(df_cs, use_container_width=True, height=420,
+        st.dataframe(df_cs, width="stretch", height=420,
                      column_config={"Ad honorem": st.column_config.CheckboxColumn("Ad honorem")})
         st.download_button("Exportar registro CSV", make_csv(df_cs),
                            "capital_humano_cchen.csv", "text/csv")
@@ -216,7 +216,7 @@ def render(ctx: dict) -> None:
             })
             .sort_values(["Año", "Registros"], ascending=[False, False])
         )
-        st.dataframe(df_cs, use_container_width=True, height=420)
+        st.dataframe(df_cs, width="stretch", height=420)
         st.download_button(
             "Exportar resumen CSV",
             make_csv(df_cs),

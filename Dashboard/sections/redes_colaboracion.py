@@ -126,7 +126,7 @@ def render(ctx: dict) -> None:
                     "convenios_count": "Convenios",
                     "ror_id": "ROR",
                 }),
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
                 height=320,
                 column_config={"ROR": st.column_config.LinkColumn("ROR")},
@@ -159,7 +159,7 @@ def render(ctx: dict) -> None:
                         "signal_total": "Señal total",
                         "source_evidence": "Evidencia",
                     }),
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True,
                     height=320,
                 )
@@ -209,7 +209,7 @@ def render(ctx: dict) -> None:
                          coastlinecolor="#BBBBBB", landcolor="#F0F0F0",
                          bgcolor="#F8FAFC"),
             )
-            st.plotly_chart(fig_map, use_container_width=True)
+            st.plotly_chart(fig_map, width="stretch")
 
         with bar_col:
             _top10c = _country_counts.sort_values("N", ascending=False).head(12)
@@ -224,7 +224,7 @@ def render(ctx: dict) -> None:
                 margin=dict(t=5, b=5, l=5, r=30),
                 plot_bgcolor="#F8FAFC",
             )
-            st.plotly_chart(fig_topc, use_container_width=True)
+            st.plotly_chart(fig_topc, width="stretch")
     else:
         st.info("Sin datos de país para el período seleccionado.")
 
@@ -294,12 +294,12 @@ def render(ctx: dict) -> None:
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             plot_bgcolor="#F8FAFC",
         )
-        st.plotly_chart(fig_net, use_container_width=True)
+        st.plotly_chart(fig_net, width="stretch")
         st.caption("🔴 CCHEN   🔵 Instituciones colaboradoras")
 
         _deg_df = pd.DataFrame(sorted(G_sub.degree(), key=lambda x: -x[1])[:15],
                                columns=["Institución", "Conexiones"])
-        st.dataframe(_deg_df, use_container_width=True, hide_index=True, height=280)
+        st.dataframe(_deg_df, width="stretch", hide_index=True, height=280)
 
     except ImportError:
         st.warning("Instala networkx: `pip install networkx`")
@@ -402,7 +402,7 @@ def render(ctx: dict) -> None:
             yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             plot_bgcolor="#F8FAFC",
         )
-        st.plotly_chart(fig_au_net, use_container_width=True)
+        st.plotly_chart(fig_au_net, width="stretch")
         st.caption("🔴 Autores con afiliación CCHEN   🔵 Colaboradores externos   Tamaño = nº de papers")
 
         _au_top_df = pd.DataFrame([
@@ -414,7 +414,7 @@ def render(ctx: dict) -> None:
             }
             for n, _ in sorted(G_au.degree(), key=lambda x: -x[1])[:20]
         ])
-        st.dataframe(_au_top_df, use_container_width=True, hide_index=True, height=320)
+        st.dataframe(_au_top_df, width="stretch", hide_index=True, height=320)
 
     except ImportError:
         st.warning("Instala networkx: `pip install networkx`")
@@ -449,7 +449,7 @@ def render(ctx: dict) -> None:
             margin=dict(t=10, b=30, l=40, r=20), height=280,
             plot_bgcolor="#F8FAFC",
         )
-        st.plotly_chart(fig_h, use_container_width=True)
+        st.plotly_chart(fig_h, width="stretch")
 
     with h_col2:
         st.markdown(f"""
@@ -484,7 +484,7 @@ def render(ctx: dict) -> None:
     fig_inst.update_traces(textposition="outside")
     fig_inst.update_layout(yaxis_title="", margin=dict(t=0, b=0, l=10, r=30),
                            plot_bgcolor="#F8FAFC")
-    st.plotly_chart(fig_inst, use_container_width=True)
+    st.plotly_chart(fig_inst, width="stretch")
 
     st.download_button(
         "Exportar instituciones colaboradoras CSV",
