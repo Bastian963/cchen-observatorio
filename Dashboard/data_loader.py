@@ -31,6 +31,7 @@ AVANZADO  = SALIDA / "analisis_avanzado"
 CAPITAL   = SALIDA / "analisis_capital_humano"
 
 SUPABASE_PAGE_SIZE = 1000
+TABLE_LOAD_STATUS: dict[str, dict] = {}
 
 PUBLIC_TABLE_CONFIG = {
     "publications": {"order_by": "openalex_id"},
@@ -38,31 +39,30 @@ PUBLIC_TABLE_CONFIG = {
     "authorships": {"order_by": "id"},
     "crossref_data": {"order_by": "doi"},
     "concepts": {"order_by": "id"},
+    "patents": {"order_by": "patent_uid"},
     "datacite_outputs": {"order_by": "doi"},
     "openaire_outputs": {"order_by": "openaire_id"},
     "anid_projects": {"order_by": "proyecto"},
     "researchers_orcid": {"order_by": "orcid_id"},
     "institution_registry": {"order_by": "normalized_key"},
     "institution_registry_pending_review": {"order_by": "canonical_name"},
-    "convenios_nacionales": {"order_by": "id"},
-    "acuerdos_internacionales": {"order_by": "id"},
-    "capital_humano": {"order_by": "id"},
-    "funding_complementario": {"order_by": "funding_id"},
-    "convocatorias_matching_institucional": {"order_by": "conv_id"},
-    "entity_registry_personas": {"order_by": "persona_id"},
-    "entity_registry_proyectos": {"order_by": "project_id"},
-    "entity_registry_convocatorias": {"order_by": "convocatoria_id"},
-    "entity_links": {},
-    "citing_papers": {"order_by": "citing_id"},
-    "europmc_works": {"order_by": "source_id"},
-    "citation_graph": {"order_by": "openalex_id"},
-    "arxiv_monitor": {"order_by": "arxiv_id"},
-    "iaea_inis_monitor": {"order_by": "inis_id"},
-    "news_monitor": {"order_by": "news_id"},
-    "bertopic_topics": {"order_by": "openalex_id"},
-    "bertopic_topic_info": {"order_by": "topic"},
+    "perfiles_institucionales": {"order_by": "perfil_id"},
     "convocatorias": {"order_by": "conv_id"},
     "convocatorias_matching_rules": {"order_by": "rule_id"},
+    "convenios_nacionales": {"order_by": "id"},
+    "acuerdos_internacionales": {"order_by": "id"},
+    "entity_registry_proyectos": {"order_by": "project_id"},
+    "entity_registry_convocatorias": {"order_by": "convocatoria_id"},
+    "convocatorias_matching_institucional": {"order_by": "conv_id"},
+    "iaea_inis_monitor": {"order_by": "inis_id"},
+    "arxiv_monitor": {"order_by": "arxiv_id"},
+    "news_monitor": {"order_by": "news_id"},
+    "citation_graph": {"order_by": "openalex_id"},
+    "europmc_works": {"order_by": "source_id"},
+    "bertopic_topics": {"order_by": "openalex_id"},
+    "bertopic_topic_info": {"order_by": "topic"},
+    "citing_papers": {"order_by": "citing_id"},
+    "data_sources": {"order_by": "source_name"},
 }
 
 
@@ -90,6 +90,19 @@ def get_data_backend_info() -> dict:
         "detail": f"duckdb disponible para lectura local y consultas analíticas rápidas · fuente: {source_detail}",
         "source_mode": source_mode,
     }
+
+
+def _record_table_load_status(table_name: str, source: str, detail: str = "") -> None:
+    TABLE_LOAD_STATUS[table_name] = {
+        "source": source,
+        "detail": detail,
+        "recorded_at": datetime.datetime.now().isoformat(timespec="seconds"),
+    }
+
+
+def get_table_load_status() -> dict[str, dict]:
+    """Retorna un snapshot del origen de lectura por tabla en la sesión actual."""
+    return {k: v.copy() for k, v in TABLE_LOAD_STATUS.items()}
 
 
 def _read_csv_fast(path: Path) -> pd.DataFrame:
@@ -175,15 +188,21 @@ def _load_public_table(table_name: str, local_path: Path) -> pd.DataFrame:
     mode = _get_data_source_mode()
 
     if mode == "local":
+        _record_table_load_status(table_name, "local_only", str(local_path))
         return _read_csv_fast(local_path)
 
     if table_name in PUBLIC_TABLE_CONFIG:
         try:
-            return _fetch_supabase_table(table_name)
+            df = _fetch_supabase_table(table_name)
+            _record_table_load_status(table_name, "supabase_public", table_name)
+            return df
         except Exception:
             if mode == "supabase_public":
                 raise
+            _record_table_load_status(table_name, "local_fallback", str(local_path))
+            return _read_csv_fast(local_path)
 
+    _record_table_load_status(table_name, "local_only", str(local_path))
     return _read_csv_fast(local_path)
 
 
@@ -376,12 +395,24 @@ def load_dian_publications():
 
 # ─── Patentes ─────────────────────────────────────────────────────────────────
 
-def load_patents():
-    """Carga patentes descargadas vía script o notebook (Lens.org / PatentsView).
-    Retorna DataFrame vacío si el archivo aún no existe.
-    Ejecutar primero: Scripts/fetch_patentsview_patents.py o Codes/Download_patents.ipynb
-    """
-    # Acepta tanto el archivo de Lens.org como el de PatentsView o INAPI
+def _normalize_patents_frame(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return df
+    if "year" not in df.columns:
+        for col in ("publication_year", "grant_year", "fecha_solicitud"):
+            if col in df.columns:
+                df["year"] = pd.to_numeric(
+                    df[col].astype(str).str[:4], errors="coerce"
+                ).astype("Int64")
+                break
+    if "cited_by_count" not in df.columns:
+        df["cited_by_count"] = 0
+    df["cited_by_count"] = pd.to_numeric(df["cited_by_count"], errors="coerce").fillna(0).astype(int)
+    return df
+
+
+def _load_patents_local() -> pd.DataFrame:
+    """Carga patentes descargadas vía script o notebook (Lens.org / PatentsView)."""
     dfs = []
     for fname in ("cchen_patents.csv", "cchen_patents_uspto.csv", "cchen_patents_manual.csv",
                   "cchen_inapi_patents.csv"):
@@ -389,21 +420,24 @@ def load_patents():
         if not p.exists():
             continue
         df = _read_csv_fast(p)
-        # Normalizar columna de año según la fuente
-        if "year" not in df.columns:
-            for col in ("publication_year", "grant_year", "fecha_solicitud"):
-                if col in df.columns:
-                    df["year"] = pd.to_numeric(
-                        df[col].astype(str).str[:4], errors="coerce"
-                    ).astype("Int64")
-                    break
-        if "cited_by_count" not in df.columns:
-            df["cited_by_count"] = 0
-        df["cited_by_count"] = pd.to_numeric(df["cited_by_count"], errors="coerce").fillna(0).astype(int)
-        dfs.append(df)
+        dfs.append(_normalize_patents_frame(df))
     if dfs:
         return pd.concat(dfs, ignore_index=True)
     return pd.DataFrame()
+
+
+def load_patents():
+    """Carga patentes desde Supabase público si está disponible; si no, usa archivos locales."""
+    mode = _get_data_source_mode()
+    if mode != "local":
+        try:
+            remote = _fetch_supabase_table("patents")
+            if not remote.empty or mode == "supabase_public":
+                return _normalize_patents_frame(remote)
+        except Exception:
+            if mode == "supabase_public":
+                raise
+    return _load_patents_local()
 
 
 # ─── CrossRef enrichment ──────────────────────────────────────────────────────

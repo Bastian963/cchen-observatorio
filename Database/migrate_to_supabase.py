@@ -23,20 +23,31 @@ ORDEN DE EJECUCIÓN (por dependencias FK):
     6. patents
     7. anid_projects
     8. funding_complementario
-   9. capital_humano
-    10. researchers_orcid
-    11. institution_registry
-    12. institution_registry_pending_review
+    9. capital_humano
+   10. researchers_orcid
+   11. institution_registry
+   12. institution_registry_pending_review
    13. entity_registry_personas
    14. entity_registry_proyectos
    15. entity_registry_convocatorias
    16. entity_links
-   17. convocatorias_matching_institucional
-   18. datacite_outputs
-   19. openaire_outputs
-   20. convenios_nacionales
-   21. acuerdos_internacionales
-   22. data_sources        (metadatos, pre-cargado en schema.sql)
+   17. perfiles_institucionales
+   18. convocatorias
+   19. convocatorias_matching_rules
+   20. convocatorias_matching_institucional
+   21. iaea_inis_monitor
+   22. arxiv_monitor
+   23. news_monitor
+   24. citation_graph
+   25. datacite_outputs
+   26. openaire_outputs
+   27. europmc_works
+   28. bertopic_topics
+   29. bertopic_topic_info
+   30. convenios_nacionales
+   31. acuerdos_internacionales
+   32. citing_papers
+   33. data_sources        (metadatos, pre-cargado en schema.sql)
 """
 
 import os
@@ -131,6 +142,49 @@ def _read_csv_flexible(path: Path) -> pd.DataFrame:
         return pd.read_csv(path, encoding="utf-8-sig")
     except Exception:
         return pd.read_csv(path)
+
+
+def _coerce_bool(value):
+    """Normaliza strings y numéricos comunes a booleanos Python."""
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        if value == 1:
+            return True
+        if value == 0:
+            return False
+    text = str(value).strip().lower()
+    if text in {"true", "1", "yes", "y", "si", "sí"}:
+        return True
+    if text in {"false", "0", "no", "n"}:
+        return False
+    return None
+
+
+def _stringify_identifier(value):
+    """Convierte IDs potencialmente numéricos en texto estable sin sufijos .0."""
+    if value is None:
+        return None
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    if isinstance(value, bool):
+        return str(value).lower()
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float):
+        return str(int(value)) if value.is_integer() else format(value, "g")
+    text = str(value).strip()
+    return text or None
 
 
 def upsert_table(table: str, records: list[dict], on_conflict: str) -> dict:
@@ -638,6 +692,72 @@ def migrate_entity_links():
     )
 
 
+def migrate_perfiles_institucionales():
+    """perfiles_institucionales (PK: perfil_id)"""
+    p = VIG_DIR / "perfiles_institucionales_cchen.csv"
+    if not p.exists():
+        print(f"  [perfiles_institucionales] Archivo no encontrado: {p}")
+        return
+    df = _read_csv_flexible(p)
+    cols = [
+        "perfil_id", "perfil_nombre", "owner_unit",
+        "profile_aliases", "secondary_aliases", "descripcion",
+    ]
+    df = df[[c for c in cols if c in df.columns]].dropna(subset=["perfil_id"])
+    REPORT.append(upsert_table("perfiles_institucionales", _to_records(df), "perfil_id"))
+
+
+def migrate_convocatorias():
+    """convocatorias (PK: conv_id)"""
+    p = VIG_DIR / "convocatorias_curadas.csv"
+    if not p.exists():
+        p = VIG_DIR / "convocatorias.csv"
+    if not p.exists():
+        print(f"  [convocatorias] Archivo no encontrado en: {VIG_DIR}")
+        return
+    df = _read_csv_flexible(p)
+    cols = [
+        "conv_id", "tipo_registro", "titulo", "organismo", "categoria", "estado",
+        "apertura_texto", "cierre_texto", "fallo_texto", "apertura_iso", "cierre_iso",
+        "perfil_objetivo", "relevancia_cchen", "fuente", "es_oficial", "postulable",
+        "url", "notas",
+    ]
+    df = df[[c for c in cols if c in df.columns]].dropna(subset=["conv_id"])
+    for col in ("apertura_iso", "cierre_iso"):
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors="coerce").dt.strftime("%Y-%m-%d")
+            df[col] = df[col].where(df[col].notna(), None)
+    for col in ("es_oficial", "postulable"):
+        if col in df.columns:
+            df[col] = df[col].map(_coerce_bool).fillna(True)
+    REPORT.append(upsert_table("convocatorias", _to_records(df), "conv_id"))
+
+
+def migrate_convocatorias_matching_rules():
+    """convocatorias_matching_rules (PK: rule_id)"""
+    p = VIG_DIR / "convocatorias_matching_rules.csv"
+    if not p.exists():
+        print(f"  [convocatorias_matching_rules] Archivo no encontrado: {p}")
+        return
+    df = _read_csv_flexible(p)
+    cols = [
+        "rule_id", "perfil_id", "exact_aliases", "secondary_aliases",
+        "requiere_doctorado", "requiere_institucion", "requiere_transferencia",
+        "requiere_red_internacional", "requiere_capacidad_instrumental", "notes",
+    ]
+    df = df[[c for c in cols if c in df.columns]].dropna(subset=["rule_id"])
+    for col in (
+        "requiere_doctorado",
+        "requiere_institucion",
+        "requiere_transferencia",
+        "requiere_red_internacional",
+        "requiere_capacidad_instrumental",
+    ):
+        if col in df.columns:
+            df[col] = df[col].map(_coerce_bool).fillna(False)
+    REPORT.append(upsert_table("convocatorias_matching_rules", _to_records(df), "rule_id"))
+
+
 def migrate_matching_institucional():
     """convocatorias_matching_institucional (PK compuesto: conv_id, perfil_id)"""
     p = VIG_DIR / "convocatorias_matching_institucional.csv"
@@ -667,6 +787,84 @@ def migrate_matching_institucional():
             "conv_id,perfil_id",
         )
     )
+
+
+def migrate_iaea_inis_monitor():
+    """iaea_inis_monitor (PK: inis_id)"""
+    p = VIG_DIR / "iaea_inis_monitor.csv"
+    if not p.exists():
+        print(f"  [iaea_inis_monitor] Archivo no encontrado: {p}")
+        return
+    df = _read_csv_flexible(p)
+    cols = [
+        "inis_id", "title", "authors", "abstract_short", "link", "published",
+        "subject_area", "relevance_flag", "keywords_found", "source_type", "fetched_at",
+    ]
+    df = df[[c for c in cols if c in df.columns]].dropna(subset=["inis_id"])
+    df["inis_id"] = df["inis_id"].map(_stringify_identifier)
+    if "fetched_at" in df.columns:
+        df["fetched_at"] = pd.to_datetime(df["fetched_at"], errors="coerce").dt.strftime("%Y-%m-%d")
+        df["fetched_at"] = df["fetched_at"].where(df["fetched_at"].notna(), None)
+    REPORT.append(upsert_table("iaea_inis_monitor", _to_records(df), "inis_id"))
+
+
+def migrate_arxiv_monitor():
+    """arxiv_monitor (PK: arxiv_id)"""
+    p = VIG_DIR / "arxiv_monitor.csv"
+    if not p.exists():
+        print(f"  [arxiv_monitor] Archivo no encontrado: {p}")
+        return
+    df = _read_csv_flexible(p)
+    cols = [
+        "arxiv_id", "title", "authors", "abstract_short", "link", "published",
+        "feed_area", "relevance_flag", "keywords_found", "fetched_at",
+    ]
+    df = df[[c for c in cols if c in df.columns]].dropna(subset=["arxiv_id"])
+    df["arxiv_id"] = df["arxiv_id"].map(_stringify_identifier)
+    if "fetched_at" in df.columns:
+        df["fetched_at"] = pd.to_datetime(df["fetched_at"], errors="coerce").dt.strftime("%Y-%m-%d")
+        df["fetched_at"] = df["fetched_at"].where(df["fetched_at"].notna(), None)
+    REPORT.append(upsert_table("arxiv_monitor", _to_records(df), "arxiv_id"))
+
+
+def migrate_news_monitor():
+    """news_monitor (PK: news_id)"""
+    p = VIG_DIR / "news_monitor.csv"
+    if not p.exists():
+        print(f"  [news_monitor] Archivo no encontrado: {p}")
+        return
+    df = _read_csv_flexible(p)
+    cols = [
+        "news_id", "title", "source_name", "link", "published", "snippet",
+        "query_label", "topic_flag", "fetched_at",
+    ]
+    df = df[[c for c in cols if c in df.columns]].dropna(subset=["news_id"])
+    df["news_id"] = df["news_id"].map(_stringify_identifier)
+    if "fetched_at" in df.columns:
+        df["fetched_at"] = pd.to_datetime(df["fetched_at"], errors="coerce").dt.strftime("%Y-%m-%d")
+        df["fetched_at"] = df["fetched_at"].where(df["fetched_at"].notna(), None)
+    REPORT.append(upsert_table("news_monitor", _to_records(df), "news_id"))
+
+
+def migrate_citation_graph():
+    """citation_graph (PK: openalex_id)"""
+    p = PUB / "cchen_citation_graph.csv"
+    if not p.exists():
+        print(f"  [citation_graph] Archivo no encontrado: {p}")
+        return
+    df = _read_csv_flexible(p)
+    cols = [
+        "openalex_id", "doi", "year", "cited_by_count",
+        "referenced_works_count", "referenced_ids_sample", "fetched_at",
+    ]
+    df = df[[c for c in cols if c in df.columns]].dropna(subset=["openalex_id"])
+    for col in ("year", "cited_by_count", "referenced_works_count"):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
+    if "fetched_at" in df.columns:
+        df["fetched_at"] = pd.to_datetime(df["fetched_at"], errors="coerce").dt.strftime("%Y-%m-%d")
+        df["fetched_at"] = df["fetched_at"].where(df["fetched_at"].notna(), None)
+    REPORT.append(upsert_table("citation_graph", _to_records(df), "openalex_id"))
 
 
 def migrate_datacite_outputs():
@@ -721,6 +919,73 @@ def migrate_openaire_outputs():
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
     REPORT.append(upsert_table("openaire_outputs", _to_records(df), "openaire_id"))
+
+
+def migrate_europmc_works():
+    """europmc_works (PK: source_id)"""
+    p = PUB / "cchen_europmc_works.csv"
+    if not p.exists():
+        print(f"  [europmc_works] Archivo no encontrado: {p}")
+        return
+    df = _read_csv_flexible(p)
+    cols = [
+        "source_id", "doi", "pmid", "pmcid", "title", "authors", "journal",
+        "year", "pub_date", "cited_by_count", "is_open_access",
+        "abstract_available", "source", "keywords", "affiliation_raw",
+        "europmc_url", "fetched_at",
+    ]
+    df = df[[c for c in cols if c in df.columns]].dropna(subset=["source_id"])
+    for col in ("source_id", "pmid", "pmcid"):
+        if col in df.columns:
+            df[col] = df[col].map(_stringify_identifier)
+    for col in ("year", "cited_by_count"):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
+    for col in ("pub_date", "fetched_at"):
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors="coerce").dt.strftime("%Y-%m-%d")
+            df[col] = df[col].where(df[col].notna(), None)
+    REPORT.append(upsert_table("europmc_works", _to_records(df), "source_id"))
+
+
+def migrate_bertopic_topics():
+    """bertopic_topics (PK compuesto: openalex_id, topic_id)"""
+    p = PUB / "cchen_bertopic_topics.csv"
+    if not p.exists():
+        print(f"  [bertopic_topics] Archivo no encontrado: {p}")
+        return
+    df = _read_csv_flexible(p)
+    cols = ["openalex_id", "title", "year", "abstract_best", "topic_id", "topic_prob"]
+    df = df[[c for c in cols if c in df.columns]].dropna(subset=["openalex_id", "topic_id"])
+    if "year" in df.columns:
+        df["year"] = pd.to_numeric(df["year"], errors="coerce").astype("Int64")
+    if "topic_id" in df.columns:
+        df["topic_id"] = pd.to_numeric(df["topic_id"], errors="coerce").astype("Int64")
+    if "topic_prob" in df.columns:
+        df["topic_prob"] = pd.to_numeric(df["topic_prob"], errors="coerce")
+    REPORT.append(upsert_table("bertopic_topics", _to_records(df), "openalex_id,topic_id"))
+
+
+def migrate_bertopic_topic_info():
+    """bertopic_topic_info (PK: topic)"""
+    p = PUB / "cchen_bertopic_topic_info.csv"
+    if not p.exists():
+        print(f"  [bertopic_topic_info] Archivo no encontrado: {p}")
+        return
+    df = _read_csv_flexible(p)
+    df = df.rename(columns={
+        "Topic": "topic",
+        "Count": "count",
+        "Name": "name",
+        "Representation": "representation",
+        "Representative_Docs": "representative_docs",
+    })
+    cols = ["topic", "count", "name", "representation", "representative_docs"]
+    df = df[[c for c in cols if c in df.columns]].dropna(subset=["topic"])
+    for col in ("topic", "count"):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
+    REPORT.append(upsert_table("bertopic_topic_info", _to_records(df), "topic"))
 
 
 def migrate_convenios():
@@ -823,6 +1088,23 @@ def migrate_acuerdos():
     print("  [acuerdos_internacionales] Archivo no encontrado.")
 
 
+def migrate_citing_papers():
+    """citing_papers (PK compuesta: citing_id, cited_cchen_id)"""
+    p = PUB / "cchen_citing_papers.csv"
+    if not p.exists():
+        print(f"  [citing_papers] Archivo no encontrado: {p}")
+        return
+    df = pd.read_csv(p)
+    cols = ["citing_id", "cited_cchen_id", "citing_doi",
+            "citing_title", "citing_year", "citing_institutions"]
+    df = df[[c for c in cols if c in df.columns]]
+    df = df.dropna(subset=["citing_id", "cited_cchen_id"])
+    df = df.drop_duplicates(subset=["citing_id", "cited_cchen_id"])
+    if "citing_year" in df.columns:
+        df["citing_year"] = pd.to_numeric(df["citing_year"], errors="coerce").astype("Int64")
+    REPORT.append(upsert_table("citing_papers", _to_records(df), "citing_id,cited_cchen_id"))
+
+
 # ─── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
@@ -850,11 +1132,22 @@ def main():
         ("14. entity_registry_proyectos", migrate_entity_registry_proyectos),
         ("15. entity_registry_convocatorias", migrate_entity_registry_convocatorias),
         ("16. entity_links",            migrate_entity_links),
-        ("17. convocatorias_matching_institucional", migrate_matching_institucional),
-        ("18. datacite_outputs",        migrate_datacite_outputs),
-        ("19. openaire_outputs",        migrate_openaire_outputs),
-        ("20. convenios_nacionales",    migrate_convenios),
-        ("21. acuerdos_internacionales", migrate_acuerdos),
+        ("17. perfiles_institucionales", migrate_perfiles_institucionales),
+        ("18. convocatorias",          migrate_convocatorias),
+        ("19. convocatorias_matching_rules", migrate_convocatorias_matching_rules),
+        ("20. convocatorias_matching_institucional", migrate_matching_institucional),
+        ("21. iaea_inis_monitor",      migrate_iaea_inis_monitor),
+        ("22. arxiv_monitor",          migrate_arxiv_monitor),
+        ("23. news_monitor",           migrate_news_monitor),
+        ("24. citation_graph",         migrate_citation_graph),
+        ("25. datacite_outputs",       migrate_datacite_outputs),
+        ("26. openaire_outputs",       migrate_openaire_outputs),
+        ("27. europmc_works",          migrate_europmc_works),
+        ("28. bertopic_topics",        migrate_bertopic_topics),
+        ("29. bertopic_topic_info",    migrate_bertopic_topic_info),
+        ("30. convenios_nacionales",   migrate_convenios),
+        ("31. acuerdos_internacionales", migrate_acuerdos),
+        ("32. citing_papers",          migrate_citing_papers),
     ]
 
     for label, fn in steps:

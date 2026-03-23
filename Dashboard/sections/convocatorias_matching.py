@@ -1,4 +1,6 @@
 """Section: Convocatorias y Matching — CCHEN Observatorio"""
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
 
@@ -12,7 +14,10 @@ from .shared import (
 
 def render(ctx: dict) -> None:
     """Render the Convocatorias y Matching section."""
-    from data_loader import BASE, load_convocatorias_matching_rules
+    import data_loader as _data_loader
+
+    base = getattr(_data_loader, "BASE", Path(__file__).resolve().parents[2] / "Data")
+    load_convocatorias_matching_rules = getattr(_data_loader, "load_convocatorias_matching_rules", None)
 
     matching_inst = ctx["matching_inst"]
     perfiles_inst = ctx["perfiles_inst"]
@@ -27,7 +32,11 @@ def render(ctx: dict) -> None:
     _conv, _conv_mode, _conv_path = _load_convocatorias_data()
     _matching = matching_inst.copy() if matching_inst is not None else pd.DataFrame()
     _profiles = perfiles_inst.copy() if perfiles_inst is not None else pd.DataFrame()
-    _rules = load_convocatorias_matching_rules()
+    rules_path = base / "Vigilancia" / "convocatorias_matching_rules.csv"
+    if callable(load_convocatorias_matching_rules):
+        _rules = load_convocatorias_matching_rules()
+    else:
+        _rules = pd.read_csv(rules_path, encoding="utf-8-sig") if rules_path.exists() else pd.DataFrame()
 
     if _conv.empty or _matching.empty:
         st.info(

@@ -296,7 +296,8 @@ El dashboard soporta tres modos configurables via `data_source` en secrets.toml:
 1. Fork o push del repositorio a GitHub
 2. Ir a [share.streamlit.io](https://share.streamlit.io) → New app
 3. Seleccionar repo, rama `main`, archivo `Dashboard/app.py`
-4. En **Secrets**, agregar:
+4. Streamlit Cloud instalará automáticamente el `requirements.txt` de la raíz del repo
+5. En **Secrets**, agregar:
 
 ```toml
 GROQ_API_KEY = "gsk_..."
@@ -307,6 +308,34 @@ anon_key    = "eyJ..."
 data_source = "supabase_public"
 ```
 
+### Notas de despliegue
+
+- El archivo canónico para Streamlit Cloud es `requirements.txt` en la raíz del repositorio.
+- Se fija `python-3.11` en `runtime.txt` para evitar problemas de compatibilidad con el stack científico (`sentence-transformers`, `matplotlib`, `pyvis`, `duckdb`).
+- Si el deploy muestra un error del tipo `cannot import name 'load_convocatorias' from 'data_loader'`, la app está corriendo una revisión antigua del repo. En ese caso:
+  1. confirma que Streamlit Cloud apunte a la rama `main`,
+  2. fuerza un `Redeploy` o `Reboot app`,
+  3. verifica que el deploy use el commit más reciente del repositorio.
+
+### Smoke test de CI
+
+- El workflow [dashboard_smoke.yml](/Users/bastianayalainostroza/Dropbox/CCHEN/.github/workflows/dashboard_smoke.yml) corre en `push`, `pull_request` y manualmente.
+- Compila `Dashboard/app.py`, `Dashboard/data_loader.py` y `Dashboard/sections/*.py`.
+- Ejecuta [check_dashboard_smoke.py](/Users/bastianayalainostroza/Dropbox/CCHEN/Scripts/check_dashboard_smoke.py), que valida:
+  - contrato de imports `app/sections -> data_loader`,
+  - carga local de convocatorias, matching, funding y núcleo institucional,
+  - y columnas mínimas de los datasets críticos del observatorio.
+
+### Contrato de base de datos en CI
+
+- El workflow [database_contract.yml](/Users/bastianayalainostroza/Dropbox/CCHEN/.github/workflows/database_contract.yml) corre en `push`, `pull_request` y manualmente cuando cambian `Database/**`.
+- Compila los scripts de base de datos y ejecuta [check_database_contract.py](/Users/bastianayalainostroza/Dropbox/CCHEN/Scripts/check_database_contract.py).
+- El chequeo falla si:
+  - `migrate_to_supabase.py` usa tablas no creadas en `schema.sql`,
+  - `schema.sql` define tablas nuevas sin ruta de migración declarada,
+  - una tabla no tiene `RLS` habilitado,
+  - o no tiene ninguna `policy` asociada.
+
 ### Secrets requeridos
 
 | Variable | Descripción | Obligatoria | Obtener en |
@@ -316,6 +345,58 @@ data_source = "supabase_public"
 | `supabase.anon_key` | Anon key pública de Supabase | Para modo remoto | Dashboard Supabase → API |
 | `SUPABASE_KEY` | Service role key (solo para migración) | Para scripts Database/ | Dashboard Supabase → API |
 
+### Activación final de Supabase
+
+1. En tu proyecto Supabase, abrir **SQL Editor** y ejecutar [schema.sql](/Users/bastianayalainostroza/Dropbox/CCHEN/Database/schema.sql).
+2. Crear `Database/.env` con:
+
+```bash
+SUPABASE_URL=https://uhoeftavcvuzcqhukshi.supabase.co
+SUPABASE_KEY=tu_service_role_key
+SUPABASE_ANON_KEY=tu_anon_key_publica
+```
+
+3. Migrar datos:
+
+```bash
+python3 Database/migrate_to_supabase.py
+```
+
+4. Verificar contrato local:
+
+```bash
+python3 Scripts/check_database_contract.py
+OBSERVATORIO_DATA_SOURCE=local python3 Scripts/check_dashboard_smoke.py
+```
+
+5. Verificar conectividad real contra tu instancia:
+
+```bash
+python3 Scripts/check_supabase_runtime.py
+```
+
+6. En `Dashboard/.streamlit/secrets.toml` o en Streamlit Cloud → **Secrets**, configurar:
+
+```toml
+GROQ_API_KEY = "gsk_..."
+
+[supabase]
+url = "https://uhoeftavcvuzcqhukshi.supabase.co"
+anon_key = "tu_anon_key_publica"
+data_source = "supabase_public"
+```
+
+7. Levantar localmente o redeployar Streamlit Cloud.
+
+### Cómo verificar desde la app
+
+- Abre `Inspector de datasets`.
+- Cada dataset ahora muestra `Lectura efectiva`.
+- Los valores esperados son:
+  - `Supabase pública`: está saliendo desde tu instancia remota.
+  - `Fallback local`: intentó Supabase pero cayó al CSV local.
+  - `Solo local / autenticado`: no está expuesto públicamente o sigue siendo interno.
+
 ---
 
 ## File Structure
@@ -324,7 +405,8 @@ data_source = "supabase_public"
 CCHEN/
 ├── README.md                         ← Este archivo
 ├── ARCHITECTURE.md                   ← Diseño técnico completo
-├── requirements.txt                  ← Dependencias raíz (referencia)
+├── requirements.txt                  ← Dependencias raíz para Streamlit Cloud
+├── runtime.txt                       ← Versión de Python usada en deploy
 │
 ├── Dashboard/                        ← Aplicación web Streamlit
 │   ├── app.py                        ← Punto de entrada; carga datos y enruta secciones

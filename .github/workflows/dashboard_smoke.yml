@@ -1,0 +1,49 @@
+name: Dashboard Smoke Test
+
+on:
+  push:
+    paths:
+      - ".github/workflows/dashboard_smoke.yml"
+      - "Dashboard/**"
+      - "Scripts/check_dashboard_smoke.py"
+      - "Data/**"
+      - "requirements.txt"
+      - "runtime.txt"
+  pull_request:
+    paths:
+      - ".github/workflows/dashboard_smoke.yml"
+      - "Dashboard/**"
+      - "Scripts/check_dashboard_smoke.py"
+      - "Data/**"
+      - "requirements.txt"
+      - "runtime.txt"
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "runtime.txt"
+
+      - name: Instalar dependencias
+        run: pip install --quiet -r requirements.txt
+
+      - name: Compilar codigo del dashboard
+        run: |
+          python -m py_compile \
+            Dashboard/app.py \
+            Dashboard/data_loader.py \
+            Dashboard/sections/*.py \
+            Scripts/check_dashboard_smoke.py
+
+      - name: Ejecutar smoke test de imports y loaders
+        env:
+          OBSERVATORIO_DATA_SOURCE: local
+        run: python Scripts/check_dashboard_smoke.py

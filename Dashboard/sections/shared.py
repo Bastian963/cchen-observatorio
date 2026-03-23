@@ -344,11 +344,17 @@ def _normalize_convocatorias_df(df: pd.DataFrame, mode: str) -> pd.DataFrame:
 
 
 def _load_convocatorias_data():
-    from data_loader import BASE, load_convocatorias
-    curated = BASE / "Vigilancia" / "convocatorias_curadas.csv"
+    import data_loader as _data_loader
+
+    base = getattr(_data_loader, "BASE", Path(__file__).resolve().parents[2] / "Data")
+    curated = base / "Vigilancia" / "convocatorias_curadas.csv"
+    load_convocatorias = getattr(_data_loader, "load_convocatorias", None)
 
     # Intentar Supabase primero (o CSV local si existe)
-    df = load_convocatorias()
+    if callable(load_convocatorias):
+        df = load_convocatorias()
+    else:
+        df = pd.read_csv(curated, encoding="utf-8-sig") if curated.exists() else pd.DataFrame()
     if not df.empty:
         return _normalize_convocatorias_df(df, mode="curated"), "curated", curated
 

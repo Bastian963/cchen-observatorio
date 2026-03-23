@@ -1,0 +1,38 @@
+name: Database Contract
+
+on:
+  push:
+    paths:
+      - ".github/workflows/database_contract.yml"
+      - "Database/**"
+      - "Scripts/check_database_contract.py"
+      - "runtime.txt"
+  pull_request:
+    paths:
+      - ".github/workflows/database_contract.yml"
+      - "Database/**"
+      - "Scripts/check_database_contract.py"
+      - "runtime.txt"
+  workflow_dispatch:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "runtime.txt"
+
+      - name: Compilar scripts de base de datos
+        run: |
+          python -m py_compile \
+            Database/*.py \
+            Scripts/check_database_contract.py
+
+      - name: Validar contrato schema vs migración
+        run: python Scripts/check_database_contract.py

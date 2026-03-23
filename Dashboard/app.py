@@ -2,6 +2,7 @@
 CCHEN Observatorio Tecnológico — Beta interna v0.2
 Vigilancia e Inteligencia I+D+i+Tt · Comisión Chilena de Energía Nuclear
 """
+import json
 import os
 import hashlib
 import ast
@@ -15,26 +16,121 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import math
-from data_loader import (
-    load_publications, load_publications_enriched, load_authorships,
-    load_anid, load_capital_humano,
-    load_ch_resumen_ejecutivo, load_ch_analisis_avanzado,
-    load_ch_cumplimiento_centros, load_ch_transiciones,
-    load_ch_participacion_tipo_anio,
-    load_patents, get_source_timestamps, load_dian_publications,
-    load_crossref_enriched, load_concepts, load_datacite_outputs, load_openaire_outputs, load_grants_openalex,
-    load_orcid_researchers, load_ror_registry, load_ror_pending_review, load_funding_complementario, load_iaea_tc,
-    load_perfiles_institucionales, load_matching_institucional,
-    load_entity_registry_personas, load_entity_registry_proyectos, load_entity_registry_convocatorias, load_entity_links,
-    load_publications_with_concepts,
-    load_convenios_nacionales, load_acuerdos_internacionales,
-    load_unpaywall_oa, load_iaea_inis,
-    load_citation_graph, load_citing_papers, load_altmetric,
-    load_europmc, load_arxiv_monitor, load_news_monitor,
-    load_bertopic_topics, load_bertopic_topic_info,
-    load_convocatorias, load_convocatorias_matching_rules,
-    get_data_backend_info, BASE,
+import data_loader as _data_loader
+
+
+_DEFAULT_DATA_ROOT = Path(os.getenv("CCHEN_DATA_ROOT", str(Path(__file__).resolve().parent.parent / "Data")))
+BASE = getattr(_data_loader, "BASE", _DEFAULT_DATA_ROOT)
+
+
+def _compat_read_csv(*parts: str) -> pd.DataFrame:
+    path = BASE.joinpath(*parts)
+    if not path.exists():
+        return pd.DataFrame()
+    try:
+        return pd.read_csv(path, encoding="utf-8-sig")
+    except Exception:
+        return pd.read_csv(path)
+
+
+def _compat_read_json(*parts: str):
+    path = BASE.joinpath(*parts)
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _empty_loader():
+    return pd.DataFrame()
+
+
+def _csv_loader(*parts: str):
+    def _loader():
+        return _compat_read_csv(*parts)
+    return _loader
+
+
+def _json_loader(*parts: str):
+    def _loader():
+        return _compat_read_json(*parts)
+    return _loader
+
+
+def _resolve_loader(name: str, fallback=None):
+    value = getattr(_data_loader, name, None)
+    if value is not None:
+        return value
+    if fallback is not None:
+        return fallback
+    raise ImportError(f"data_loader no expone `{name}` y no existe fallback de compatibilidad")
+
+
+load_publications = _resolve_loader("load_publications")
+load_publications_enriched = _resolve_loader("load_publications_enriched")
+load_authorships = _resolve_loader("load_authorships")
+load_anid = _resolve_loader("load_anid")
+load_capital_humano = _resolve_loader("load_capital_humano")
+load_ch_resumen_ejecutivo = _resolve_loader(
+    "load_ch_resumen_ejecutivo",
+    _json_loader("Capital humano CCHEN", "salida_dataset_maestro", "resumen_ejecutivo.json"),
 )
+load_ch_analisis_avanzado = _resolve_loader(
+    "load_ch_analisis_avanzado",
+    _json_loader("Capital humano CCHEN", "salida_dataset_maestro", "analisis_avanzado", "resumen_analisis_avanzado.json"),
+)
+load_ch_cumplimiento_centros = _resolve_loader("load_ch_cumplimiento_centros", _empty_loader)
+load_ch_transiciones = _resolve_loader("load_ch_transiciones", _empty_loader)
+load_ch_participacion_tipo_anio = _resolve_loader("load_ch_participacion_tipo_anio", _empty_loader)
+load_patents = _resolve_loader("load_patents", _csv_loader("Patents", "cchen_patents_uspto.csv"))
+get_source_timestamps = _resolve_loader("get_source_timestamps", lambda: {})
+load_dian_publications = _resolve_loader("load_dian_publications", _empty_loader)
+load_crossref_enriched = _resolve_loader("load_crossref_enriched")
+load_concepts = _resolve_loader("load_concepts")
+load_datacite_outputs = _resolve_loader("load_datacite_outputs", _csv_loader("ResearchOutputs", "cchen_datacite_outputs.csv"))
+load_openaire_outputs = _resolve_loader("load_openaire_outputs", _csv_loader("ResearchOutputs", "cchen_openaire_outputs.csv"))
+load_grants_openalex = _resolve_loader("load_grants_openalex", _empty_loader)
+load_orcid_researchers = _resolve_loader("load_orcid_researchers", _csv_loader("Researchers", "cchen_researchers_orcid.csv"))
+load_ror_registry = _resolve_loader("load_ror_registry", _csv_loader("Institutional", "cchen_institution_registry.csv"))
+load_ror_pending_review = _resolve_loader("load_ror_pending_review", _csv_loader("Institutional", "ror_pending_review.csv"))
+load_funding_complementario = _resolve_loader("load_funding_complementario", _csv_loader("Funding", "cchen_funding_complementario.csv"))
+load_iaea_tc = _resolve_loader("load_iaea_tc", _csv_loader("Funding", "cchen_iaea_tc.csv"))
+load_perfiles_institucionales = _resolve_loader("load_perfiles_institucionales", _csv_loader("Vigilancia", "perfiles_institucionales_cchen.csv"))
+load_matching_institucional = _resolve_loader("load_matching_institucional", _csv_loader("Vigilancia", "convocatorias_matching_institucional.csv"))
+load_entity_registry_personas = _resolve_loader("load_entity_registry_personas", _csv_loader("Gobernanza", "entity_registry_personas.csv"))
+load_entity_registry_proyectos = _resolve_loader("load_entity_registry_proyectos", _csv_loader("Gobernanza", "entity_registry_proyectos.csv"))
+load_entity_registry_convocatorias = _resolve_loader("load_entity_registry_convocatorias", _csv_loader("Gobernanza", "entity_registry_convocatorias.csv"))
+load_entity_links = _resolve_loader("load_entity_links", _csv_loader("Gobernanza", "entity_links.csv"))
+load_publications_with_concepts = _resolve_loader("load_publications_with_concepts", _csv_loader("Publications", "cchen_publications_with_concepts.csv"))
+load_convenios_nacionales = _resolve_loader("load_convenios_nacionales", _empty_loader)
+load_acuerdos_internacionales = _resolve_loader("load_acuerdos_internacionales", _empty_loader)
+load_unpaywall_oa = _resolve_loader("load_unpaywall_oa", _empty_loader)
+load_iaea_inis = _resolve_loader("load_iaea_inis", _csv_loader("Vigilancia", "iaea_inis_monitor.csv"))
+load_citation_graph = _resolve_loader("load_citation_graph", _csv_loader("Publications", "cchen_citation_graph.csv"))
+load_citing_papers = _resolve_loader("load_citing_papers", _csv_loader("Publications", "cchen_citing_papers.csv"))
+load_altmetric = _resolve_loader("load_altmetric", _empty_loader)
+load_europmc = _resolve_loader("load_europmc", _csv_loader("Publications", "cchen_europmc_works.csv"))
+load_arxiv_monitor = _resolve_loader("load_arxiv_monitor", _csv_loader("Vigilancia", "arxiv_monitor.csv"))
+load_news_monitor = _resolve_loader("load_news_monitor", _csv_loader("Vigilancia", "news_monitor.csv"))
+load_bertopic_topics = _resolve_loader("load_bertopic_topics", _csv_loader("Publications", "cchen_bertopic_topics.csv"))
+load_bertopic_topic_info = _resolve_loader("load_bertopic_topic_info", _csv_loader("Publications", "cchen_bertopic_topic_info.csv"))
+load_convocatorias = _resolve_loader("load_convocatorias", _csv_loader("Vigilancia", "convocatorias_curadas.csv"))
+load_convocatorias_matching_rules = _resolve_loader(
+    "load_convocatorias_matching_rules",
+    _csv_loader("Vigilancia", "convocatorias_matching_rules.csv"),
+)
+get_data_backend_info = _resolve_loader(
+    "get_data_backend_info",
+    lambda: {
+        "engine": "pandas",
+        "detail": "compat mode local CSV fallback",
+        "source_mode": "local",
+    },
+)
+get_table_load_status = _resolve_loader("get_table_load_status", lambda: {})
+_PUBLIC_TABLE_CONFIG = getattr(_data_loader, "PUBLIC_TABLE_CONFIG", {})
 
 # ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -606,119 +702,161 @@ def _dataset_catalog() -> dict:
         "Publicaciones OpenAlex": {
             "df": pub,
             "source": "Data/Publications/cchen_openalex_works.csv",
+            "table_name": "publications",
             "sensitive": False,
         },
         "Publicaciones enriquecidas + SJR": {
             "df": pub_enr,
             "source": "Data/Publications/cchen_publications_with_quartile_sjr.csv",
+            "table_name": "publications_enriched",
             "sensitive": False,
         },
         "Autorías OpenAlex": {
             "df": auth,
             "source": "Data/Publications/cchen_authorships_enriched.csv",
+            "table_name": "authorships",
             "sensitive": False,
         },
         "ANID": {
             "df": anid,
             "source": "Data/ANID/RepositorioAnid_con_monto.csv",
+            "table_name": "anid_projects",
             "sensitive": False,
         },
         "Capital Humano": {
             "df": ch,
             "source": "Data/Capital humano CCHEN/salida_dataset_maestro/dataset_maestro_limpio.csv",
+            "table_name": "capital_humano",
             "sensitive": True,
         },
         "CrossRef": {
             "df": crossref,
             "source": "Data/Publications/cchen_crossref_enriched.csv",
+            "table_name": "crossref_data",
             "sensitive": False,
         },
         "Conceptos OpenAlex": {
             "df": concepts,
             "source": "Data/Publications/cchen_openalex_concepts.csv",
+            "table_name": "concepts",
             "sensitive": False,
         },
         "DataCite outputs": {
             "df": datacite,
             "source": "Data/ResearchOutputs/cchen_datacite_outputs.csv",
+            "table_name": "datacite_outputs",
             "sensitive": False,
         },
         "OpenAIRE outputs": {
             "df": openaire,
             "source": "Data/ResearchOutputs/cchen_openaire_outputs.csv",
+            "table_name": "openaire_outputs",
             "sensitive": False,
         },
         "Investigadores ORCID": {
             "df": orcid,
             "source": "Data/Researchers/cchen_researchers_orcid.csv",
+            "table_name": "researchers_orcid",
             "sensitive": False,
         },
         "Registro institucional ROR": {
             "df": ror_registry,
             "source": "Data/Institutional/cchen_institution_registry.csv",
+            "table_name": "institution_registry",
             "sensitive": False,
         },
         "Cola revisión ROR": {
             "df": ror_pending_review,
             "source": "Data/Institutional/ror_pending_review.csv",
+            "table_name": "institution_registry_pending_review",
             "sensitive": False,
         },
         "Financiamiento complementario": {
             "df": funding_plus,
             "source": "Data/Funding/cchen_funding_complementario.csv",
+            "table_name": "funding_complementario",
             "sensitive": True,
         },
         "Perfiles institucionales": {
             "df": perfiles_inst,
             "source": "Data/Vigilancia/perfiles_institucionales_cchen.csv",
+            "table_name": "perfiles_institucionales",
             "sensitive": False,
         },
         "Matching institucional": {
             "df": matching_inst,
             "source": "Data/Vigilancia/convocatorias_matching_institucional.csv",
+            "table_name": "convocatorias_matching_institucional",
             "sensitive": False,
         },
         "Entidades persona": {
             "df": entity_personas,
             "source": "Data/Gobernanza/entity_registry_personas.csv",
+            "table_name": "entity_registry_personas",
             "sensitive": True,
         },
         "Entidades proyecto": {
             "df": entity_projects,
             "source": "Data/Gobernanza/entity_registry_proyectos.csv",
+            "table_name": "entity_registry_proyectos",
             "sensitive": False,
         },
         "Entidades convocatoria": {
             "df": entity_convocatorias,
             "source": "Data/Gobernanza/entity_registry_convocatorias.csv",
+            "table_name": "entity_registry_convocatorias",
             "sensitive": False,
         },
         "Enlaces entre entidades": {
             "df": entity_links,
             "source": "Data/Gobernanza/entity_links.csv",
+            "table_name": "entity_links",
             "sensitive": True,
         },
         "Convenios nacionales": {
             "df": convenios,
             "source": "Data/Institutional/clean_Convenios_suscritos_por_la_Com.csv",
+            "table_name": "convenios_nacionales",
             "sensitive": False,
         },
         "Acuerdos internacionales": {
             "df": acuerdos,
             "source": "Data/Institutional/clean_Acuerdos_e_instrumentos_intern.csv",
+            "table_name": "acuerdos_internacionales",
             "sensitive": False,
         },
         "Unpaywall OA enrichment": {
             "df": unpaywall,
             "source": "Data/Publications/cchen_unpaywall_oa.csv",
+            "table_name": "unpaywall_oa",
             "sensitive": False,
         },
         "Monitor IAEA INIS": {
             "df": load_iaea_inis(),
             "source": "Data/Vigilancia/iaea_inis_monitor.csv",
+            "table_name": "iaea_inis_monitor",
             "sensitive": False,
         },
     }
+
+
+def _describe_dataset_read_source(meta: dict) -> tuple[str, str]:
+    table_name = str(meta.get("table_name") or "").strip()
+    status = get_table_load_status().get(table_name, {}) if table_name else {}
+    source = status.get("source", "")
+    detail = status.get("detail", "")
+
+    if source == "supabase_public":
+        return "Supabase pública", table_name
+    if source == "local_fallback":
+        return "Fallback local", detail or meta.get("source", "CSV local")
+    if source == "local_only":
+        if table_name and table_name in _PUBLIC_TABLE_CONFIG:
+            return "Local", detail or meta.get("source", "CSV local")
+        return "Solo local / autenticado", detail or meta.get("source", "CSV local")
+    if table_name and table_name in _PUBLIC_TABLE_CONFIG:
+        return "Remoto habilitado", table_name
+    return "Solo local / autenticado", meta.get("source", "CSV local")
 
 
 @_dialog("Inspector de datasets", width="large")
@@ -728,12 +866,15 @@ def open_dataset_inspector():
     dataset_name = st.selectbox("Dataset", list(catalog.keys()), index=0)
     meta = catalog[dataset_name]
     df = meta["df"]
+    read_source, read_detail = _describe_dataset_read_source(meta)
 
     st.caption(f"Fuente: `{meta['source']}`")
-    c1, c2, c3 = st.columns(3)
+    st.caption(f"Lectura efectiva: `{read_source}` · `{read_detail}`")
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric("Filas", f"{len(df):,}")
     c2.metric("Columnas", f"{len(df.columns):,}" if hasattr(df, "columns") else "—")
     c3.metric("Sensibilidad", "Restringido" if meta["sensitive"] else "Público")
+    c4.metric("Origen", read_source)
 
     if meta["sensitive"] and not access["can_view_sensitive"]:
         st.warning(
@@ -1536,7 +1677,7 @@ with st.sidebar:
         unsafe_allow_html=True
     )
     st.markdown("---")
-    seccion = st.radio("", [
+    seccion = st.radio("Sección del observatorio", [
         "Panel de Indicadores",
         "Producción Científica",
         "Redes y Colaboración",

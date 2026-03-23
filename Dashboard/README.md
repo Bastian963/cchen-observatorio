@@ -89,25 +89,42 @@ Al abrir el dashboard:
 - `authorships`
 - `crossref_data`
 - `concepts`
+- `patents`
 - `datacite_outputs`
 - `openaire_outputs`
 - `anid_projects`
 - `researchers_orcid`
 - `institution_registry`
 - `institution_registry_pending_review`
+- `perfiles_institucionales`
+- `convocatorias`
+- `convocatorias_matching_rules`
 - `convenios_nacionales`
 - `acuerdos_internacionales`
+- `entity_registry_proyectos`
+- `entity_registry_convocatorias`
+- `convocatorias_matching_institucional`
+- `iaea_inis_monitor`
+- `arxiv_monitor`
+- `news_monitor`
+- `citation_graph`
+- `europmc_works`
+- `bertopic_topics`
+- `bertopic_topic_info`
+- `citing_papers`
+- `data_sources`
 
 ### Tablas que siguen locales en esta fase
 
 - `capital_humano`
 - `funding_complementario`
+- `entity_registry_personas`
+- `entity_links`
 - `dian_publications`
 - `grants_openalex`
 - `publications_with_concepts`
-- `patents`
 
-Estas siguen locales para no mezclar OIDC de Streamlit con autorización real de Supabase/RLS, y porque algunas son derivadas o internas.
+Estas siguen locales para no mezclar OIDC de Streamlit con autorización real de Supabase/RLS, y porque son sensibles o internas.
 
 ## Activar autenticación OIDC
 

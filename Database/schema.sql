@@ -637,6 +637,240 @@ COMMENT ON TABLE convocatorias_matching_institucional IS
     'Incluye score formal, elegibilidad, readiness y acción recomendada.';
 
 -- ============================================================
+-- MÓDULO: VIGILANCIA Y MATCHING
+-- Fuentes: Data/Vigilancia/*.csv + scripts semanales
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS perfiles_institucionales (
+    perfil_id            TEXT PRIMARY KEY,
+    perfil_nombre        TEXT NOT NULL,
+    owner_unit           TEXT,
+    profile_aliases      TEXT,
+    secondary_aliases    TEXT,
+    descripcion          TEXT,
+    created_at           TIMESTAMP DEFAULT NOW()
+);
+
+COMMENT ON TABLE perfiles_institucionales IS
+    'Perfiles institucionales base para la mesa de convocatorias CCHEN. '
+    'Define unidad responsable, alias y descripción operacional por perfil objetivo.';
+
+CREATE TABLE IF NOT EXISTS convocatorias (
+    conv_id              TEXT PRIMARY KEY,
+    tipo_registro        TEXT,
+    titulo               TEXT NOT NULL,
+    organismo            TEXT,
+    categoria            TEXT,
+    estado               TEXT,
+    apertura_texto       TEXT,
+    cierre_texto         TEXT,
+    fallo_texto          TEXT,
+    apertura_iso         DATE,
+    cierre_iso           DATE,
+    perfil_objetivo      TEXT,
+    relevancia_cchen     TEXT,
+    fuente               TEXT,
+    es_oficial           BOOLEAN DEFAULT TRUE,
+    postulable           BOOLEAN DEFAULT TRUE,
+    url                  TEXT,
+    notas                TEXT,
+    created_at           TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_convocatorias_estado ON convocatorias(estado);
+CREATE INDEX IF NOT EXISTS idx_convocatorias_categoria ON convocatorias(categoria);
+CREATE INDEX IF NOT EXISTS idx_convocatorias_cierre ON convocatorias(cierre_iso);
+
+COMMENT ON TABLE convocatorias IS
+    'Convocatorias curadas y priorizadas para CCHEN. '
+    'Conserva calendario, relevancia, elegibilidad base y fuente oficial.';
+
+CREATE TABLE IF NOT EXISTS convocatorias_matching_rules (
+    rule_id                      TEXT PRIMARY KEY,
+    perfil_id                    TEXT,
+    exact_aliases                TEXT,
+    secondary_aliases            TEXT,
+    requiere_doctorado           BOOLEAN DEFAULT FALSE,
+    requiere_institucion         BOOLEAN DEFAULT FALSE,
+    requiere_transferencia       BOOLEAN DEFAULT FALSE,
+    requiere_red_internacional   BOOLEAN DEFAULT FALSE,
+    requiere_capacidad_instrumental BOOLEAN DEFAULT FALSE,
+    notes                        TEXT,
+    created_at                   TIMESTAMP DEFAULT NOW()
+);
+
+COMMENT ON TABLE convocatorias_matching_rules IS
+    'Reglas explícitas de matching para convocatorias CCHEN. '
+    'Codifica perfiles, alias y banderas mínimas de elegibilidad institucional.';
+
+CREATE TABLE IF NOT EXISTS iaea_inis_monitor (
+    inis_id              TEXT PRIMARY KEY,
+    title                TEXT NOT NULL,
+    authors              TEXT,
+    abstract_short       TEXT,
+    link                 TEXT,
+    published            TEXT,
+    subject_area         TEXT,
+    relevance_flag       TEXT,
+    keywords_found       TEXT,
+    source_type          TEXT,
+    fetched_at           DATE,
+    created_at           TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_inis_relevance ON iaea_inis_monitor(relevance_flag);
+CREATE INDEX IF NOT EXISTS idx_inis_subject_area ON iaea_inis_monitor(subject_area);
+
+COMMENT ON TABLE iaea_inis_monitor IS
+    'Monitoreo de literatura IAEA INIS relevante a CCHEN. '
+    'Fuente: Scripts/iaea_inis_monitor.py.';
+
+CREATE TABLE IF NOT EXISTS arxiv_monitor (
+    arxiv_id             TEXT PRIMARY KEY,
+    title                TEXT NOT NULL,
+    authors              TEXT,
+    abstract_short       TEXT,
+    link                 TEXT,
+    published            TEXT,
+    feed_area            TEXT,
+    relevance_flag       TEXT,
+    keywords_found       TEXT,
+    fetched_at           DATE,
+    created_at           TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_arxiv_relevance ON arxiv_monitor(relevance_flag);
+CREATE INDEX IF NOT EXISTS idx_arxiv_feed_area ON arxiv_monitor(feed_area);
+
+COMMENT ON TABLE arxiv_monitor IS
+    'Monitoreo arXiv para áreas científicas relevantes al observatorio. '
+    'Fuente: Scripts/arxiv_monitor.py.';
+
+CREATE TABLE IF NOT EXISTS news_monitor (
+    news_id              TEXT PRIMARY KEY,
+    title                TEXT NOT NULL,
+    source_name          TEXT,
+    link                 TEXT,
+    published            TEXT,
+    snippet              TEXT,
+    query_label          TEXT,
+    topic_flag           TEXT,
+    fetched_at           DATE,
+    created_at           TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_news_topic_flag ON news_monitor(topic_flag);
+CREATE INDEX IF NOT EXISTS idx_news_source_name ON news_monitor(source_name);
+
+COMMENT ON TABLE news_monitor IS
+    'Monitoreo de prensa sobre CCHEN, energía nuclear y ciencia relacionada. '
+    'Fuente: Scripts/news_monitor.py.';
+
+-- ============================================================
+-- MÓDULO: ANALÍTICA CIENTÍFICA Y TEMÁTICA
+-- Fuentes: OpenAlex, EuroPMC y BERTopic
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS citation_graph (
+    openalex_id             TEXT PRIMARY KEY REFERENCES publications(openalex_id),
+    doi                     TEXT,
+    year                    INTEGER,
+    cited_by_count          INTEGER DEFAULT 0,
+    referenced_works_count  INTEGER DEFAULT 0,
+    referenced_ids_sample   TEXT,
+    fetched_at              DATE,
+    created_at              TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_citation_graph_year ON citation_graph(year);
+CREATE INDEX IF NOT EXISTS idx_citation_graph_cites ON citation_graph(cited_by_count);
+
+COMMENT ON TABLE citation_graph IS
+    'Resumen del grafo de citas por publicación CCHEN. '
+    'Incluye conteos de citas recibidas y de referencias salientes desde OpenAlex.';
+
+CREATE TABLE IF NOT EXISTS europmc_works (
+    source_id            TEXT PRIMARY KEY,
+    doi                  TEXT,
+    pmid                 TEXT,
+    pmcid                TEXT,
+    title                TEXT NOT NULL,
+    authors              TEXT,
+    journal              TEXT,
+    year                 INTEGER,
+    pub_date             DATE,
+    cited_by_count       INTEGER DEFAULT 0,
+    is_open_access       TEXT,
+    abstract_available   TEXT,
+    source               TEXT,
+    keywords             TEXT,
+    affiliation_raw      TEXT,
+    europmc_url          TEXT,
+    fetched_at           DATE,
+    created_at           TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_europmc_year ON europmc_works(year);
+CREATE INDEX IF NOT EXISTS idx_europmc_doi ON europmc_works(doi);
+
+COMMENT ON TABLE europmc_works IS
+    'Outputs CCHEN detectados en EuroPMC. '
+    'Complementa OpenAlex con literatura biomédica, PMC y preprints afines.';
+
+CREATE TABLE IF NOT EXISTS bertopic_topics (
+    openalex_id          TEXT NOT NULL REFERENCES publications(openalex_id),
+    topic_id             INTEGER NOT NULL,
+    title                TEXT,
+    year                 INTEGER,
+    abstract_best        TEXT,
+    topic_prob           NUMERIC,
+    created_at           TIMESTAMP DEFAULT NOW(),
+    PRIMARY KEY (openalex_id, topic_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_bertopic_topics_topic ON bertopic_topics(topic_id);
+CREATE INDEX IF NOT EXISTS idx_bertopic_topics_year ON bertopic_topics(year);
+
+COMMENT ON TABLE bertopic_topics IS
+    'Asignación de tema BERTopic por publicación CCHEN. '
+    'Permite navegar distribución temática y series temporales.';
+
+CREATE TABLE IF NOT EXISTS bertopic_topic_info (
+    topic                INTEGER PRIMARY KEY,
+    count                INTEGER,
+    name                 TEXT,
+    representation       TEXT,
+    representative_docs  TEXT,
+    created_at           TIMESTAMP DEFAULT NOW()
+);
+
+COMMENT ON TABLE bertopic_topic_info IS
+    'Metadatos de los temas BERTopic: nombre base, representación y documentos representativos.';
+
+-- ============================================================
+-- MÓDULO: GRAFO DE CITAS
+-- Fuente: OpenAlex citation graph (papers citantes)
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS citing_papers (
+    citing_id           TEXT NOT NULL,
+    cited_cchen_id      TEXT NOT NULL REFERENCES publications(openalex_id),
+    citing_doi          TEXT,
+    citing_title        TEXT,
+    citing_year         INTEGER,
+    citing_institutions TEXT,
+    created_at          TIMESTAMP DEFAULT NOW(),
+    PRIMARY KEY (citing_id, cited_cchen_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_citing_papers_year ON citing_papers(citing_year);
+CREATE INDEX IF NOT EXISTS idx_citing_papers_cited ON citing_papers(cited_cchen_id);
+
+COMMENT ON TABLE citing_papers IS
+    'Papers externos que citan publicaciones CCHEN. '
+    'Fuente: grafo de citación OpenAlex. 8.499 registros esperados.';
+
+-- ============================================================
 -- MÓDULO: GOBERNANZA DE DATOS
 -- Tabla de metadatos de fuentes (trazabilidad)
 -- ============================================================
@@ -678,12 +912,24 @@ INSERT INTO data_sources (source_name, description, url, table_name, notebook_pa
     ('DataCite outputs',        'Datasets y otros outputs con DOI asociados a CCHEN vía ROR',      'https://api.datacite.org', 'datacite_outputs',        'Scripts/fetch_datacite_outputs.py',          'semestral',  FALSE),
     ('OpenAIRE outputs',        'Outputs asociados a investigadores CCHEN vía ORCID en OpenAIRE', 'https://api.openaire.eu',  'openaire_outputs',        'Scripts/fetch_openaire_outputs.py',          'semestral',  FALSE),
     ('SJR Scimago',             'Rankings y cuartiles de revistas científicas',                    'https://www.scimagojr.com','publications_enriched',   NULL,                                         'anual',      FALSE),
+    ('Perfiles institucionales', 'Perfiles institucionales base para matching y priorización',      NULL,                       'perfiles_institucionales', 'Data/Vigilancia/perfiles_institucionales_cchen.csv', 'semanal', FALSE),
+    ('Convocatorias curadas',   'Calendario curado de convocatorias relevantes para CCHEN',         'https://anid.cl/calendario-concursos-2026/', 'convocatorias', 'Scripts/convocatorias_monitor.py', 'semanal', FALSE),
+    ('Reglas de matching',      'Reglas explícitas de elegibilidad y alias para matching institucional', NULL,                 'convocatorias_matching_rules', 'Data/Vigilancia/convocatorias_matching_rules.csv', 'semanal', FALSE),
+    ('Matching institucional',  'Scoring formal de convocatorias abiertas y próximas para CCHEN',   NULL,                       'convocatorias_matching_institucional', 'Scripts/build_operational_core.py', 'semanal', FALSE),
+    ('IAEA INIS monitor',       'Monitoreo de literatura INIS relevante a CCHEN',                   'https://inis.iaea.org',    'iaea_inis_monitor',       'Scripts/iaea_inis_monitor.py',               'semanal', FALSE),
+    ('arXiv monitor',           'Monitoreo de papers arXiv relevantes al observatorio',             'https://arxiv.org',        'arxiv_monitor',           'Scripts/arxiv_monitor.py',                    'semanal', FALSE),
+    ('News monitor',            'Monitoreo de prensa y noticias sobre CCHEN y energía nuclear',     'https://news.google.com',  'news_monitor',            'Scripts/news_monitor.py',                     'semanal', FALSE),
+    ('Citation graph',          'Resumen de citas y referencias de publicaciones CCHEN en OpenAlex', 'https://api.openalex.org', 'citation_graph',         'Scripts/fetch_openalex_citations.py',         'trimestral', FALSE),
+    ('EuroPMC works',           'Outputs CCHEN identificados en EuroPMC',                           'https://europepmc.org',    'europmc_works',           'Scripts/fetch_europmc.py',                    'semestral', FALSE),
+    ('BERTopic topics',         'Asignación temática BERTopic por publicación CCHEN',               NULL,                       'bertopic_topics',         'Scripts/run_bertopic.py',                     'trimestral', FALSE),
+    ('BERTopic topic info',     'Metadatos y términos representativos de temas BERTopic',           NULL,                       'bertopic_topic_info',     'Scripts/run_bertopic.py',                     'trimestral', FALSE),
+    ('OpenAlex Citations',      'Papers externos que citan publicaciones CCHEN',                  'https://api.openalex.org', 'citing_papers',           'Scripts/fetch_openalex_citations.py',        'trimestral', FALSE),
     ('Financiamiento complementario', 'CORFO, IAEA TC y otros fondos curados con elegibilidad y confianza', NULL, 'funding_complementario', 'Scripts/fetch_funding_plus.py', 'semestral', FALSE),
     ('Entity registry personas', 'Registro canónico de personas del observatorio',                  NULL,                       'entity_registry_personas', 'Scripts/build_operational_core.py',          'semanal',    FALSE),
     ('Entity registry proyectos','Registro canónico de proyectos adjudicados y asociados',          NULL,                       'entity_registry_proyectos','Scripts/build_operational_core.py',          'semanal',    FALSE),
     ('Entity registry convocatorias','Registro canónico de convocatorias curadas',                  NULL,                       'entity_registry_convocatorias','Scripts/build_operational_core.py',       'semanal',    FALSE),
     ('Entity links',            'Relaciones operativas entre entidades canónicas del observatorio', NULL,                       'entity_links',            'Scripts/build_operational_core.py',          'semanal',    FALSE),
-    ('Matching institucional',  'Scoring formal de convocatorias abiertas y próximas para CCHEN',  NULL,                       'convocatorias_matching_institucional', 'Scripts/build_operational_core.py', 'semanal', FALSE)
+    ('Capital humano',          'Registro interno consolidado de formación de capital humano CCHEN', NULL,                      'capital_humano',          'Data/Capital humano CCHEN/salida_dataset_maestro/dataset_maestro_limpio.csv', 'semestral', FALSE)
 ON CONFLICT (source_name) DO NOTHING;
 
 -- ============================================================
@@ -777,10 +1023,51 @@ ALTER TABLE entity_registry_personas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE entity_registry_proyectos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE entity_registry_convocatorias ENABLE ROW LEVEL SECURITY;
 ALTER TABLE entity_links             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE perfiles_institucionales ENABLE ROW LEVEL SECURITY;
+ALTER TABLE convocatorias            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE convocatorias_matching_rules ENABLE ROW LEVEL SECURITY;
 ALTER TABLE convocatorias_matching_institucional ENABLE ROW LEVEL SECURITY;
+ALTER TABLE iaea_inis_monitor        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE arxiv_monitor            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE news_monitor             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE citation_graph           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE europmc_works            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bertopic_topics          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bertopic_topic_info      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE citing_papers           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE data_sources             ENABLE ROW LEVEL SECURITY;
 
 -- Lectura pública para tablas no sensibles
+DROP POLICY IF EXISTS "public_read_publications" ON publications;
+DROP POLICY IF EXISTS "public_read_pub_enriched" ON publications_enriched;
+DROP POLICY IF EXISTS "public_read_authorships" ON authorships;
+DROP POLICY IF EXISTS "public_read_crossref" ON crossref_data;
+DROP POLICY IF EXISTS "public_read_concepts" ON concepts;
+DROP POLICY IF EXISTS "public_read_patents" ON patents;
+DROP POLICY IF EXISTS "public_read_anid" ON anid_projects;
+DROP POLICY IF EXISTS "public_read_orcid" ON researchers_orcid;
+DROP POLICY IF EXISTS "public_read_convenios" ON convenios_nacionales;
+DROP POLICY IF EXISTS "public_read_acuerdos" ON acuerdos_internacionales;
+DROP POLICY IF EXISTS "public_read_institution_registry" ON institution_registry;
+DROP POLICY IF EXISTS "public_read_ror_pending" ON institution_registry_pending_review;
+DROP POLICY IF EXISTS "public_read_datacite" ON datacite_outputs;
+DROP POLICY IF EXISTS "public_read_openaire" ON openaire_outputs;
+DROP POLICY IF EXISTS "public_read_entity_projects" ON entity_registry_proyectos;
+DROP POLICY IF EXISTS "public_read_entity_convocatorias" ON entity_registry_convocatorias;
+DROP POLICY IF EXISTS "public_read_profiles" ON perfiles_institucionales;
+DROP POLICY IF EXISTS "public_read_convocatorias" ON convocatorias;
+DROP POLICY IF EXISTS "public_read_matching_rules" ON convocatorias_matching_rules;
+DROP POLICY IF EXISTS "public_read_matching" ON convocatorias_matching_institucional;
+DROP POLICY IF EXISTS "public_read_inis_monitor" ON iaea_inis_monitor;
+DROP POLICY IF EXISTS "public_read_arxiv_monitor" ON arxiv_monitor;
+DROP POLICY IF EXISTS "public_read_news_monitor" ON news_monitor;
+DROP POLICY IF EXISTS "public_read_citation_graph" ON citation_graph;
+DROP POLICY IF EXISTS "public_read_europmc" ON europmc_works;
+DROP POLICY IF EXISTS "public_read_bertopic_topics" ON bertopic_topics;
+DROP POLICY IF EXISTS "public_read_bertopic_info" ON bertopic_topic_info;
+DROP POLICY IF EXISTS "public_read_citing_papers" ON citing_papers;
+DROP POLICY IF EXISTS "public_read_data_sources" ON data_sources;
+
 CREATE POLICY "public_read_publications"    ON publications             FOR SELECT USING (TRUE);
 CREATE POLICY "public_read_pub_enriched"    ON publications_enriched    FOR SELECT USING (TRUE);
 CREATE POLICY "public_read_authorships"     ON authorships              FOR SELECT USING (TRUE);
@@ -797,10 +1084,26 @@ CREATE POLICY "public_read_datacite"        ON datacite_outputs         FOR SELE
 CREATE POLICY "public_read_openaire"        ON openaire_outputs         FOR SELECT USING (TRUE);
 CREATE POLICY "public_read_entity_projects" ON entity_registry_proyectos FOR SELECT USING (TRUE);
 CREATE POLICY "public_read_entity_convocatorias" ON entity_registry_convocatorias FOR SELECT USING (TRUE);
+CREATE POLICY "public_read_profiles"        ON perfiles_institucionales FOR SELECT USING (TRUE);
+CREATE POLICY "public_read_convocatorias"   ON convocatorias            FOR SELECT USING (TRUE);
+CREATE POLICY "public_read_matching_rules"  ON convocatorias_matching_rules FOR SELECT USING (TRUE);
 CREATE POLICY "public_read_matching"        ON convocatorias_matching_institucional FOR SELECT USING (TRUE);
+CREATE POLICY "public_read_inis_monitor"    ON iaea_inis_monitor        FOR SELECT USING (TRUE);
+CREATE POLICY "public_read_arxiv_monitor"   ON arxiv_monitor            FOR SELECT USING (TRUE);
+CREATE POLICY "public_read_news_monitor"    ON news_monitor             FOR SELECT USING (TRUE);
+CREATE POLICY "public_read_citation_graph"  ON citation_graph           FOR SELECT USING (TRUE);
+CREATE POLICY "public_read_europmc"         ON europmc_works            FOR SELECT USING (TRUE);
+CREATE POLICY "public_read_bertopic_topics" ON bertopic_topics          FOR SELECT USING (TRUE);
+CREATE POLICY "public_read_bertopic_info"   ON bertopic_topic_info      FOR SELECT USING (TRUE);
+CREATE POLICY "public_read_citing_papers"   ON citing_papers            FOR SELECT USING (TRUE);
 CREATE POLICY "public_read_data_sources"    ON data_sources             FOR SELECT USING (TRUE);
 
 -- Capital humano: solo lectura autenticada (datos personales)
+DROP POLICY IF EXISTS "auth_read_capital_humano" ON capital_humano;
+DROP POLICY IF EXISTS "auth_read_funding_plus" ON funding_complementario;
+DROP POLICY IF EXISTS "auth_read_entity_personas" ON entity_registry_personas;
+DROP POLICY IF EXISTS "auth_read_entity_links" ON entity_links;
+
 CREATE POLICY "auth_read_capital_humano"    ON capital_humano           FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "auth_read_funding_plus"      ON funding_complementario   FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "auth_read_entity_personas"   ON entity_registry_personas FOR SELECT USING (auth.role() = 'authenticated');
