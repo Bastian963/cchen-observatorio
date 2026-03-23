@@ -241,17 +241,21 @@ def empty_state(msg):
 
 # ── Generación del HTML ────────────────────────────────────────────────────────
 
-def generate_html(news_df, papers_df, weeks_back, week_label):
+def generate_html(news_df, papers_df, weeks_back, week_label, news_fallback=False):
     c = COLORS
     now = datetime.datetime.now()
 
-    n_news   = len(news_df)
+    n_news   = 0 if news_fallback else len(news_df)
     n_papers = len(papers_df)
 
     # Build news cards
-    news_rows = "".join(news_card(r) for _, r in news_df.iterrows()) \
-                if not news_df.empty \
-                else empty_state("No se encontraron noticias de CCHEN en este período.")
+    if news_fallback and not news_df.empty:
+        fallback_note = empty_state("Sin noticias esta semana · Mostrando las más recientes")
+        news_rows = fallback_note + "".join(news_card(r) for _, r in news_df.iterrows())
+    elif not news_df.empty:
+        news_rows = "".join(news_card(r) for _, r in news_df.iterrows())
+    else:
+        news_rows = empty_state("No se encontraron noticias de CCHEN en este período.")
 
     # Build CCHEN papers
     paper_rows = "".join(paper_card(r) for _, r in papers_df.iterrows()) \
@@ -390,13 +394,21 @@ def main():
 
     print(f"Generando boletín: {week_label}")
 
-    news_df   = load_news(weeks_back)
+    news_df      = load_news(weeks_back)
+    news_fallback = False
+    if news_df.empty and weeks_back > 0:
+        all_news = load_news(0)
+        if not all_news.empty:
+            news_df = all_news.head(3)
+            news_fallback = True
+
     papers_df = load_cchen_papers(n=5)
 
-    print(f"  Noticias CCHEN:      {len(news_df)}")
+    print(f"  Noticias CCHEN:      {len(news_df)}{' (fallback: más recientes)' if news_fallback else ''}")
     print(f"  Publicaciones CCHEN: {len(papers_df)}")
 
-    html = generate_html(news_df, papers_df, weeks_back or "todas las", week_label)
+    html = generate_html(news_df, papers_df, weeks_back or "todas las", week_label,
+                         news_fallback=news_fallback)
 
     out_path = Path(args.output) if args.output else \
                OUT_DIR / f"boletin_{year}-S{week:02d}.html"
