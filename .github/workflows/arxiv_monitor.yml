@@ -22,7 +22,7 @@ jobs:
           python-version: "3.11"
 
       - name: Instalar dependencias
-        run: pip install --quiet requests pandas openpyxl
+        run: pip install --quiet requests pandas openpyxl supabase python-dotenv
 
       # ── Módulo Vigilancia ────────────────────────────────────────────────
 
@@ -55,6 +55,15 @@ jobs:
         run: |
           pip install --quiet pandas openpyxl
           python Database/data_quality.py --output Data/Vigilancia/calidad_datos.csv
+
+      # ── Migrar CSVs a Supabase ───────────────────────────────────────────────
+
+      - name: Migrar datos de vigilancia a Supabase
+        continue-on-error: true
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: python Database/migrate_vigilancia.py
 
       # ── Commit y push ────────────────────────────────────────────────────
 
