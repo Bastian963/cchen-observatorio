@@ -32,6 +32,7 @@ from data_loader import (
     load_citation_graph, load_citing_papers, load_altmetric,
     load_europmc, load_arxiv_monitor, load_news_monitor,
     load_bertopic_topics, load_bertopic_topic_info,
+    load_convocatorias, load_convocatorias_matching_rules,
     get_data_backend_info, BASE,
 )
 

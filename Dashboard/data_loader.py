@@ -61,6 +61,8 @@ PUBLIC_TABLE_CONFIG = {
     "news_monitor": {"order_by": "news_id"},
     "bertopic_topics": {"order_by": "openalex_id"},
     "bertopic_topic_info": {"order_by": "topic"},
+    "convocatorias": {"order_by": "conv_id"},
+    "convocatorias_matching_rules": {"order_by": "rule_id"},
 }
 
 
@@ -593,12 +595,21 @@ def load_iaea_tc():
 def load_perfiles_institucionales():
     """Perfiles institucionales curados para matching de convocatorias."""
     p = BASE / "Vigilancia" / "perfiles_institucionales_cchen.csv"
+    return _load_public_table("perfiles_institucionales", p)
+
+
+def load_convocatorias() -> pd.DataFrame:
+    """Convocatorias de financiamiento curadas."""
+    p = BASE / "Vigilancia" / "convocatorias_curadas.csv"
     if not p.exists():
-        return pd.DataFrame()
-    try:
-        return _read_csv_fast(p)
-    except Exception:
-        return pd.DataFrame()
+        p = BASE / "Vigilancia" / "convocatorias.csv"
+    return _load_public_table("convocatorias", p)
+
+
+def load_convocatorias_matching_rules() -> pd.DataFrame:
+    """Reglas explícitas de elegibilidad para matching de convocatorias."""
+    p = BASE / "Vigilancia" / "convocatorias_matching_rules.csv"
+    return _load_public_table("convocatorias_matching_rules", p)
 
 
 def load_matching_institucional():

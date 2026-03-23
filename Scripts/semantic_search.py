@@ -37,34 +37,86 @@ def _load_artifacts() -> tuple[np.ndarray, pd.DataFrame] | tuple[None, None]:
     return _embeddings, _meta
 
 
+def _encode_query(query: str) -> "np.ndarray | None":
+    try:
+        from sentence_transformers import SentenceTransformer
+        model = SentenceTransformer(_MODEL_NAME)
+        return model.encode([query], normalize_embeddings=True)[0]
+    except Exception:
+        return None
+
+
+def _search_supabase(query: str, top_k: int) -> pd.DataFrame:
+    """Búsqueda vectorial vía Supabase pgvector (fallback cuando no hay .npy local)."""
+    q_vec = _encode_query(query)
+    if q_vec is None:
+        return pd.DataFrame(columns=["openalex_id", "doi", "title", "year", "score"])
+    try:
+        import os
+        from supabase import create_client
+        url = os.getenv("SUPABASE_URL") or os.getenv("supabase_url", "")
+        key = os.getenv("SUPABASE_KEY") or os.getenv("supabase_key", "")
+        # En Streamlit Cloud los secrets se exponen como variables de entorno
+        if not url or not key:
+            try:
+                import streamlit as st
+                url = st.secrets.get("SUPABASE_URL", url)
+                key = st.secrets.get("SUPABASE_KEY", key)
+            except Exception:
+                pass
+        if not url or not key:
+            return pd.DataFrame(columns=["openalex_id", "doi", "title", "year", "score"])
+
+        client = create_client(url, key)
+        resp = client.rpc(
+            "match_papers",
+            {"query_embedding": q_vec.tolist(), "match_count": top_k},
+        ).execute()
+        if not resp.data:
+            return pd.DataFrame(columns=["openalex_id", "doi", "title", "year", "score"])
+        df = pd.DataFrame(resp.data)
+        df = df.rename(columns={"similarity": "score"})
+        return df[["openalex_id", "doi", "title", "year", "score"]]
+    except Exception:
+        return pd.DataFrame(columns=["openalex_id", "doi", "title", "year", "score"])
+
+
 def search(query: str, top_k: int = 10) -> pd.DataFrame:
     """
     Busca los top_k papers más similares al query.
     Retorna DataFrame con columnas: openalex_id, doi, title, year, score.
-    Si los embeddings no están disponibles, retorna DataFrame vacío.
+    Usa embeddings locales si están disponibles; si no, usa Supabase pgvector.
     """
     emb, meta = _load_artifacts()
-    if emb is None:
-        return pd.DataFrame(columns=["openalex_id", "doi", "title", "year", "score"])
+    if emb is not None:
+        # Ruta local: más rápida
+        q_vec = _encode_query(query)
+        if q_vec is None:
+            return pd.DataFrame(columns=["openalex_id", "doi", "title", "year", "score"])
+        scores = emb @ q_vec
+        top_idx = np.argsort(scores)[::-1][:top_k]
+        result = meta.iloc[top_idx].copy()
+        result["score"] = scores[top_idx].round(4)
+        return result.reset_index(drop=True)
 
-    try:
-        from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer(_MODEL_NAME)
-        q_vec = model.encode([query], normalize_embeddings=True)[0]
-    except Exception:
-        return pd.DataFrame(columns=["openalex_id", "doi", "title", "year", "score"])
-
-    scores = emb @ q_vec  # dot product (cosine similarity, ya normalizados)
-    top_idx = np.argsort(scores)[::-1][:top_k]
-
-    result = meta.iloc[top_idx].copy()
-    result["score"] = scores[top_idx].round(4)
-    return result.reset_index(drop=True)
+    # Ruta Supabase: cuando los archivos locales no existen (Streamlit Cloud)
+    return _search_supabase(query, top_k)
 
 
 def is_available() -> bool:
-    """True si los embeddings están pre-calculados y listos."""
-    return EMB_FILE.exists() and META_FILE.exists()
+    """True si la búsqueda semántica está disponible (local o Supabase)."""
+    if EMB_FILE.exists() and META_FILE.exists():
+        return True
+    # Verificar si Supabase está configurado
+    try:
+        import os
+        url = os.getenv("SUPABASE_URL") or os.getenv("supabase_url", "")
+        if url:
+            return True
+        import streamlit as st
+        return bool(st.secrets.get("SUPABASE_URL"))
+    except Exception:
+        return False
 
 
 if __name__ == "__main__":

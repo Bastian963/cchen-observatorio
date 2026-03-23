@@ -12,7 +12,7 @@ from .shared import (
 
 def render(ctx: dict) -> None:
     """Render the Convocatorias y Matching section."""
-    from data_loader import BASE
+    from data_loader import BASE, load_convocatorias_matching_rules
 
     matching_inst = ctx["matching_inst"]
     perfiles_inst = ctx["perfiles_inst"]
@@ -27,8 +27,7 @@ def render(ctx: dict) -> None:
     _conv, _conv_mode, _conv_path = _load_convocatorias_data()
     _matching = matching_inst.copy() if matching_inst is not None else pd.DataFrame()
     _profiles = perfiles_inst.copy() if perfiles_inst is not None else pd.DataFrame()
-    _rules_path = BASE / "Vigilancia" / "convocatorias_matching_rules.csv"
-    _rules = pd.read_csv(_rules_path) if _rules_path.exists() else pd.DataFrame()
+    _rules = load_convocatorias_matching_rules()
 
     if _conv.empty or _matching.empty:
         st.info(
