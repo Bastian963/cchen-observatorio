@@ -302,6 +302,13 @@ El dashboard soporta tres modos configurables via `data_source` en secrets.toml:
 - Muestra además el snapshot local más reciente detectado en `Data/`, útil para distinguir entre conectividad remota y respaldo disponible en el host.
 - Cuando `data_source != local`, la fecha mostrada corresponde al respaldo local conocido, no necesariamente al último sync remoto de Supabase.
 
+### Carga lazy por sección
+
+- El dashboard ya no precarga todas las capas al iniciar.
+- `Dashboard/app.py` mantiene un registro de loaders cacheados por dataset y arma el `ctx` solo con los datasets requeridos por la sección activa.
+- La navegación entre secciones reutiliza `st.cache_data`, de modo que los datasets ya consultados se reaprovechan sin volver a leerlos en cada cambio.
+- La franja operativa y el inspector reflejan el estado de la sección actual, no un preload global de todo el observatorio.
+
 ### Despliegue en Streamlit Cloud
 
 1. Fork o push del repositorio a GitHub
@@ -448,7 +455,7 @@ CCHEN/
 ├── runtime.txt                       ← Versión de Python usada en deploy
 │
 ├── Dashboard/                        ← Aplicación web Streamlit
-│   ├── app.py                        ← Punto de entrada; carga datos y enruta secciones
+│   ├── app.py                        ← Punto de entrada; arma contexto lazy y enruta secciones
 │   ├── data_loader.py                ← Carga y preprocesa todos los datasets
 │   ├── requirements.txt              ← Dependencias del dashboard (pip install aquí)
 │   └── sections/                     ← Módulos del dashboard (uno por sección)

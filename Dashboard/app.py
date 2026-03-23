@@ -603,92 +603,344 @@ def _maybe_sensitive(loader, enabled: bool, empty_factory=pd.DataFrame):
     return loader() if enabled else empty_factory()
 
 
-@st.cache_data
-def get_data(can_view_sensitive: bool):
-    return dict(
-        pub       = load_publications(),
-        pub_enr   = load_publications_enriched(),
-        auth      = load_authorships(),
-        anid      = load_anid(),
-        ch        = _maybe_sensitive(load_capital_humano, can_view_sensitive, _empty_capital_humano_frame),
-        ch_ej     = load_ch_resumen_ejecutivo(),
-        ch_adv    = load_ch_analisis_avanzado(),
-        ch_cumpl  = load_ch_cumplimiento_centros(),
-        ch_trans  = load_ch_transiciones(),
-        ch_tipo_a = load_ch_participacion_tipo_anio(),
-        dian      = load_dian_publications(),
-        crossref    = load_crossref_enriched(),
-        concepts    = load_concepts(),
-        datacite    = load_datacite_outputs(),
-        openaire    = load_openaire_outputs(),
-        grants_oa   = load_grants_openalex(),
-        orcid       = load_orcid_researchers(),
-        ror_registry = load_ror_registry(),
-        ror_pending_review = load_ror_pending_review(),
-        funding_plus = _maybe_sensitive(load_funding_complementario, can_view_sensitive),
-        iaea_tc     = load_iaea_tc(),
-        perfiles_inst = load_perfiles_institucionales(),
-        matching_inst = load_matching_institucional(),
-        entity_personas = _maybe_sensitive(load_entity_registry_personas, can_view_sensitive),
-        entity_projects = load_entity_registry_proyectos(),
-        entity_convocatorias = load_entity_registry_convocatorias(),
-        entity_links = _maybe_sensitive(load_entity_links, can_view_sensitive),
-        pub_full    = load_publications_with_concepts(),
-        convenios   = load_convenios_nacionales(),
-        acuerdos    = load_acuerdos_internacionales(),
-        unpaywall   = load_unpaywall_oa(),
-        citation_graph = load_citation_graph(),
-        citing_papers  = load_citing_papers(),
-        altmetric      = load_altmetric(),
-        europmc        = load_europmc(),
-        arxiv_monitor       = load_arxiv_monitor(),
-        news_monitor        = load_news_monitor(),
-        iaea_inis           = load_iaea_inis(),
-        bertopic_topics     = load_bertopic_topics(),
-        bertopic_topic_info = load_bertopic_topic_info(),
-    )
+_DATASET_LOADERS = {
+    "pub": lambda can_view_sensitive: load_publications(),
+    "pub_enr": lambda can_view_sensitive: load_publications_enriched(),
+    "auth": lambda can_view_sensitive: load_authorships(),
+    "anid": lambda can_view_sensitive: load_anid(),
+    "ch": lambda can_view_sensitive: _maybe_sensitive(
+        load_capital_humano,
+        can_view_sensitive,
+        _empty_capital_humano_frame,
+    ),
+    "ch_ej": lambda can_view_sensitive: load_ch_resumen_ejecutivo(),
+    "ch_adv": lambda can_view_sensitive: load_ch_analisis_avanzado(),
+    "ch_cumpl": lambda can_view_sensitive: load_ch_cumplimiento_centros(),
+    "ch_trans": lambda can_view_sensitive: load_ch_transiciones(),
+    "ch_tipo_a": lambda can_view_sensitive: load_ch_participacion_tipo_anio(),
+    "dian": lambda can_view_sensitive: load_dian_publications(),
+    "crossref": lambda can_view_sensitive: load_crossref_enriched(),
+    "concepts": lambda can_view_sensitive: load_concepts(),
+    "datacite": lambda can_view_sensitive: load_datacite_outputs(),
+    "openaire": lambda can_view_sensitive: load_openaire_outputs(),
+    "grants_oa": lambda can_view_sensitive: load_grants_openalex(),
+    "orcid": lambda can_view_sensitive: load_orcid_researchers(),
+    "ror_registry": lambda can_view_sensitive: load_ror_registry(),
+    "ror_pending_review": lambda can_view_sensitive: load_ror_pending_review(),
+    "funding_plus": lambda can_view_sensitive: _maybe_sensitive(
+        load_funding_complementario,
+        can_view_sensitive,
+    ),
+    "iaea_tc": lambda can_view_sensitive: load_iaea_tc(),
+    "perfiles_inst": lambda can_view_sensitive: load_perfiles_institucionales(),
+    "matching_inst": lambda can_view_sensitive: load_matching_institucional(),
+    "entity_personas": lambda can_view_sensitive: _maybe_sensitive(
+        load_entity_registry_personas,
+        can_view_sensitive,
+    ),
+    "entity_projects": lambda can_view_sensitive: load_entity_registry_proyectos(),
+    "entity_convocatorias": lambda can_view_sensitive: load_entity_registry_convocatorias(),
+    "entity_links": lambda can_view_sensitive: _maybe_sensitive(
+        load_entity_links,
+        can_view_sensitive,
+    ),
+    "pub_full": lambda can_view_sensitive: load_publications_with_concepts(),
+    "convenios": lambda can_view_sensitive: load_convenios_nacionales(),
+    "acuerdos": lambda can_view_sensitive: load_acuerdos_internacionales(),
+    "unpaywall": lambda can_view_sensitive: load_unpaywall_oa(),
+    "citation_graph": lambda can_view_sensitive: load_citation_graph(),
+    "citing_papers": lambda can_view_sensitive: load_citing_papers(),
+    "altmetric": lambda can_view_sensitive: load_altmetric(),
+    "europmc": lambda can_view_sensitive: load_europmc(),
+    "arxiv_monitor": lambda can_view_sensitive: load_arxiv_monitor(),
+    "news_monitor": lambda can_view_sensitive: load_news_monitor(),
+    "iaea_inis": lambda can_view_sensitive: load_iaea_inis(),
+    "bertopic_topics": lambda can_view_sensitive: load_bertopic_topics(),
+    "bertopic_topic_info": lambda can_view_sensitive: load_bertopic_topic_info(),
+    "patents": lambda can_view_sensitive: load_patents(),
+}
 
-D = get_data(_APP_ACCESS["can_view_sensitive"])
-pub, pub_enr, auth = D["pub"], D["pub_enr"], D["auth"]
-anid = D["anid"]
-ch, ch_ej, ch_adv = D["ch"], D["ch_ej"], D["ch_adv"]
-ch_cumpl, ch_trans, ch_tipo_a = D["ch_cumpl"], D["ch_trans"], D["ch_tipo_a"]
-dian = D["dian"]
-crossref     = D["crossref"]
-concepts     = D["concepts"]
-datacite     = D["datacite"]
-openaire     = D["openaire"]
-grants_oa    = D["grants_oa"]
-orcid        = D["orcid"]
-ror_registry = D["ror_registry"]
-ror_pending_review = D["ror_pending_review"]
-funding_plus = D["funding_plus"]
-iaea_tc      = D["iaea_tc"]
-perfiles_inst = D["perfiles_inst"]
-matching_inst = D["matching_inst"]
-entity_personas = D["entity_personas"]
-entity_projects = D["entity_projects"]
-entity_convocatorias = D["entity_convocatorias"]
-entity_links = D["entity_links"]
-pub_full     = D.get("pub_full", pub)
-convenios    = D["convenios"]
-acuerdos     = D["acuerdos"]
-unpaywall    = D["unpaywall"]
-citation_graph = D["citation_graph"]
-citing_papers  = D["citing_papers"]
-altmetric      = D["altmetric"]
-europmc        = D["europmc"]
-arxiv_monitor       = D["arxiv_monitor"]
-news_monitor        = D["news_monitor"]
-iaea_inis           = D["iaea_inis"]
-bertopic_topics     = D["bertopic_topics"]
-bertopic_topic_info = D["bertopic_topic_info"]
+_SECTION_DATASETS = {
+    "Panel de Indicadores": (
+        "pub", "pub_enr", "anid", "ch", "ch_ej", "ch_adv",
+        "ror_pending_review", "patents",
+    ),
+    "Producción Científica": (
+        "pub", "pub_enr", "auth", "dian", "concepts", "orcid", "unpaywall", "europmc",
+    ),
+    "Redes y Colaboración": (
+        "auth", "pub", "ror_pending_review", "ror_registry",
+    ),
+    "Vigilancia Tecnológica": (
+        "arxiv_monitor", "news_monitor", "iaea_inis",
+        "pub", "pub_enr", "bertopic_topics", "bertopic_topic_info",
+    ),
+    "Financiamiento I+D": (
+        "anid", "crossref", "funding_plus", "iaea_tc", "acuerdos", "convenios",
+    ),
+    "Convocatorias y Matching": (
+        "matching_inst", "perfiles_inst",
+    ),
+    "Transferencia y Portafolio": (
+        "datacite", "openaire", "orcid", "patents", "pub_enr",
+        "anid", "funding_plus", "acuerdos", "convenios",
+    ),
+    "Modelo y Gobernanza": (
+        "pub", "auth", "ch", "orcid", "patents", "convenios", "acuerdos",
+        "matching_inst", "entity_personas", "entity_projects",
+        "entity_convocatorias", "entity_links",
+    ),
+    "Formación de Capacidades": (
+        "ch", "ch_ej", "ch_adv", "ch_cumpl", "ch_trans",
+    ),
+    "Asistente I+D": (
+        "pub", "pub_enr", "auth", "anid", "ch", "ch_ej", "ch_adv", "orcid",
+        "ror_registry", "ror_pending_review", "funding_plus", "iaea_tc",
+        "matching_inst", "entity_personas", "entity_projects",
+        "entity_convocatorias", "entity_links", "acuerdos", "convenios",
+        "patents", "datacite", "openaire",
+    ),
+    "Grafo de Citas": (
+        "pub", "pub_enr", "citation_graph", "citing_papers",
+    ),
+}
 
-@st.cache_data
-def get_patents():
-    return load_patents()
+_DATASET_METADATA = {
+    "pub": {
+        "label": "Publicaciones OpenAlex",
+        "source": "Data/Publications/cchen_openalex_works.csv",
+        "table_name": "publications",
+        "sensitive": False,
+    },
+    "pub_enr": {
+        "label": "Publicaciones enriquecidas + SJR",
+        "source": "Data/Publications/cchen_publications_with_quartile_sjr.csv",
+        "table_name": "publications_enriched",
+        "sensitive": False,
+    },
+    "auth": {
+        "label": "Autorías OpenAlex",
+        "source": "Data/Publications/cchen_authorships_enriched.csv",
+        "table_name": "authorships",
+        "sensitive": False,
+    },
+    "anid": {
+        "label": "ANID",
+        "source": "Data/ANID/RepositorioAnid_con_monto.csv",
+        "table_name": "anid_projects",
+        "sensitive": False,
+    },
+    "ch": {
+        "label": "Capital Humano",
+        "source": "Data/Capital humano CCHEN/salida_dataset_maestro/dataset_maestro_limpio.csv",
+        "table_name": "capital_humano",
+        "sensitive": True,
+    },
+    "patents": {
+        "label": "Patentes",
+        "source": "Data/Patents/cchen_patents_uspto.csv",
+        "table_name": "patents",
+        "sensitive": False,
+    },
+    "crossref": {
+        "label": "CrossRef",
+        "source": "Data/Publications/cchen_crossref_enriched.csv",
+        "table_name": "crossref_data",
+        "sensitive": False,
+    },
+    "concepts": {
+        "label": "Conceptos OpenAlex",
+        "source": "Data/Publications/cchen_openalex_concepts.csv",
+        "table_name": "concepts",
+        "sensitive": False,
+    },
+    "datacite": {
+        "label": "DataCite outputs",
+        "source": "Data/ResearchOutputs/cchen_datacite_outputs.csv",
+        "table_name": "datacite_outputs",
+        "sensitive": False,
+    },
+    "openaire": {
+        "label": "OpenAIRE outputs",
+        "source": "Data/ResearchOutputs/cchen_openaire_outputs.csv",
+        "table_name": "openaire_outputs",
+        "sensitive": False,
+    },
+    "orcid": {
+        "label": "Investigadores ORCID",
+        "source": "Data/Researchers/cchen_researchers_orcid.csv",
+        "table_name": "researchers_orcid",
+        "sensitive": False,
+    },
+    "ror_registry": {
+        "label": "Registro institucional ROR",
+        "source": "Data/Institutional/cchen_institution_registry.csv",
+        "table_name": "institution_registry",
+        "sensitive": False,
+    },
+    "ror_pending_review": {
+        "label": "Cola revisión ROR",
+        "source": "Data/Institutional/ror_pending_review.csv",
+        "table_name": "institution_registry_pending_review",
+        "sensitive": False,
+    },
+    "funding_plus": {
+        "label": "Financiamiento complementario",
+        "source": "Data/Funding/cchen_funding_complementario.csv",
+        "table_name": "funding_complementario",
+        "sensitive": True,
+    },
+    "iaea_tc": {
+        "label": "IAEA Technical Cooperation",
+        "source": "Data/Funding/cchen_iaea_tc.csv",
+        "table_name": "",
+        "sensitive": False,
+    },
+    "perfiles_inst": {
+        "label": "Perfiles institucionales",
+        "source": "Data/Vigilancia/perfiles_institucionales_cchen.csv",
+        "table_name": "perfiles_institucionales",
+        "sensitive": False,
+    },
+    "matching_inst": {
+        "label": "Matching institucional",
+        "source": "Data/Vigilancia/convocatorias_matching_institucional.csv",
+        "table_name": "convocatorias_matching_institucional",
+        "sensitive": False,
+    },
+    "entity_personas": {
+        "label": "Entidades persona",
+        "source": "Data/Gobernanza/entity_registry_personas.csv",
+        "table_name": "entity_registry_personas",
+        "sensitive": True,
+    },
+    "entity_projects": {
+        "label": "Entidades proyecto",
+        "source": "Data/Gobernanza/entity_registry_proyectos.csv",
+        "table_name": "entity_registry_proyectos",
+        "sensitive": False,
+    },
+    "entity_convocatorias": {
+        "label": "Entidades convocatoria",
+        "source": "Data/Gobernanza/entity_registry_convocatorias.csv",
+        "table_name": "entity_registry_convocatorias",
+        "sensitive": False,
+    },
+    "entity_links": {
+        "label": "Enlaces entre entidades",
+        "source": "Data/Gobernanza/entity_links.csv",
+        "table_name": "entity_links",
+        "sensitive": True,
+    },
+    "convenios": {
+        "label": "Convenios nacionales",
+        "source": "Data/Institutional/clean_Convenios_suscritos_por_la_Com.csv",
+        "table_name": "convenios_nacionales",
+        "sensitive": False,
+    },
+    "acuerdos": {
+        "label": "Acuerdos internacionales",
+        "source": "Data/Institutional/clean_Acuerdos_e_instrumentos_intern.csv",
+        "table_name": "acuerdos_internacionales",
+        "sensitive": False,
+    },
+    "unpaywall": {
+        "label": "Unpaywall OA enrichment",
+        "source": "Data/Publications/cchen_unpaywall_oa.csv",
+        "table_name": "unpaywall_oa",
+        "sensitive": False,
+    },
+    "citation_graph": {
+        "label": "Citation graph",
+        "source": "Data/Publications/cchen_citation_graph.csv",
+        "table_name": "citation_graph",
+        "sensitive": False,
+    },
+    "citing_papers": {
+        "label": "Papers citantes",
+        "source": "Data/Publications/cchen_citing_papers.csv",
+        "table_name": "citing_papers",
+        "sensitive": False,
+    },
+    "europmc": {
+        "label": "EuroPMC",
+        "source": "Data/Publications/cchen_europmc_works.csv",
+        "table_name": "europmc_works",
+        "sensitive": False,
+    },
+    "arxiv_monitor": {
+        "label": "Monitor arXiv",
+        "source": "Data/Vigilancia/arxiv_monitor.csv",
+        "table_name": "arxiv_monitor",
+        "sensitive": False,
+    },
+    "news_monitor": {
+        "label": "Monitor noticias",
+        "source": "Data/Vigilancia/news_monitor.csv",
+        "table_name": "news_monitor",
+        "sensitive": False,
+    },
+    "iaea_inis": {
+        "label": "Monitor IAEA INIS",
+        "source": "Data/Vigilancia/iaea_inis_monitor.csv",
+        "table_name": "iaea_inis_monitor",
+        "sensitive": False,
+    },
+    "bertopic_topics": {
+        "label": "BERTopic topics",
+        "source": "Data/Publications/cchen_bertopic_topics.csv",
+        "table_name": "bertopic_topics",
+        "sensitive": False,
+    },
+    "bertopic_topic_info": {
+        "label": "BERTopic topic info",
+        "source": "Data/Publications/cchen_bertopic_topic_info.csv",
+        "table_name": "bertopic_topic_info",
+        "sensitive": False,
+    },
+    "dian": {
+        "label": "Publicaciones DIAN",
+        "source": "Data/Publicaciones DIAN CCHEN/Publicaciones DIAN.xlsx",
+        "table_name": "",
+        "sensitive": False,
+    },
+}
 
-patents = get_patents()
+_ACTIVE_SECTION_CTX = None
+
+
+@st.cache_data(show_spinner=False)
+def _load_dataset_cached(dataset_key: str, can_view_sensitive: bool):
+    loader = _DATASET_LOADERS.get(dataset_key)
+    if loader is None:
+        raise KeyError(f"Dataset no registrado para lazy loading: {dataset_key}")
+    return loader(can_view_sensitive)
+
+
+def _current_section_name() -> str:
+    return str(globals().get("seccion") or "Panel de Indicadores")
+
+
+def _build_section_ctx(section_name: str, can_view_sensitive: bool) -> dict:
+    dataset_keys = _SECTION_DATASETS.get(section_name, ())
+    ctx = {
+        key: _load_dataset_cached(key, can_view_sensitive)
+        for key in dataset_keys
+    }
+    ctx["render_operational_strip"] = render_operational_strip
+    ctx["open_dataset_inspector"] = open_dataset_inspector
+    return ctx
+
+
+def _active_section_ctx() -> dict:
+    current_name = _current_section_name()
+    current_ctx = globals().get("_ACTIVE_SECTION_CTX")
+    if isinstance(current_ctx, dict) and current_ctx.get("_section_name") == current_name:
+        return current_ctx
+    ctx = _build_section_ctx(current_name, _access_context()["can_view_sensitive"])
+    ctx["_section_name"] = current_name
+    return ctx
+
 _timestamps = get_source_timestamps()
 _backend = get_data_backend_info()
 
@@ -749,195 +1001,20 @@ else:
         return func
 
 
-def _dataset_catalog() -> dict:
-    return {
-        "Publicaciones OpenAlex": {
-            "df": pub,
-            "source": "Data/Publications/cchen_openalex_works.csv",
-            "table_name": "publications",
-            "sensitive": False,
-        },
-        "Publicaciones enriquecidas + SJR": {
-            "df": pub_enr,
-            "source": "Data/Publications/cchen_publications_with_quartile_sjr.csv",
-            "table_name": "publications_enriched",
-            "sensitive": False,
-        },
-        "Autorías OpenAlex": {
-            "df": auth,
-            "source": "Data/Publications/cchen_authorships_enriched.csv",
-            "table_name": "authorships",
-            "sensitive": False,
-        },
-        "ANID": {
-            "df": anid,
-            "source": "Data/ANID/RepositorioAnid_con_monto.csv",
-            "table_name": "anid_projects",
-            "sensitive": False,
-        },
-        "Capital Humano": {
-            "df": ch,
-            "source": "Data/Capital humano CCHEN/salida_dataset_maestro/dataset_maestro_limpio.csv",
-            "table_name": "capital_humano",
-            "sensitive": True,
-        },
-        "Patentes": {
-            "df": patents,
-            "source": "Data/Patents/cchen_patents_uspto.csv",
-            "table_name": "patents",
-            "sensitive": False,
-        },
-        "CrossRef": {
-            "df": crossref,
-            "source": "Data/Publications/cchen_crossref_enriched.csv",
-            "table_name": "crossref_data",
-            "sensitive": False,
-        },
-        "Conceptos OpenAlex": {
-            "df": concepts,
-            "source": "Data/Publications/cchen_openalex_concepts.csv",
-            "table_name": "concepts",
-            "sensitive": False,
-        },
-        "DataCite outputs": {
-            "df": datacite,
-            "source": "Data/ResearchOutputs/cchen_datacite_outputs.csv",
-            "table_name": "datacite_outputs",
-            "sensitive": False,
-        },
-        "OpenAIRE outputs": {
-            "df": openaire,
-            "source": "Data/ResearchOutputs/cchen_openaire_outputs.csv",
-            "table_name": "openaire_outputs",
-            "sensitive": False,
-        },
-        "Investigadores ORCID": {
-            "df": orcid,
-            "source": "Data/Researchers/cchen_researchers_orcid.csv",
-            "table_name": "researchers_orcid",
-            "sensitive": False,
-        },
-        "Registro institucional ROR": {
-            "df": ror_registry,
-            "source": "Data/Institutional/cchen_institution_registry.csv",
-            "table_name": "institution_registry",
-            "sensitive": False,
-        },
-        "Cola revisión ROR": {
-            "df": ror_pending_review,
-            "source": "Data/Institutional/ror_pending_review.csv",
-            "table_name": "institution_registry_pending_review",
-            "sensitive": False,
-        },
-        "Financiamiento complementario": {
-            "df": funding_plus,
-            "source": "Data/Funding/cchen_funding_complementario.csv",
-            "table_name": "funding_complementario",
-            "sensitive": True,
-        },
-        "Perfiles institucionales": {
-            "df": perfiles_inst,
-            "source": "Data/Vigilancia/perfiles_institucionales_cchen.csv",
-            "table_name": "perfiles_institucionales",
-            "sensitive": False,
-        },
-        "Matching institucional": {
-            "df": matching_inst,
-            "source": "Data/Vigilancia/convocatorias_matching_institucional.csv",
-            "table_name": "convocatorias_matching_institucional",
-            "sensitive": False,
-        },
-        "Entidades persona": {
-            "df": entity_personas,
-            "source": "Data/Gobernanza/entity_registry_personas.csv",
-            "table_name": "entity_registry_personas",
-            "sensitive": True,
-        },
-        "Entidades proyecto": {
-            "df": entity_projects,
-            "source": "Data/Gobernanza/entity_registry_proyectos.csv",
-            "table_name": "entity_registry_proyectos",
-            "sensitive": False,
-        },
-        "Entidades convocatoria": {
-            "df": entity_convocatorias,
-            "source": "Data/Gobernanza/entity_registry_convocatorias.csv",
-            "table_name": "entity_registry_convocatorias",
-            "sensitive": False,
-        },
-        "Enlaces entre entidades": {
-            "df": entity_links,
-            "source": "Data/Gobernanza/entity_links.csv",
-            "table_name": "entity_links",
-            "sensitive": True,
-        },
-        "Convenios nacionales": {
-            "df": convenios,
-            "source": "Data/Institutional/clean_Convenios_suscritos_por_la_Com.csv",
-            "table_name": "convenios_nacionales",
-            "sensitive": False,
-        },
-        "Acuerdos internacionales": {
-            "df": acuerdos,
-            "source": "Data/Institutional/clean_Acuerdos_e_instrumentos_intern.csv",
-            "table_name": "acuerdos_internacionales",
-            "sensitive": False,
-        },
-        "Unpaywall OA enrichment": {
-            "df": unpaywall,
-            "source": "Data/Publications/cchen_unpaywall_oa.csv",
-            "table_name": "unpaywall_oa",
-            "sensitive": False,
-        },
-        "Monitor IAEA INIS": {
-            "df": iaea_inis,
-            "source": "Data/Vigilancia/iaea_inis_monitor.csv",
-            "table_name": "iaea_inis_monitor",
-            "sensitive": False,
-        },
-        "Monitor arXiv": {
-            "df": arxiv_monitor,
-            "source": "Data/Vigilancia/arxiv_monitor.csv",
-            "table_name": "arxiv_monitor",
-            "sensitive": False,
-        },
-        "Monitor noticias": {
-            "df": news_monitor,
-            "source": "Data/Vigilancia/news_monitor.csv",
-            "table_name": "news_monitor",
-            "sensitive": False,
-        },
-        "Citation graph": {
-            "df": citation_graph,
-            "source": "Data/Publications/cchen_citation_graph.csv",
-            "table_name": "citation_graph",
-            "sensitive": False,
-        },
-        "Papers citantes": {
-            "df": citing_papers,
-            "source": "Data/Publications/cchen_citing_papers.csv",
-            "table_name": "citing_papers",
-            "sensitive": False,
-        },
-        "EuroPMC": {
-            "df": europmc,
-            "source": "Data/Publications/cchen_europmc_works.csv",
-            "table_name": "europmc_works",
-            "sensitive": False,
-        },
-        "BERTopic topics": {
-            "df": bertopic_topics,
-            "source": "Data/Publications/cchen_bertopic_topics.csv",
-            "table_name": "bertopic_topics",
-            "sensitive": False,
-        },
-        "BERTopic topic info": {
-            "df": bertopic_topic_info,
-            "source": "Data/Publications/cchen_bertopic_topic_info.csv",
-            "table_name": "bertopic_topic_info",
-            "sensitive": False,
-        },
-    }
+def _dataset_catalog(ctx: dict | None = None) -> dict:
+    active_ctx = ctx or _active_section_ctx()
+    catalog = {}
+    for dataset_key, meta in _DATASET_METADATA.items():
+        if dataset_key not in active_ctx:
+            continue
+        catalog[meta["label"]] = {
+            "key": dataset_key,
+            "df": active_ctx[dataset_key],
+            "source": meta["source"],
+            "table_name": meta["table_name"],
+            "sensitive": meta["sensitive"],
+        }
+    return catalog
 
 
 def _describe_dataset_read_source(meta: dict) -> tuple[str, str]:
@@ -1008,8 +1085,10 @@ def _build_runtime_dataset_status() -> pd.DataFrame:
     access = _access_context()
     status_map = get_table_load_status()
     rows = []
+    section_name = _current_section_name()
+    catalog = _dataset_catalog()
 
-    for dataset_name, meta in _dataset_catalog().items():
+    for dataset_name, meta in catalog.items():
         table_name = str(meta.get("table_name") or "").strip()
         status = status_map.get(table_name, {}) if table_name else {}
         read_source, read_detail = _describe_dataset_read_source(meta)
@@ -1032,6 +1111,7 @@ def _build_runtime_dataset_status() -> pd.DataFrame:
                 "rows": row_count,
                 "snapshot": snapshot_label,
                 "snapshot_age_days": snapshot_age_days,
+                "section_name": section_name,
             }
         )
 
@@ -1082,6 +1162,7 @@ def _summarize_runtime_dataset_status(status_df: pd.DataFrame) -> dict:
 @_dialog("Inspector de datasets", width="large")
 def open_dataset_inspector():
     access = _access_context()
+    section_name = _current_section_name()
     catalog = _dataset_catalog()
     runtime_df = _build_runtime_dataset_status()
     runtime_summary = _summarize_runtime_dataset_status(runtime_df)
@@ -1092,6 +1173,7 @@ def open_dataset_inspector():
     snapshot_label, snapshot_age_days = _dataset_snapshot_info(meta)
 
     with st.expander("Estado operativo de la sesión", expanded=False):
+        st.caption(f"Sección actual: `{section_name}`")
         st.caption(
             f"Datasets instrumentados: {runtime_summary['dataset_count']} · "
             f"remotos: {runtime_summary['remote_count']} · "
@@ -1139,6 +1221,7 @@ def open_dataset_inspector():
 @_fragment
 def render_operational_strip():
     access = _access_context()
+    section_name = _current_section_name()
     engine_label = _backend["engine"].upper()
     engine_short = engine_label[:6] if len(engine_label) > 6 else engine_label
     acceso_short = "Sí" if access["can_view_sensitive"] else "No"
@@ -1154,7 +1237,7 @@ def render_operational_strip():
 
     st.caption(_backend["detail"])
     st.caption(
-        f"Sesión actual: {runtime_summary['dataset_count']} datasets instrumentados · "
+        f"Sección actual `{section_name}`: {runtime_summary['dataset_count']} datasets instrumentados · "
         f"{runtime_summary['local_only_count']} solo local · "
         f"{runtime_summary['unavailable_count']} no disponibles."
     )
@@ -2023,44 +2106,10 @@ with st.sidebar:
 # ══════════════════════════════════════════════════════════════════════════════
 
 _ctx = dict(
-    pub=pub, pub_enr=pub_enr, auth=auth,
-    anid=anid,
-    ch=ch, ch_ej=ch_ej, ch_adv=ch_adv,
-    ch_cumpl=ch_cumpl, ch_trans=ch_trans, ch_tipo_a=ch_tipo_a,
-    dian=dian,
-    crossref=crossref,
-    concepts=concepts,
-    datacite=datacite,
-    openaire=openaire,
-    grants_oa=grants_oa,
-    orcid=orcid,
-    ror_registry=ror_registry,
-    ror_pending_review=ror_pending_review,
-    funding_plus=funding_plus,
-    iaea_tc=iaea_tc,
-    perfiles_inst=perfiles_inst,
-    matching_inst=matching_inst,
-    entity_personas=entity_personas,
-    entity_projects=entity_projects,
-    entity_convocatorias=entity_convocatorias,
-    entity_links=entity_links,
-    pub_full=pub_full,
-    convenios=convenios,
-    acuerdos=acuerdos,
-    unpaywall=unpaywall,
-    citation_graph=citation_graph,
-    citing_papers=citing_papers,
-    altmetric=altmetric,
-    europmc=europmc,
-    arxiv_monitor=arxiv_monitor,
-    news_monitor=news_monitor,
-    iaea_inis=iaea_inis,
-    bertopic_topics=bertopic_topics,
-    bertopic_topic_info=bertopic_topic_info,
-    patents=patents,
-    render_operational_strip=render_operational_strip,
-    open_dataset_inspector=open_dataset_inspector,
+    _build_section_ctx(seccion, _APP_ACCESS["can_view_sensitive"])
 )
+_ctx["_section_name"] = seccion
+_ACTIVE_SECTION_CTX = _ctx
 
 _SECTION_MAP = {
     "Panel de Indicadores":       panel_indicadores.render,

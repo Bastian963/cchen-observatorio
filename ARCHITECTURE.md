@@ -130,7 +130,7 @@ Scimago SJR (CSV anual)
                                 ▼
 ┌───────────────────────────────────────────────────────┐
 │  DASHBOARD STREAMLIT                                  │
-│  app.py → carga todos los datasets vía get_data()    │
+│  app.py → resuelve loaders cacheados y arma ctx lazy │
 │  sections/*.py → render() recibe ctx dict            │
 │  shared.py → helpers, estilos, generate_pdf_report() │
 └───────────────────────────────────────────────────────┘
@@ -224,6 +224,17 @@ Cada carga instrumentada registra su resultado en `TABLE_LOAD_STATUS`, con un sn
 - `unavailable` → no hubo lectura remota ni respaldo local utilizable
 
 `Dashboard/app.py` consume este registro para construir la franja operativa superior y el inspector de datasets. Así, el usuario ve en tiempo real si la sesión está trabajando contra Supabase, contra respaldos locales o con datasets ausentes.
+
+### Lazy loading por sección en app.py
+
+El dashboard ya no usa un `get_data()` global para precargar todo el observatorio al inicio. En su lugar:
+
+- `_DATASET_LOADERS` declara loaders cacheados por dataset.
+- `_SECTION_DATASETS` define qué claves necesita cada sección del sidebar.
+- `_build_section_ctx(section_name, can_view_sensitive)` arma el `ctx` solo con la porción requerida por la sección activa.
+- `sections/*.py` mantienen la misma interfaz `render(ctx)`; el cambio ocurre en el ensamblaje del contexto, no en la API de cada módulo.
+
+Este patrón reduce el costo de arranque del dashboard y evita leer tablas o CSVs que no son necesarios para la vista actual.
 
 ### _fetch_supabase_table(table_name, use_service_role=False)
 
