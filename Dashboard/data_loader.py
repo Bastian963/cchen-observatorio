@@ -32,6 +32,27 @@ CAPITAL   = SALIDA / "analisis_capital_humano"
 
 SUPABASE_PAGE_SIZE = 1000
 TABLE_LOAD_STATUS: dict[str, dict] = {}
+CAPITAL_HUMANO_COLUMNS = [
+    "id",
+    "anio_hoja",
+    "nombre",
+    "inicio",
+    "termino",
+    "duracion_dias",
+    "tutor",
+    "centro_norm",
+    "tipo_norm",
+    "universidad",
+    "carrera",
+    "monto_contrato_num",
+    "ad_honorem",
+    "objeto_contrato",
+    "observaciones_texto",
+    "informe_url_principal",
+    "flag_fechas_inconsistentes",
+    "flag_tipo_fuera_catalogo",
+    "created_at",
+]
 
 PUBLIC_TABLE_CONFIG = {
     "publications": {"order_by": "openalex_id"},
@@ -206,6 +227,11 @@ def _load_public_table(table_name: str, local_path: Path) -> pd.DataFrame:
     return _read_csv_fast(local_path)
 
 
+def _empty_capital_humano_frame() -> pd.DataFrame:
+    """Retorna un DataFrame vacío con el esquema mínimo esperado por la app."""
+    return pd.DataFrame(columns=CAPITAL_HUMANO_COLUMNS)
+
+
 # ─── Gobernanza: timestamps de fuentes ────────────────────────────────────────
 
 def _mtime(path: Path) -> str:
@@ -311,10 +337,24 @@ def load_anid():
 # ─── Capital Humano ───────────────────────────────────────────────────────────
 
 def load_capital_humano():
-    df = _load_public_table("capital_humano", SALIDA / "dataset_maestro_limpio.csv")
-    df["anio_hoja"]          = pd.to_numeric(df["anio_hoja"],          errors="coerce").astype("Int64")
-    df["duracion_dias"]      = pd.to_numeric(df["duracion_dias"],      errors="coerce")
-    df["monto_contrato_num"] = pd.to_numeric(df["monto_contrato_num"], errors="coerce")
+    path = SALIDA / "dataset_maestro_limpio.csv"
+    try:
+        df = _load_public_table("capital_humano", path)
+    except Exception:
+        # En Streamlit Cloud no desplegamos este CSV sensible; la app debe seguir operativa.
+        _record_table_load_status("capital_humano", "unavailable", str(path))
+        df = _empty_capital_humano_frame()
+
+    for col in CAPITAL_HUMANO_COLUMNS:
+        if col not in df.columns:
+            df[col] = pd.Series(dtype="object")
+
+    if "anio_hoja" in df.columns:
+        df["anio_hoja"] = pd.to_numeric(df["anio_hoja"], errors="coerce").astype("Int64")
+    if "duracion_dias" in df.columns:
+        df["duracion_dias"] = pd.to_numeric(df["duracion_dias"], errors="coerce")
+    if "monto_contrato_num" in df.columns:
+        df["monto_contrato_num"] = pd.to_numeric(df["monto_contrato_num"], errors="coerce")
     return df
 
 
