@@ -54,6 +54,7 @@ PUBLIC_TABLE_CONFIG = {
     "entity_registry_convocatorias": {"order_by": "convocatoria_id"},
     "entity_links": {},
     "citing_papers": {"order_by": "citing_id"},
+    "europmc_works": {"order_by": "source_id"},
 }
 
 
@@ -805,14 +806,11 @@ def load_altmetric() -> pd.DataFrame:
 def load_europmc() -> pd.DataFrame:
     """Publicaciones CCHEN indexadas en EuroPMC (PubMed/PMC/bioRxiv)."""
     p = BASE_PUB / "cchen_europmc_works.csv"
-    if not p.exists():
-        return pd.DataFrame()
-    try:
-        df = _read_csv_fast(p)
-        if "year" in df.columns:
-            df["year"] = pd.to_numeric(df["year"], errors="coerce").astype("Int64")
-        if "cited_by_count" in df.columns:
-            df["cited_by_count"] = pd.to_numeric(df["cited_by_count"], errors="coerce").fillna(0).astype(int)
+    df = _load_public_table("europmc_works", p)
+    if df.empty:
         return df
-    except Exception:
-        return pd.DataFrame()
+    if "year" in df.columns:
+        df["year"] = pd.to_numeric(df["year"], errors="coerce").astype("Int64")
+    if "cited_by_count" in df.columns:
+        df["cited_by_count"] = pd.to_numeric(df["cited_by_count"], errors="coerce").fillna(0).astype(int)
+    return df
