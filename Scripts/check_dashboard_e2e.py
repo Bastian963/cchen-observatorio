@@ -30,9 +30,37 @@ SECTION_EXPECTATIONS: dict[str, tuple[str, ...]] = {
         "CCHEN — Observatorio Tecnológico I+D+i+Tt",
         "Panel consolidado de indicadores de Vigilancia Tecnológica",
     ),
+    "Producción Científica": (
+        "Producción Científica CCHEN",
+        "Fuente: OpenAlex",
+    ),
+    "Redes y Colaboración": (
+        "Redes de Colaboración Científica",
+        "Fuente: OpenAlex authorships",
+    ),
+    "Vigilancia Tecnológica": (
+        "Vigilancia Tecnológica CCHEN",
+    ),
+    "Financiamiento I+D": (
+        "Financiamiento I+D — Fondos ANID",
+    ),
     "Convocatorias y Matching": (
         "Convocatorias y Matching CCHEN",
         "Ranking por perfil / unidad",
+    ),
+    "Transferencia y Portafolio": (
+        "Transferencia y Portafolio Tecnológico",
+    ),
+    "Modelo y Gobernanza": (
+        "Modelo Unificado y Gobernanza de Datos",
+    ),
+    "Formación de Capacidades": (
+        "Formación de Capacidades I+D",
+        "Fuente: Registro interno CCHEN",
+    ),
+    "Asistente I+D": (
+        "Asistente I+D — CCHEN",
+        "Analiza las capas integradas del observatorio",
     ),
     "Grafo de Citas": (
         "Grafo de Citas — Red de Impacto Científico CCHEN",
