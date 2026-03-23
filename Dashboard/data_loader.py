@@ -3,11 +3,14 @@ Carga y preprocesa los datos del Observatorio CCHEN.
 Fuentes: CSVs de publicaciones, ANID, capital humano + JSONs precomputados.
 """
 import json
+import logging
 import os
 import datetime
 import pandas as pd
 from pathlib import Path
 from functools import lru_cache
+
+_log = logging.getLogger(__name__)
 
 try:
     import duckdb
@@ -429,7 +432,7 @@ def load_ch_cumplimiento_centros():
     p = AVANZADO / "cumplimiento_documental_centros.csv"
     if p.exists():
         try: return _read_csv_fast(p)
-        except Exception: pass
+        except Exception as _e: _log.debug("[data_loader] %s", _e)
     return pd.DataFrame()
 
 
@@ -437,7 +440,7 @@ def load_ch_transiciones():
     p = AVANZADO / "transiciones_modalidad.csv"
     if p.exists():
         try: return _read_csv_fast(p)
-        except Exception: pass
+        except Exception as _e: _log.debug("[data_loader] %s", _e)
     return pd.DataFrame()
 
 
@@ -445,7 +448,7 @@ def load_ch_participacion_tipo_anio():
     p = CAPITAL / "participacion_tipo_anio.csv"
     if p.exists():
         try: return _read_csv_fast(p)
-        except Exception: pass
+        except Exception as _e: _log.debug("[data_loader] %s", _e)
     return pd.DataFrame()
 
 
@@ -465,8 +468,8 @@ def load_dian_publications():
                 if "anio" in df.columns:
                     df["anio"] = pd.to_numeric(df["anio"], errors="coerce").astype("Int64")
                 return df[df["titulo"].notna()].copy()
-    except Exception:
-        pass
+    except Exception as _e:
+        _log.debug("[data_loader] %s", _e)
 
     # 2. Excel local
     p = BASE / "Publicaciones DIAN CCHEN" / "Publicaciones DIAN.xlsx"
