@@ -55,6 +55,10 @@ PUBLIC_TABLE_CONFIG = {
     "entity_links": {},
     "citing_papers": {"order_by": "citing_id"},
     "europmc_works": {"order_by": "source_id"},
+    "citation_graph": {"order_by": "openalex_id"},
+    "arxiv_monitor": {"order_by": "arxiv_id"},
+    "iaea_inis_monitor": {"order_by": "inis_id"},
+    "news_monitor": {"order_by": "news_id"},
 }
 
 
@@ -749,21 +753,32 @@ def load_unpaywall_oa():
 def load_iaea_inis():
     """Documentos IAEA INIS de vigilancia tecnológica nuclear."""
     p = BASE / "Vigilancia" / "iaea_inis_monitor.csv"
-    if not p.exists():
-        return pd.DataFrame()
-    try:
-        return _read_csv_fast(p)
-    except Exception:
-        return pd.DataFrame()
+    return _load_public_table("iaea_inis_monitor", p)
+
+
+def load_arxiv_monitor() -> pd.DataFrame:
+    """Papers arXiv monitoreados en áreas relevantes para CCHEN."""
+    p = BASE / "Vigilancia" / "arxiv_monitor.csv"
+    return _load_public_table("arxiv_monitor", p)
+
+
+def load_news_monitor() -> pd.DataFrame:
+    """Noticias de prensa sobre CCHEN (Google News RSS)."""
+    p = BASE / "Vigilancia" / "news_monitor.csv"
+    return _load_public_table("news_monitor", p)
 
 
 def load_citation_graph() -> pd.DataFrame:
     """Grafo de citas OpenAlex — openalex_id, cited_by_count, referenced_works_count, year"""
     p = BASE_PUB / "cchen_citation_graph.csv"
-    if not p.exists():
+    df = _load_public_table("citation_graph", p)
+    if df.empty:
         return pd.DataFrame(columns=["openalex_id","doi","year","cited_by_count",
                                       "referenced_works_count","referenced_ids_sample","fetched_at"])
-    return pd.read_csv(p).fillna("")
+    for col in ("cited_by_count", "referenced_works_count"):
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0).astype(int)
+    return df
 
 
 def load_citing_papers() -> pd.DataFrame:

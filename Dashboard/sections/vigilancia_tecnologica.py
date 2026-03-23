@@ -18,10 +18,14 @@ from .shared import (
 
 def render(ctx: dict) -> None:
     """Render the Vigilancia Tecnológica section."""
-    from data_loader import BASE, load_iaea_inis
+    from data_loader import BASE
 
     _VT_BASE = BASE / "Publications"
     _VT_VIG  = BASE / "Vigilancia"
+
+    _arxiv_data = ctx.get("arxiv_monitor", __import__("pandas").DataFrame())
+    _news_data  = ctx.get("news_monitor",  __import__("pandas").DataFrame())
+    _iaea_data  = ctx.get("iaea_inis",     __import__("pandas").DataFrame())
 
     st.title("Vigilancia Tecnológica CCHEN")
     st.caption("Actividad publicadora institucional · Monitoreo de tendencias · Temas de investigación")
@@ -38,21 +42,24 @@ def render(ctx: dict) -> None:
 
     # ── TAB 1: Publicaciones CCHEN ───────────────────────────────────────────
     with _vt_tabs[0]:
-        _oa_path  = _VT_BASE / "cchen_openalex_works.csv"
-        _we_path  = _VT_BASE / "cchen_works_enriched.csv"
         _abs_path = _VT_BASE / "cchen_abstracts_merged.csv"
 
-        if not _oa_path.exists():
-            st.info("No se encontró cchen_openalex_works.csv en Data/Publications.")
+        _pub_ctx = ctx.get("pub", __import__("pandas").DataFrame())
+        _enr_ctx = ctx.get("pub_enr", __import__("pandas").DataFrame())
+
+        if _pub_ctx.empty:
+            st.info("No se encontraron publicaciones CCHEN en la base de datos.")
         else:
-            _pub = pd.read_csv(_oa_path, low_memory=False)
-            if _we_path.exists():
-                _we = pd.read_csv(_we_path, low_memory=False)
-                _pub = _pub.merge(
-                    _we[["work_id", "publication_date"]].rename(columns={"work_id": "openalex_id"}),
-                    on="openalex_id", how="left"
-                )
-            else:
+            _pub = _pub_ctx.copy()
+            if not _enr_ctx.empty and "publication_date" in _enr_ctx.columns:
+                _merge_cols = [c for c in ["work_id", "openalex_id"] if c in _enr_ctx.columns]
+                if _merge_cols:
+                    _key = _merge_cols[0]
+                    _pub = _pub.merge(
+                        _enr_ctx[[_key, "publication_date"]].rename(columns={_key: "openalex_id"}),
+                        on="openalex_id", how="left"
+                    )
+            if "publication_date" not in _pub.columns:
                 _pub["publication_date"] = None
 
             _pub["publication_date"] = pd.to_datetime(_pub["publication_date"], errors="coerce")
@@ -278,11 +285,10 @@ def render(ctx: dict) -> None:
 
     # ── TAB 2: En la prensa ──────────────────────────────────────────────────
     with _vt_tabs[1]:
-        _news_path = _VT_VIG / "news_monitor.csv"
-        if not _news_path.exists():
+        if _news_data.empty:
             st.info("Ejecuta `python3 Scripts/news_monitor.py` para obtener noticias.")
         else:
-            _news = pd.read_csv(_news_path)
+            _news = _news_data.copy()
             _news["published_dt"] = pd.to_datetime(_news["published"], errors="coerce", utc=True).dt.tz_convert(None)
             _news["title_clean"] = _news.apply(
                 lambda r: _clean_news_title(r.get("title", ""), r.get("source_name", "")),
@@ -475,14 +481,13 @@ def render(ctx: dict) -> None:
 
     # ── TAB 4: Monitor entorno arXiv ─────────────────────────────────────────
     with _vt_tabs[3]:
-        _arxiv_path = _VT_VIG / "arxiv_monitor.csv"
-        if not _arxiv_path.exists():
+        if _arxiv_data.empty:
             st.info(
                 "Aún no hay datos de monitoreo arXiv. "
                 "Ejecuta `python3 Scripts/arxiv_monitor.py` para la primera captura."
             )
         else:
-            _arxiv = pd.read_csv(_arxiv_path)
+            _arxiv = _arxiv_data.copy()
             _arxiv["fetched_at"] = pd.to_datetime(_arxiv["fetched_at"], errors="coerce")
 
             kpi_row(
@@ -541,7 +546,7 @@ def render(ctx: dict) -> None:
 
     # ── TAB 5: Monitor IAEA INIS ──────────────────────────────────────────────
     with _vt_tabs[4]:
-        _inis_df = load_iaea_inis()
+        _inis_df = _iaea_data.copy() if not _iaea_data.empty else _iaea_data
         if _inis_df.empty:
             st.info(
                 "Aún no hay datos de monitoreo IAEA INIS. "
