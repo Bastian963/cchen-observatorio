@@ -356,6 +356,11 @@ can_view_sensitive = true
   - contrato de imports `app/sections -> data_loader`,
   - carga local de convocatorias, matching, funding y núcleo institucional,
   - y columnas mínimas de los datasets críticos del observatorio.
+- Ejecuta además [check_dashboard_e2e.py](/Users/bastianayalainostroza/Dropbox/CCHEN/Scripts/check_dashboard_e2e.py), un E2E mínimo con `streamlit.testing.v1.AppTest` que verifica:
+  - la muralla beta de acceso,
+  - el login interno con secrets inyectados de prueba,
+  - y la navegación de secciones clave (`Panel de Indicadores`, `Convocatorias y Matching`, `Grafo de Citas`) para cubrir la carga lazy por sección.
+- Este E2E debe correrse con **Python 3.11**, igual que el runtime del dashboard.
 
 ### Contrato de base de datos en CI
 
@@ -400,6 +405,7 @@ python3 Database/migrate_to_supabase.py
 ```bash
 python3 Scripts/check_database_contract.py
 OBSERVATORIO_DATA_SOURCE=local python3 Scripts/check_dashboard_smoke.py
+uv run --python 3.11 --with-requirements requirements.txt python Scripts/check_dashboard_e2e.py
 ```
 
 5. Verificar conectividad real contra tu instancia:

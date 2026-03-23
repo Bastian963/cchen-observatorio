@@ -236,6 +236,16 @@ El dashboard ya no usa un `get_data()` global para precargar todo el observatori
 
 Este patrón reduce el costo de arranque del dashboard y evita leer tablas o CSVs que no son necesarios para la vista actual.
 
+### E2E mínimo del dashboard
+
+El repositorio incorpora `Scripts/check_dashboard_e2e.py`, un chequeo de interfaz ligero basado en `streamlit.testing.v1.AppTest`:
+
+- inyecta `internal_auth` de prueba sin depender de secrets reales de despliegue,
+- valida la muralla beta y el login interno,
+- y recorre un subconjunto estable de secciones para comprobar que la navegación principal sigue operativa tras cambios en `app.py` o en el armado lazy del `ctx`.
+
+Este test se ejecuta en CI dentro de `dashboard_smoke.yml` con `OBSERVATORIO_DATA_SOURCE=local` y Python 3.11, alineado con `runtime.txt`.
+
 ### _fetch_supabase_table(table_name, use_service_role=False)
 
 Implementa **paginación completa** de Supabase:

@@ -59,3 +59,23 @@ Icon
 
 # Logs
 *.log
+
+# Artefactos locales de QA / exploración
+/01_inicio_panel_indicadores.png
+/02_produccion_cientifica.png
+/03_redes_colaboracion.png
+/04_vigilancia_tecnologica.png
+/05_financiamiento_id.png
+/06_convocatorias_matching.png
+/07_transferencia_portafolio.png
+/08_modelo_gobernanza.png
+/09_formacion_capacidades.png
+/10_asistente_id.png
+/11_grafo_citas.png
+/cchen-observatorio-screenshot.png
+/streamlit_app_initial.png
+/streamlit_error.png
+/Notebooks/
+/lib/
+/Dashboard/lib/
+/output/playwright/
