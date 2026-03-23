@@ -326,7 +326,8 @@ def render(ctx: dict) -> None:
         )
 
         _paper_authors = _au_pairs.groupby("work_id").apply(
-            lambda df: list(zip(df["author_id"], df["author_name"]))
+            lambda df: list(zip(df["author_id"], df["author_name"])),
+            include_groups=False,
         ).reset_index(name="authors_list")
 
         _coauth_edges: dict = {}

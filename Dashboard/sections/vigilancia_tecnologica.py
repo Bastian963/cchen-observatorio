@@ -135,7 +135,7 @@ def render(ctx: dict) -> None:
                     _full_days["week_start"] = _full_days["date"] - pd.to_timedelta(_full_days["date"].dt.dayofweek, unit="D")
                     _full_days["week_label"] = _full_days["week_start"].dt.strftime("%d %b")
                     _pivot_last = _full_days.pivot(index="dow", columns="week_label", values="n").reindex(_day_order)
-                    _last_text = _pivot_last.applymap(lambda v: str(int(v)) if pd.notna(v) and int(v) > 0 else "")
+                    _last_text = _pivot_last.map(lambda v: str(int(v)) if pd.notna(v) and int(v) > 0 else "")
                     fig_last = go.Figure(go.Heatmap(
                         x=_pivot_last.columns.tolist(),
                         y=_pivot_last.index.tolist(),
