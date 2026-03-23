@@ -46,6 +46,13 @@ PUBLIC_TABLE_CONFIG = {
     "institution_registry_pending_review": {"order_by": "canonical_name"},
     "convenios_nacionales": {"order_by": "id"},
     "acuerdos_internacionales": {"order_by": "id"},
+    "capital_humano": {"order_by": "id"},
+    "funding_complementario": {"order_by": "funding_id"},
+    "convocatorias_matching_institucional": {"order_by": "conv_id"},
+    "entity_registry_personas": {"order_by": "persona_id"},
+    "entity_registry_proyectos": {"order_by": "project_id"},
+    "entity_registry_convocatorias": {"order_by": "convocatoria_id"},
+    "entity_links": {},
 }
 
 
@@ -275,7 +282,7 @@ def load_anid():
 # ─── Capital Humano ───────────────────────────────────────────────────────────
 
 def load_capital_humano():
-    df = _read_csv_fast(SALIDA / "dataset_maestro_limpio.csv")
+    df = _load_public_table("capital_humano", SALIDA / "dataset_maestro_limpio.csv")
     df["anio_hoja"]          = pd.to_numeric(df["anio_hoja"],          errors="coerce").astype("Int64")
     df["duracion_dias"]      = pd.to_numeric(df["duracion_dias"],      errors="coerce")
     df["monto_contrato_num"] = pd.to_numeric(df["monto_contrato_num"], errors="coerce")
@@ -555,10 +562,8 @@ def load_ror_pending_review():
 def load_funding_complementario():
     """Proyectos de financiamiento más allá de ANID (CORFO, IAEA TC, etc.)."""
     p = BASE / "Funding" / "cchen_funding_complementario.csv"
-    if not p.exists():
-        return pd.DataFrame()
     try:
-        df = _read_csv_fast(p)
+        df = _load_public_table("funding_complementario", p)
         if "anio" in df.columns:
             df["anio"] = pd.to_numeric(df["anio"], errors="coerce").astype("Int64")
         return df
@@ -591,10 +596,8 @@ def load_perfiles_institucionales():
 def load_matching_institucional():
     """Matching institucional formal de convocatorias abiertas y próximas."""
     p = BASE / "Vigilancia" / "convocatorias_matching_institucional.csv"
-    if not p.exists():
-        return pd.DataFrame()
     try:
-        df = _read_csv_fast(p)
+        df = _load_public_table("convocatorias_matching_institucional", p)
         if "score_total" in df.columns:
             df["score_total"] = pd.to_numeric(df["score_total"], errors="coerce").fillna(0).astype(int)
         return df
@@ -614,22 +617,38 @@ def _load_governance_csv(filename: str) -> pd.DataFrame:
 
 def load_entity_registry_personas():
     """Registro canónico de personas del observatorio."""
-    return _load_governance_csv("entity_registry_personas.csv")
+    p = BASE / "Gobernanza" / "entity_registry_personas.csv"
+    try:
+        return _load_public_table("entity_registry_personas", p)
+    except Exception:
+        return pd.DataFrame()
 
 
 def load_entity_registry_proyectos():
     """Registro canónico de proyectos del observatorio."""
-    return _load_governance_csv("entity_registry_proyectos.csv")
+    p = BASE / "Gobernanza" / "entity_registry_proyectos.csv"
+    try:
+        return _load_public_table("entity_registry_proyectos", p)
+    except Exception:
+        return pd.DataFrame()
 
 
 def load_entity_registry_convocatorias():
     """Registro canónico de convocatorias del observatorio."""
-    return _load_governance_csv("entity_registry_convocatorias.csv")
+    p = BASE / "Gobernanza" / "entity_registry_convocatorias.csv"
+    try:
+        return _load_public_table("entity_registry_convocatorias", p)
+    except Exception:
+        return pd.DataFrame()
 
 
 def load_entity_links():
     """Enlaces operativos entre entidades canónicas del observatorio."""
-    return _load_governance_csv("entity_links.csv")
+    p = BASE / "Gobernanza" / "entity_links.csv"
+    try:
+        return _load_public_table("entity_links", p)
+    except Exception:
+        return pd.DataFrame()
 
 
 # ─── Datos institucionales (datos.gob.cl) ────────────────────────────────────
