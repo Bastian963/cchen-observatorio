@@ -31,6 +31,7 @@ from data_loader import (
     load_unpaywall_oa, load_iaea_inis,
     load_citation_graph, load_citing_papers, load_altmetric,
     load_europmc, load_arxiv_monitor, load_news_monitor,
+    load_bertopic_topics, load_bertopic_topic_info,
     get_data_backend_info, BASE,
 )
 
@@ -448,9 +449,11 @@ def get_data():
         citing_papers  = load_citing_papers(),
         altmetric      = load_altmetric(),
         europmc        = load_europmc(),
-        arxiv_monitor  = load_arxiv_monitor(),
-        news_monitor   = load_news_monitor(),
-        iaea_inis      = load_iaea_inis(),
+        arxiv_monitor       = load_arxiv_monitor(),
+        news_monitor        = load_news_monitor(),
+        iaea_inis           = load_iaea_inis(),
+        bertopic_topics     = load_bertopic_topics(),
+        bertopic_topic_info = load_bertopic_topic_info(),
     )
 
 D = get_data()
@@ -483,9 +486,11 @@ citation_graph = D["citation_graph"]
 citing_papers  = D["citing_papers"]
 altmetric      = D["altmetric"]
 europmc        = D["europmc"]
-arxiv_monitor  = D["arxiv_monitor"]
-news_monitor   = D["news_monitor"]
-iaea_inis      = D["iaea_inis"]
+arxiv_monitor       = D["arxiv_monitor"]
+news_monitor        = D["news_monitor"]
+iaea_inis           = D["iaea_inis"]
+bertopic_topics     = D["bertopic_topics"]
+bertopic_topic_info = D["bertopic_topic_info"]
 
 @st.cache_data
 def get_patents():
@@ -1618,6 +1623,8 @@ _ctx = dict(
     arxiv_monitor=arxiv_monitor,
     news_monitor=news_monitor,
     iaea_inis=iaea_inis,
+    bertopic_topics=bertopic_topics,
+    bertopic_topic_info=bertopic_topic_info,
     patents=patents,
     render_operational_strip=render_operational_strip,
     open_dataset_inspector=open_dataset_inspector,

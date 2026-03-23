@@ -579,15 +579,16 @@ def render(ctx: dict) -> None:
     st.markdown("## 👤 Perfil de Investigador")
     st.caption("Producción científica individual · Fuente: OpenAlex")
 
-    _auth_path = BASE / "Publications" / "cchen_authorships_enriched.csv"
-    _oa_path_p = BASE / "Publications" / "cchen_openalex_works.csv"
+    _auth_all = auth.copy() if not auth.empty else pd.DataFrame()
+    _oa_all   = pub.copy()
 
-    if not _auth_path.exists():
-        st.info("No se encontró cchen_authorships_enriched.csv.")
+    # work_id en authorships → openalex_id en publications
+    if "work_id" not in _auth_all.columns and "openalex_id" in _auth_all.columns:
+        _auth_all = _auth_all.rename(columns={"openalex_id": "work_id"})
+
+    if _auth_all.empty or "is_cchen_affiliation" not in _auth_all.columns:
+        st.info("No hay datos de autorías disponibles.")
     else:
-        _auth_all = pd.read_csv(_auth_path, low_memory=False)
-        _oa_all   = pd.read_csv(_oa_path_p, low_memory=False)
-
         _cchen_auth = _auth_all[_auth_all["is_cchen_affiliation"] == True].copy()
         _inv_counts = (
             _cchen_auth.groupby(["author_id", "author_name"])

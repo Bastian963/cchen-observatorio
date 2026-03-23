@@ -59,6 +59,8 @@ PUBLIC_TABLE_CONFIG = {
     "arxiv_monitor": {"order_by": "arxiv_id"},
     "iaea_inis_monitor": {"order_by": "inis_id"},
     "news_monitor": {"order_by": "news_id"},
+    "bertopic_topics": {"order_by": "openalex_id"},
+    "bertopic_topic_info": {"order_by": "topic"},
 }
 
 
@@ -814,6 +816,36 @@ def load_altmetric() -> pd.DataFrame:
         return df
     except Exception:
         return pd.DataFrame()
+
+
+# ─── BERTopic ─────────────────────────────────────────────────────────────────
+
+def load_bertopic_topics() -> pd.DataFrame:
+    """Asignación de topics BERTopic por paper CCHEN."""
+    p = BASE_PUB / "cchen_bertopic_topics.csv"
+    df = _load_public_table("bertopic_topics", p)
+    if not df.empty:
+        for col in ("topic_id",):
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
+    return df
+
+
+def load_bertopic_topic_info() -> pd.DataFrame:
+    """Metadatos de topics BERTopic (nombre, palabras clave, docs representativos)."""
+    p = BASE_PUB / "cchen_bertopic_topic_info.csv"
+    df = _load_public_table("bertopic_topic_info", p)
+    if not df.empty:
+        rename = {c: c.capitalize() for c in df.columns}
+        # Normalizar nombres al formato que usa el dashboard (Topic, Count, Name, ...)
+        col_map = {
+            "topic": "Topic", "count": "Count", "name": "Name",
+            "representation": "Representation", "representative_docs": "Representative_Docs",
+        }
+        df = df.rename(columns={k: v for k, v in col_map.items() if k in df.columns})
+        if "Topic" in df.columns:
+            df["Topic"] = pd.to_numeric(df["Topic"], errors="coerce").astype("Int64")
+    return df
 
 
 # ─── EuroPMC ──────────────────────────────────────────────────────────────────

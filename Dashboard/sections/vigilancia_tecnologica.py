@@ -620,15 +620,12 @@ def render(ctx: dict) -> None:
 
     # ── TAB 6: Temas de Investigación (BERTopic) ─────────────────────────────
     with _vt_tabs[5]:
-        _bt_info_path = _VT_BASE / "cchen_bertopic_topic_info.csv"
-        _bt_docs_path = _VT_BASE / "cchen_bertopic_topics.csv"
-        _bt_viz_path  = BASE.parent / "Notebooks" / "analysis"
+        _bt_info = ctx.get("bertopic_topic_info", __import__("pandas").DataFrame())
+        _bt_docs = ctx.get("bertopic_topics",     __import__("pandas").DataFrame())
 
-        if not _bt_info_path.exists():
+        if _bt_info.empty:
             st.info("Ejecuta `python3 Scripts/run_bertopic.py` para generar el análisis de temas.")
         else:
-            _bt_info = pd.read_csv(_bt_info_path)
-            _bt_docs = pd.read_csv(_bt_docs_path) if _bt_docs_path.exists() else pd.DataFrame()
             _bt_real = _bt_info[_bt_info["Topic"] != -1]
 
             kpi_row(
