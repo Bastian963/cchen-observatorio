@@ -2,6 +2,7 @@
 import os
 import ast
 import re
+import hmac
 import hashlib
 import math
 from html import unescape as html_unescape
@@ -477,11 +478,125 @@ def _streamlit_auth_supported() -> bool:
     return all(hasattr(st, attr) for attr in ("login", "logout", "user"))
 
 
+def _normalize_username(value: str) -> str:
+    return str(value or "").strip().lower()
+
+
+def _internal_auth_config() -> dict:
+    block = _get_secret_block("internal_auth")
+    raw_users = block.get("users", [])
+    user_items: list[dict] = []
+
+    if isinstance(raw_users, dict):
+        for username, payload in raw_users.items():
+            item = dict(payload) if isinstance(payload, dict) else {}
+            item.setdefault("username", username)
+            user_items.append(item)
+    elif isinstance(raw_users, (list, tuple)):
+        for payload in raw_users:
+            if isinstance(payload, dict):
+                user_items.append(dict(payload))
+
+    users_by_username: dict[str, dict] = {}
+    for item in user_items:
+        username = _normalize_username(item.get("username"))
+        if not username:
+            continue
+        users_by_username[username] = {
+            "username": username,
+            "password": str(item.get("password", "") or ""),
+            "password_sha256": str(item.get("password_sha256", "") or "").strip().lower(),
+            "name": str(item.get("name", "") or username),
+            "email": str(item.get("email", "") or ""),
+            "role": str(item.get("role", "") or ""),
+            "can_view_sensitive": bool(item.get("can_view_sensitive", True)),
+        }
+
+    enabled = bool(block.get("enabled", True)) and bool(users_by_username)
+    return {
+        "enabled": enabled,
+        "beta_badge": str(block.get("beta_badge", "Beta interna") or "Beta interna"),
+        "beta_title": str(block.get("beta_title", "Observatorio Tecnológico CCHEN") or "Observatorio Tecnológico CCHEN"),
+        "beta_message": str(
+            block.get(
+                "beta_message",
+                "Acceso privado para revisión funcional, validación de datos y despliegue progresivo del observatorio.",
+            ) or ""
+        ),
+        "users_by_username": users_by_username,
+    }
+
+
+def _internal_auth_enabled() -> bool:
+    return bool(_internal_auth_config().get("enabled"))
+
+
+def _verify_internal_password(raw_password: str, user_cfg: dict) -> bool:
+    candidate = str(raw_password or "")
+    if not candidate:
+        return False
+
+    stored_hash = str(user_cfg.get("password_sha256", "") or "").strip().lower()
+    if stored_hash:
+        digest = hashlib.sha256(candidate.encode("utf-8")).hexdigest()
+        return hmac.compare_digest(digest, stored_hash)
+
+    stored_password = str(user_cfg.get("password", "") or "")
+    if not stored_password:
+        return False
+    return hmac.compare_digest(candidate, stored_password)
+
+
+def _internal_auth_login(username: str, password: str) -> tuple[bool, str]:
+    cfg = _internal_auth_config()
+    if not cfg.get("enabled"):
+        return False, "El login interno no está configurado en los secrets."
+
+    normalized = _normalize_username(username)
+    user_cfg = cfg["users_by_username"].get(normalized)
+    if user_cfg is None or not _verify_internal_password(password, user_cfg):
+        return False, "Usuario o clave incorrectos."
+
+    st.session_state["observatorio_internal_auth_username"] = normalized
+    return True, ""
+
+
+def _internal_auth_logout() -> None:
+    st.session_state.pop("observatorio_internal_auth_username", None)
+
+
 def _auth_enabled() -> bool:
-    return _streamlit_auth_supported() and bool(_get_secret_block("auth"))
+    return _internal_auth_enabled() or (
+        _streamlit_auth_supported() and bool(_get_secret_block("auth"))
+    )
 
 
 def _access_context() -> dict:
+    internal_cfg = _internal_auth_config()
+    if internal_cfg.get("enabled"):
+        username = _normalize_username(st.session_state.get("observatorio_internal_auth_username", ""))
+        user_cfg = internal_cfg["users_by_username"].get(username)
+        is_logged_in = user_cfg is not None
+        name = user_cfg.get("name", username or "usuario") if user_cfg else "usuario"
+        email = _normalize_username(user_cfg.get("email", "")) if user_cfg else ""
+        can_view_sensitive = bool(user_cfg.get("can_view_sensitive", False)) if user_cfg else False
+        return {
+            "auth_enabled": True,
+            "auth_supported": True,
+            "auth_mode": "internal",
+            "is_logged_in": is_logged_in,
+            "email": email,
+            "name": name,
+            "username": username,
+            "role": user_cfg.get("role", "") if user_cfg else "",
+            "allowlist": [],
+            "is_allowlisted": can_view_sensitive,
+            "can_view_sensitive": can_view_sensitive,
+            "beta_badge": internal_cfg.get("beta_badge", "Beta interna"),
+            "beta_title": internal_cfg.get("beta_title", "Observatorio Tecnológico CCHEN"),
+            "beta_message": internal_cfg.get("beta_message", ""),
+        }
+
     user = getattr(st, "user", None) if _streamlit_auth_supported() else None
     is_logged_in = bool(getattr(user, "is_logged_in", False)) if user is not None else False
     email = (getattr(user, "email", "") or "").strip().lower() if user is not None else ""
@@ -494,17 +609,24 @@ def _access_context() -> dict:
         if str(item).strip()
     ]
     is_allowlisted = (not allowlist) or (email in allowlist)
-    can_view_sensitive = (not _auth_enabled()) or (is_logged_in and is_allowlisted)
+    auth_enabled = _streamlit_auth_supported() and bool(_get_secret_block("auth"))
+    can_view_sensitive = (is_logged_in and is_allowlisted) if auth_enabled else True
 
     return {
-        "auth_enabled": _auth_enabled(),
+        "auth_enabled": auth_enabled,
         "auth_supported": _streamlit_auth_supported(),
+        "auth_mode": "oidc" if auth_enabled else "open",
         "is_logged_in": is_logged_in,
         "email": email,
         "name": name,
+        "username": email,
+        "role": "",
         "allowlist": allowlist,
         "is_allowlisted": is_allowlisted,
         "can_view_sensitive": can_view_sensitive,
+        "beta_badge": "Beta interna",
+        "beta_title": "Observatorio Tecnológico CCHEN",
+        "beta_message": "",
     }
 
 

@@ -68,7 +68,9 @@ def render(ctx: dict) -> None:
             "El asistente queda restringido mientras no exista una sesión autorizada, "
             "porque el prompt incorpora contexto de capital humano y otros datos internos."
         )
-        if assistant_access["auth_supported"] and not assistant_access["is_logged_in"]:
+        if assistant_access.get("auth_mode") == "internal":
+            st.info("Tu usuario beta no tiene habilitado el acceso sensible requerido para esta sección.")
+        elif assistant_access["auth_supported"] and not assistant_access["is_logged_in"]:
             if st.button("Iniciar sesión para habilitar el asistente", key="assistant_login"):
                 st.login()
         st.stop()

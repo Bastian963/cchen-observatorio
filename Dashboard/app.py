@@ -17,6 +17,15 @@ import plotly.express as px
 import plotly.graph_objects as go
 import math
 import data_loader as _data_loader
+from sections.shared import (
+    _get_secret_block,
+    _streamlit_auth_supported,
+    _auth_enabled,
+    _access_context,
+    _internal_auth_config,
+    _internal_auth_login,
+    _internal_auth_logout,
+)
 
 
 _DEFAULT_DATA_ROOT = Path(os.getenv("CCHEN_DATA_ROOT", str(Path(__file__).resolve().parent.parent / "Data")))
@@ -493,6 +502,7 @@ def _bootstrap_dashboard_env():
     mappings = {
         "SUPABASE_URL": ("url", "SUPABASE_URL"),
         "SUPABASE_ANON_KEY": ("anon_key", "SUPABASE_ANON_KEY"),
+        "SUPABASE_SERVICE_ROLE_KEY": ("service_role_key", "SUPABASE_SERVICE_ROLE_KEY"),
         "OBSERVATORIO_DATA_SOURCE": ("data_source", "OBSERVATORIO_DATA_SOURCE"),
         "CCHEN_DATA_ROOT": ("data_root", "CCHEN_DATA_ROOT"),
     }
@@ -508,14 +518,98 @@ def _bootstrap_dashboard_env():
 
 _bootstrap_dashboard_env()
 
+
+def _render_beta_access_gate() -> None:
+    auth_cfg = _internal_auth_config()
+    if not auth_cfg.get("enabled"):
+        return
+
+    access = _access_context()
+    if access.get("is_logged_in"):
+        return
+
+    st.markdown(
+        f"""
+        <div style="padding:0.5rem 0 1.25rem 0">
+            <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:{BLUE};margin-bottom:0.5rem">
+                {access.get("beta_badge", "Beta interna")}
+            </div>
+            <div style="font-size:2.1rem;font-weight:800;color:#0F172A;line-height:1.1;margin-bottom:0.65rem">
+                {access.get("beta_title", "Observatorio Tecnológico CCHEN")}
+            </div>
+            <div style="font-size:1rem;color:#475569;max-width:52rem;line-height:1.6">
+                {access.get("beta_message", "")}
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    hero_col, login_col = st.columns([1.35, 0.9], gap="large")
+
+    with hero_col:
+        st.markdown(
+            """
+            ### Acceso privado del observatorio
+            Esta versión está pensada para revisión interna, validación funcional y migración progresiva
+            desde los datasets locales hacia la arquitectura del observatorio.
+            """
+        )
+        st.info(
+            "El ingreso permite revisar módulos en beta, fuentes aún en consolidación y tablas internas "
+            "que no deben quedar expuestas en una URL pública abierta."
+        )
+        st.caption(
+            "Los usuarios se definen en `Dashboard/.streamlit/secrets.toml` o en los secrets de "
+            "Streamlit Cloud. Las credenciales no quedan hardcodeadas en el repositorio."
+        )
+
+    with login_col:
+        st.markdown("### Ingreso beta")
+        st.caption("Usa tu usuario interno para continuar.")
+        with st.form("observatorio_internal_login", clear_on_submit=False):
+            username = st.text_input("Usuario", placeholder="tu.usuario")
+            password = st.text_input("Clave", type="password")
+            submit = st.form_submit_button("Ingresar al observatorio", use_container_width=True)
+        if submit:
+            ok, message = _internal_auth_login(username, password)
+            if ok:
+                st.success("Acceso concedido. Redirigiendo…")
+                st.rerun()
+            else:
+                st.error(message)
+
+    st.stop()
+
+
+_render_beta_access_gate()
+
+
+_APP_ACCESS = _access_context()
+_CAPITAL_HUMANO_COLUMNS = getattr(_data_loader, "CAPITAL_HUMANO_COLUMNS", [
+    "id", "anio_hoja", "nombre", "inicio", "termino", "duracion_dias", "tutor",
+    "centro_norm", "tipo_norm", "universidad", "carrera", "monto_contrato_num",
+    "ad_honorem", "objeto_contrato", "observaciones_texto", "informe_url_principal",
+    "flag_fechas_inconsistentes", "flag_tipo_fuera_catalogo", "created_at",
+])
+
+
+def _empty_capital_humano_frame() -> pd.DataFrame:
+    return pd.DataFrame(columns=_CAPITAL_HUMANO_COLUMNS)
+
+
+def _maybe_sensitive(loader, enabled: bool, empty_factory=pd.DataFrame):
+    return loader() if enabled else empty_factory()
+
+
 @st.cache_data
-def get_data():
+def get_data(can_view_sensitive: bool):
     return dict(
         pub       = load_publications(),
         pub_enr   = load_publications_enriched(),
         auth      = load_authorships(),
         anid      = load_anid(),
-        ch        = load_capital_humano(),
+        ch        = _maybe_sensitive(load_capital_humano, can_view_sensitive, _empty_capital_humano_frame),
         ch_ej     = load_ch_resumen_ejecutivo(),
         ch_adv    = load_ch_analisis_avanzado(),
         ch_cumpl  = load_ch_cumplimiento_centros(),
@@ -530,14 +624,14 @@ def get_data():
         orcid       = load_orcid_researchers(),
         ror_registry = load_ror_registry(),
         ror_pending_review = load_ror_pending_review(),
-        funding_plus = load_funding_complementario(),
+        funding_plus = _maybe_sensitive(load_funding_complementario, can_view_sensitive),
         iaea_tc     = load_iaea_tc(),
         perfiles_inst = load_perfiles_institucionales(),
         matching_inst = load_matching_institucional(),
-        entity_personas = load_entity_registry_personas(),
+        entity_personas = _maybe_sensitive(load_entity_registry_personas, can_view_sensitive),
         entity_projects = load_entity_registry_proyectos(),
         entity_convocatorias = load_entity_registry_convocatorias(),
-        entity_links = load_entity_links(),
+        entity_links = _maybe_sensitive(load_entity_links, can_view_sensitive),
         pub_full    = load_publications_with_concepts(),
         convenios   = load_convenios_nacionales(),
         acuerdos    = load_acuerdos_internacionales(),
@@ -553,7 +647,7 @@ def get_data():
         bertopic_topic_info = load_bertopic_topic_info(),
     )
 
-D = get_data()
+D = get_data(_APP_ACCESS["can_view_sensitive"])
 pub, pub_enr, auth = D["pub"], D["pub_enr"], D["auth"]
 anid = D["anid"]
 ch, ch_ej, ch_adv = D["ch"], D["ch_ej"], D["ch_adv"]
@@ -652,49 +746,6 @@ else:
                 return inner
             return decorator
         return func
-
-
-def _get_secret_block(name: str) -> dict:
-    try:
-        block = st.secrets.get(name, {})
-        return dict(block) if block else {}
-    except Exception:
-        return {}
-
-
-def _streamlit_auth_supported() -> bool:
-    return all(hasattr(st, attr) for attr in ("login", "logout", "user"))
-
-
-def _auth_enabled() -> bool:
-    return _streamlit_auth_supported() and bool(_get_secret_block("auth"))
-
-
-def _access_context() -> dict:
-    user = getattr(st, "user", None) if _streamlit_auth_supported() else None
-    is_logged_in = bool(getattr(user, "is_logged_in", False)) if user is not None else False
-    email = (getattr(user, "email", "") or "").strip().lower() if user is not None else ""
-    name = (getattr(user, "name", "") or email or "usuario") if user is not None else "usuario"
-
-    observatorio_cfg = _get_secret_block("observatorio")
-    allowlist = [
-        str(item).strip().lower()
-        for item in observatorio_cfg.get("sensitive_access_emails", [])
-        if str(item).strip()
-    ]
-    is_allowlisted = (not allowlist) or (email in allowlist)
-    can_view_sensitive = (not _auth_enabled()) or (is_logged_in and is_allowlisted)
-
-    return {
-        "auth_enabled": _auth_enabled(),
-        "auth_supported": _streamlit_auth_supported(),
-        "is_logged_in": is_logged_in,
-        "email": email,
-        "name": name,
-        "allowlist": allowlist,
-        "is_allowlisted": is_allowlisted,
-        "can_view_sensitive": can_view_sensitive,
-    }
 
 
 def _dataset_catalog() -> dict:
@@ -1704,7 +1755,23 @@ with st.sidebar:
         if st.button("Inspector datasets", key="sidebar_open_dataset_inspector", use_container_width=True):
             open_dataset_inspector()
     with st.expander("Acceso y permisos", expanded=False):
-        if not access["auth_supported"]:
+        if access.get("auth_mode") == "internal":
+            if access["is_logged_in"]:
+                st.success(f"Sesión activa: {access['name']}")
+                if access.get("username"):
+                    st.caption(f"Usuario: {access['username']}")
+                if access.get("role"):
+                    st.caption(f"Rol: {access['role']}")
+                if access["can_view_sensitive"]:
+                    st.caption("Acceso a datasets internos habilitado.")
+                else:
+                    st.warning("Tu usuario no tiene acceso a vistas sensibles.")
+                if st.button("Cerrar sesión", key="sidebar_logout_internal", use_container_width=True):
+                    _internal_auth_logout()
+                    st.rerun()
+            else:
+                st.caption("El observatorio beta requiere autenticación interna.")
+        elif not access["auth_supported"]:
             st.caption("Tu versión de Streamlit no expone `st.login()` / `st.user`.")
         elif not access["auth_enabled"]:
             st.caption("OIDC no configurado. El dashboard opera en modo local abierto.")

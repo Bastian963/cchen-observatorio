@@ -86,6 +86,13 @@ PUBLIC_TABLE_CONFIG = {
     "data_sources": {"order_by": "source_name"},
 }
 
+SENSITIVE_TABLE_CONFIG = {
+    "capital_humano": {"order_by": "id"},
+    "funding_complementario": {"order_by": "funding_id"},
+    "entity_registry_personas": {"order_by": "persona_id"},
+    "entity_links": {"order_by": "origin_type"},
+}
+
 
 def get_data_backend_info() -> dict:
     """Retorna el motor de lectura disponible para el dashboard."""
@@ -165,6 +172,20 @@ def _get_supabase_credentials() -> tuple[str, str]:
     return url, key
 
 
+def _get_supabase_service_role_credentials() -> tuple[str, str]:
+    url = (
+        os.getenv("SUPABASE_URL")
+        or os.getenv("SUPABASE_PUBLIC_URL")
+        or ""
+    ).strip()
+    key = (
+        os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        or os.getenv("SUPABASE_SERVICE_ROLE")
+        or ""
+    ).strip()
+    return url, key
+
+
 @lru_cache(maxsize=1)
 def _supabase_client():
     url, key = _get_supabase_credentials()
@@ -176,12 +197,24 @@ def _supabase_client():
         return None
 
 
-def _fetch_supabase_table(table_name: str) -> pd.DataFrame:
-    client = _supabase_client()
+@lru_cache(maxsize=1)
+def _supabase_service_role_client():
+    url, key = _get_supabase_service_role_credentials()
+    if create_client is None or not url or not key:
+        return None
+    try:
+        return create_client(url, key)
+    except Exception:
+        return None
+
+
+def _fetch_supabase_table(table_name: str, use_service_role: bool = False) -> pd.DataFrame:
+    client = _supabase_service_role_client() if use_service_role else _supabase_client()
     if client is None:
         raise RuntimeError("Supabase no configurado o cliente no disponible")
 
-    order_by = PUBLIC_TABLE_CONFIG.get(table_name, {}).get("order_by")
+    table_config = SENSITIVE_TABLE_CONFIG if use_service_role else PUBLIC_TABLE_CONFIG
+    order_by = table_config.get(table_name, {}).get("order_by")
     query = client.table(table_name).select("*", count="exact")
     if order_by:
         query = query.order(order_by)
@@ -225,6 +258,24 @@ def _load_public_table(table_name: str, local_path: Path) -> pd.DataFrame:
 
     _record_table_load_status(table_name, "local_only", str(local_path))
     return _read_csv_fast(local_path)
+
+
+def _load_sensitive_table(table_name: str, local_path: Path) -> pd.DataFrame:
+    mode = _get_data_source_mode()
+
+    if mode == "local":
+        _record_table_load_status(table_name, "local_only", str(local_path))
+        return _read_csv_fast(local_path)
+
+    try:
+        df = _fetch_supabase_table(table_name, use_service_role=True)
+        _record_table_load_status(table_name, "supabase_private", table_name)
+        return df
+    except Exception:
+        if local_path.exists():
+            _record_table_load_status(table_name, "local_fallback", str(local_path))
+            return _read_csv_fast(local_path)
+        raise
 
 
 def _empty_capital_humano_frame() -> pd.DataFrame:
@@ -339,7 +390,7 @@ def load_anid():
 def load_capital_humano():
     path = SALIDA / "dataset_maestro_limpio.csv"
     try:
-        df = _load_public_table("capital_humano", path)
+        df = _load_sensitive_table("capital_humano", path)
     except Exception:
         # En Streamlit Cloud no desplegamos este CSV sensible; la app debe seguir operativa.
         _record_table_load_status("capital_humano", "unavailable", str(path))
@@ -647,7 +698,7 @@ def load_funding_complementario():
     """Proyectos de financiamiento más allá de ANID (CORFO, IAEA TC, etc.)."""
     p = BASE / "Funding" / "cchen_funding_complementario.csv"
     try:
-        df = _load_public_table("funding_complementario", p)
+        df = _load_sensitive_table("funding_complementario", p)
         if "anio" in df.columns:
             df["anio"] = pd.to_numeric(df["anio"], errors="coerce").astype("Int64")
         return df
@@ -712,7 +763,7 @@ def load_entity_registry_personas():
     """Registro canónico de personas del observatorio."""
     p = BASE / "Gobernanza" / "entity_registry_personas.csv"
     try:
-        return _load_public_table("entity_registry_personas", p)
+        return _load_sensitive_table("entity_registry_personas", p)
     except Exception:
         return pd.DataFrame()
 
@@ -739,7 +790,7 @@ def load_entity_links():
     """Enlaces operativos entre entidades canónicas del observatorio."""
     p = BASE / "Gobernanza" / "entity_links.csv"
     try:
-        return _load_public_table("entity_links", p)
+        return _load_sensitive_table("entity_links", p)
     except Exception:
         return pd.DataFrame()
 
