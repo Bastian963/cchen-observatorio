@@ -219,11 +219,26 @@ python3 Scripts/build_embeddings.py
 # 8. Validar calidad de datos
 python3 Database/data_quality.py
 
-# 9. Migrar todo a Supabase
+# 9. Migrar publicaciones principales a Supabase
 python3 Database/migrate_to_supabase.py
 
-# 10. Migrar grafo de citas a Supabase
+# 10. Migrar grafo de citas a Supabase (8.499 filas)
 python3 Database/migrate_citing_papers.py
+
+# 11. Migrar EuroPMC (74 papers con PMID/PMCID)
+python3 Database/migrate_europmc.py
+
+# 12. Migrar vigilancia tecnológica (citation_graph + arxiv + iaea + noticias)
+python3 Database/migrate_vigilancia.py
+
+# 13. Migrar BERTopic (358 papers + 23 topics)
+python3 Database/migrate_bertopic.py
+
+# 14. Migrar convocatorias y reglas de matching
+python3 Database/migrate_convocatorias.py
+
+# 15. Migrar embeddings semánticos a pgvector (877 × 384 dims)
+python3 Database/migrate_embeddings.py
 ```
 
 ### Scripts de vigilancia (automatizados vía GitHub Actions)
@@ -502,9 +517,14 @@ CCHEN/
 │   └── enrich_unpaywall.py           ← Acceso abierto Unpaywall
 │
 ├── Database/                         ← Esquema y migración a Supabase
-│   ├── schema.sql                    ← DDL completo PostgreSQL
-│   ├── migrate_to_supabase.py        ← Migración idempotente de 21 tablas
-│   ├── migrate_citing_papers.py      ← Migración de citing_papers (8.499 filas)
+│   ├── schema.sql                    ← DDL completo PostgreSQL (33 tablas)
+│   ├── migrate_to_supabase.py        ← Migración idempotente de tablas principales
+│   ├── migrate_citing_papers.py      ← citing_papers (8.499 filas)
+│   ├── migrate_europmc.py            ← europmc_works (74 filas)
+│   ├── migrate_vigilancia.py         ← citation_graph + arxiv + iaea + news
+│   ├── migrate_bertopic.py           ← bertopic_topics + bertopic_topic_info
+│   ├── migrate_convocatorias.py      ← convocatorias + matching_rules
+│   ├── migrate_embeddings.py         ← paper_embeddings (877 × 384 dims, pgvector)
 │   └── data_quality.py               ← Validación y reporte de calidad
 │
 ├── Notebooks/                        ← Pipelines ETL Jupyter (ejecutar en orden)
@@ -550,13 +570,18 @@ CCHEN/
 | ORCID API | `researchers_orcid` | 48 | Semestral | No |
 | ANID Repositorio | `anid_projects` | 24 | Manual | No |
 | datos.gob.cl | `convenios_nacionales`, `acuerdos_internacionales` | 84 / 91 | Semestral | No |
-| EuroPMC REST API | (CSV local) | 74 | Trimestral | No |
+| EuroPMC REST API | `europmc_works` | 74 | Trimestral | No |
 | DataCite API | `datacite_outputs` | Variable | Trimestral | No |
 | OpenAIRE Graph API | `openaire_outputs` | Variable | Trimestral | No |
 | ROR API | `institution_registry` | 697 | Anual | No |
 | OpenAlex Citations | `citing_papers` | 8.499 | Trimestral | No |
-| arXiv RSS | (CSV vigilancia) | Variable | Semanal (auto) | No |
-| Google News | (CSV vigilancia) | Variable | Semanal (auto) | No |
+| OpenAlex citation graph | `citation_graph` | 877 | Trimestral | No |
+| arXiv RSS | `arxiv_monitor` | ~225 | Semanal (auto) | No |
+| IAEA INIS | `iaea_inis_monitor` | ~109 | Semanal (auto) | No |
+| Google News | `news_monitor` | ~65 | Semanal (auto) | No |
+| BERTopic (NLP local) | `bertopic_topics`, `bertopic_topic_info` | 358 / 23 | Manual | No |
+| Convocatorias curadas | `convocatorias`, `convocatorias_matching_rules` | 26 / 6 | Manual | No |
+| pgvector embeddings | `paper_embeddings` | 877 × 384 dims | Manual | No |
 | Altmetric API | (CSV local) | Variable | Trimestral | Sí (free tier) |
 | PatentsView / USPTO | `patents` | Pendiente | Manual | Sí (registro gratuito) |
 | INAPI Chile | `patents` | Pendiente | Manual | No |

@@ -556,7 +556,71 @@ AFF:"Comisión Chilena de Energía Nuclear"
 
 ---
 
-## 10. Módulos del observatorio y estado
+## 10. Scripts de migración a Supabase
+
+Cada script es **idempotente** (upsert por clave primaria) y lee desde los CSVs locales de `Data/`. Se ejecutan una vez por ciclo de actualización de datos.
+
+| Script | Tablas destino | Filas aprox. | Notas |
+|--------|---------------|-------------|-------|
+| `migrate_to_supabase.py` | publications, authorships, concepts, crossref_data, publications_enriched, anid_projects, researchers_orcid, institution_registry, institution_registry_pending_review, convenios_nacionales, acuerdos_internacionales, datacite_outputs, openaire_outputs, capital_humano, funding_complementario, convocatorias_matching_institucional, entity_registry_* (4), entity_links, data_sources | ~30+ k filas | Migración principal multi-tabla |
+| `migrate_citing_papers.py` | `citing_papers` | 8.499 | Papers externos que citan a CCHEN |
+| `migrate_europmc.py` | `europmc_works` | 74 | Literatura biomédica con PMID/PMCID |
+| `migrate_vigilancia.py` | `citation_graph`, `arxiv_monitor`, `iaea_inis_monitor`, `news_monitor` | ~1.400 total | Vigilancia tecnológica completa |
+| `migrate_bertopic.py` | `bertopic_topics`, `bertopic_topic_info` | 358 / 23 | Modelado de tópicos BERTopic |
+| `migrate_convocatorias.py` | `convocatorias`, `convocatorias_matching_rules` | 26 / 6 | Convocatorias curadas manualmente |
+| `migrate_embeddings.py` | `paper_embeddings` | 877 × 384 dims | Vectores pgvector para búsqueda semántica |
+
+### Patrón de migración
+
+```python
+# Todos los scripts siguen el mismo patrón:
+client = create_client(SUPABASE_URL, SUPABASE_KEY)  # service_role
+rows = df.to_dict(orient="records")
+
+# Upsert en batches de 100 (evita timeout)
+for i in range(0, len(rows), 100):
+    client.table("nombre_tabla").upsert(rows[i:i+100]).execute()
+```
+
+### pgvector — paper_embeddings
+
+La tabla `paper_embeddings` usa la extensión `pgvector` de PostgreSQL para almacenar vectores `vector(384)`:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+
+CREATE TABLE paper_embeddings (
+    openalex_id TEXT PRIMARY KEY,
+    doi TEXT,
+    title TEXT,
+    year NUMERIC,
+    embedding vector(384)
+);
+
+-- Función RPC para búsqueda semántica por similitud coseno:
+CREATE FUNCTION match_papers(query_embedding vector(384), match_count int)
+RETURNS TABLE(openalex_id text, doi text, title text, year numeric, similarity float)
+LANGUAGE sql AS $$
+  SELECT openalex_id, doi, title, year,
+         1 - (embedding <=> query_embedding) AS similarity
+  FROM paper_embeddings
+  ORDER BY embedding <=> query_embedding
+  LIMIT match_count;
+$$;
+```
+
+En tiempo de ejecución, `Scripts/semantic_search.py` busca vía RPC si no hay embeddings locales:
+
+```python
+resp = client.rpc("match_papers", {
+    "query_embedding": q_vec.tolist(),
+    "match_count": top_k
+}).execute()
+```
+
+---
+
+## 11. Módulos del observatorio y estado
 
 Según la Memoria Metodológica (Sept. 2025), el observatorio tiene 7 módulos funcionales:
 
