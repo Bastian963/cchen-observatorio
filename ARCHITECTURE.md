@@ -39,7 +39,7 @@ El Observatorio Tecnológico CCHEN es un sistema de inteligencia de datos con **
 | Dataframes | pandas | 2.3.3 | Carga principal de datos |
 | Visualización | plotly | 6.6.0 | Gráficos interactivos |
 | Álgebra lineal | numpy | 2.0.2 | Embeddings semánticos |
-| Base de datos | Supabase (PostgreSQL) | supabase-py 2.28.3 | 34 tablas operativas, RLS habilitado |
+| Base de datos | Supabase (PostgreSQL) | supabase-py 2.28.3 | 35 tablas operativas, RLS habilitado |
 | Query local | DuckDB | — | Fallback y consultas analíticas |
 | LLM principal | Groq (llama-3.3-70b-versatile) | groq>=0.11.0 | Asistente I+D |
 | LLM auxiliar | Groq (llama-3.1-8b-instant) | groq>=0.11.0 | Decisión de gráficos PDF |
@@ -118,7 +118,7 @@ Scimago SJR (CSV anual)
                                 ▼
 ┌───────────────────────────────────────────────────────┐
 │  SUPABASE (PostgreSQL 15)                             │
-│  34 tablas operativas, relaciones FK y vistas         │
+│  35 tablas operativas, relaciones FK y vistas         │
 │  API REST autogenerada con autenticación JWT          │
 │  RLS habilitado: políticas públicas y autenticadas    │
 │  Lectura: anon key para público; service_role para    │
@@ -265,13 +265,14 @@ con.execute(f"SELECT * FROM read_csv_auto('{path}', HEADER=TRUE, SAMPLE_SIZE=-1)
 
 ## 4. Esquema de tablas Supabase
 
-El DDL completo está en `Database/schema.sql`. La base actual contiene **34 tablas operativas**, distribuidas en **30 tablas públicas** y **4 tablas sensibles**.
+El DDL completo está en `Database/schema.sql`. La base actual contiene **35 tablas operativas**, distribuidas en **31 tablas públicas** y **4 tablas sensibles**.
 
 ### Distribución por módulos
 
 ```text
 Publicaciones científicas
-  publications, publications_enriched, authorships, crossref_data, concepts
+  publications, publications_enriched, authorships, crossref_data, concepts,
+  dian_publications
 
 Propiedad intelectual
   patents
@@ -300,7 +301,7 @@ Convocatorias y matching
 Vigilancia y analítica científica
   iaea_inis_monitor, arxiv_monitor, news_monitor,
   citation_graph, europmc_works, bertopic_topics,
-  bertopic_topic_info, citing_papers
+  bertopic_topic_info, citing_papers, paper_embeddings
 
 Gobernanza
   data_sources
@@ -565,7 +566,7 @@ Cada script es **idempotente** (upsert por clave primaria) y lee desde los CSVs 
 | `migrate_to_supabase.py` | publications, authorships, concepts, crossref_data, publications_enriched, anid_projects, researchers_orcid, institution_registry, institution_registry_pending_review, convenios_nacionales, acuerdos_internacionales, datacite_outputs, openaire_outputs, capital_humano, funding_complementario, convocatorias_matching_institucional, entity_registry_* (4), entity_links, data_sources | ~30+ k filas | Migración principal multi-tabla |
 | `migrate_citing_papers.py` | `citing_papers` | 8.499 | Papers externos que citan a CCHEN |
 | `migrate_europmc.py` | `europmc_works` | 74 | Literatura biomédica con PMID/PMCID |
-| `migrate_vigilancia.py` | `citation_graph`, `arxiv_monitor`, `iaea_inis_monitor`, `news_monitor` | ~1.400 total | Vigilancia tecnológica completa |
+| `migrate_vigilancia.py` | `citation_graph`, `arxiv_monitor`, `iaea_inis_monitor`, `news_monitor` | ~1.400 total | Migración best-effort: sube fuentes disponibles y hace SKIP de CSV ausentes |
 | `migrate_bertopic.py` | `bertopic_topics`, `bertopic_topic_info` | 358 / 23 | Modelado de tópicos BERTopic |
 | `migrate_convocatorias.py` | `convocatorias`, `convocatorias_matching_rules` | 26 / 6 | Convocatorias curadas manualmente |
 | `migrate_embeddings.py` | `paper_embeddings` | 877 × 384 dims | Vectores pgvector para búsqueda semántica |
@@ -764,14 +765,25 @@ jobs:
       - python Scripts/arxiv_monitor.py       # arXiv RSS nuclear
       - python Scripts/news_monitor.py        # Google News CCHEN
       - python Scripts/convocatorias_monitor.py  # ANID + fondos (continue-on-error: true)
+      - python Scripts/iaea_inis_monitor.py   # IAEA INIS (continue-on-error: true)
       - python Scripts/generar_boletin.py     # Boletín HTML semanal
+      - python Database/migrate_vigilancia.py # Supabase (continue-on-error: true)
 ```
 
 Salidas:
 - `Data/Vigilancia/arxiv_monitor.csv` + `arxiv_state.json`
 - `Data/Vigilancia/news_monitor.csv` + `news_state.json`
 - `Data/Vigilancia/convocatorias_curadas.csv`
+- `Data/Vigilancia/iaea_inis_monitor.csv` + `iaea_inis_state.json`
 - `Data/Boletines/boletin_YYYYMMDD.html`
+
+Comportamiento operativo actual:
+
+- `arXiv` y `news` son las fuentes de actualización principal semanal.
+- `convocatorias` e `IAEA INIS` son fuentes `best-effort`: pueden fallar por scraping o estabilidad TLS/API sin detener el workflow (`continue-on-error: true`).
+- `migrate_vigilancia.py` migra lo disponible y puede registrar `SKIP` por fuente ausente (por ejemplo, si no existe el CSV en esa corrida).
+- El commit del workflow agrega solo archivos existentes para evitar fallos por `pathspec` en rutas opcionales.
+- El resumen final del run publica estado por fuente (`OK`/`SKIP`) y conteos de filas cuando hay archivo.
 
 ---
 
@@ -795,7 +807,7 @@ TRL 7: Sistema en entorno real con conectividad estable institucional
 ### Hitos alcanzados en TRL 5 (marzo 2026)
 
 - Dashboard modularizado en 11 secciones independientes
-- Supabase con 34 tablas operativas, paginación completa y RLS aplicado
+- Supabase con 35 tablas operativas, paginación completa y RLS aplicado
 - Grafo de citas OpenAlex: 714 papers × 9.840 citas × 8.499 papers citantes
 - EuroPMC: 74 papers con PMID/PMCID integrados
 - RAG con sentence-transformers multilingüe

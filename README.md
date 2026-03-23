@@ -54,7 +54,7 @@ El dashboard está desplegado en Streamlit Cloud con acceso beta privado:
                            │ Database/migrate_to_supabase.py
                            ▼
 ┌──────────────────────────────────────────────────────────────┐
-│  SUPABASE (PostgreSQL)   33 tablas operativas                │
+│  SUPABASE (PostgreSQL)   35 tablas operativas                │
 │                          API REST autogenerada               │
 │                          RLS habilitado + policies públicas  │
 │                          y autenticadas                      │
@@ -64,7 +64,7 @@ El dashboard está desplegado en Streamlit Cloud con acceso beta privado:
 ┌──────────────────────────────────────────────────────────────┐
 │  DASHBOARD STREAMLIT     Dashboard/app.py                    │
 │  11 secciones modulares  Dashboard/sections/*.py             │
-│  Login beta · Groq · RAG · pyvis  Scripts/semantic_search.py │
+│  Login beta · Groq · RAG · plotly/networkx  Scripts/semantic_search.py │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -74,7 +74,7 @@ El dashboard está desplegado en Streamlit Cloud con acceso beta privado:
 |------|-----------|-----|
 | Frontend | Streamlit 1.50 | Dashboard interactivo modular |
 | Lógica | Python 3.10+, pandas 2.3, plotly 6.6 | Procesamiento y visualización |
-| Base de datos | Supabase (PostgreSQL 15) | Almacenamiento persistente, 33 tablas con RLS |
+| Base de datos | Supabase (PostgreSQL 15) | Almacenamiento persistente, 35 tablas con RLS |
 | Lector local | DuckDB | Consultas analíticas rápidas sobre CSV |
 | LLM principal | Groq API — llama-3.3-70b-versatile | Asistente I+D conversacional |
 | LLM auxiliar | Groq API — llama-3.1-8b-instant | Decisiones de gráficos en PDF |
@@ -121,17 +121,18 @@ Panel de capital humano I+D: 97 personas formadas (2022–2025), distribución p
 Asistente conversacional basado en RAG + Groq LLM (llama-3.3-70b-versatile). Inyecta contexto de los 5 papers más relevantes (búsqueda semántica), indicadores clave y datos de convocatorias activas. Genera informes PDF descargables con gráficos contextuales automáticos.
 
 ### 11. Grafo de Citas
-Visualización interactiva con pyvis del grafo de citas OpenAlex: 714 papers CCHEN con 9.840 citas totales y 8.499 papers externos citantes. Análisis de instituciones y países que citan a CCHEN, impacto por área temática.
+Visualización interactiva con plotly + networkx del grafo de citas OpenAlex: 714 papers CCHEN con 9.840 citas totales y 8.499 papers externos citantes. Análisis de instituciones y países que citan a CCHEN, impacto por área temática.
 
 ---
 
 ## Database Schema
 
-La base de datos Supabase contiene **33 tablas operativas**: **29 públicas** y **4 sensibles**. El DDL completo está en `Database/schema.sql`.
+La base de datos Supabase contiene **35 tablas operativas**: **31 públicas** y **4 sensibles**. El DDL completo está en `Database/schema.sql`.
 
 | Módulo | Tablas principales | Acceso |
 |-------|--------------------|--------|
 | Producción científica | `publications`, `publications_enriched`, `authorships`, `crossref_data`, `concepts` | Público |
+| Producción interna | `dian_publications` | Público |
 | Propiedad intelectual | `patents` | Público |
 | Financiamiento | `anid_projects`, `funding_complementario` | `funding_complementario` sensible |
 | Capital humano e investigadores | `capital_humano`, `researchers_orcid` | `capital_humano` sensible |
@@ -140,6 +141,7 @@ La base de datos Supabase contiene **33 tablas operativas**: **29 públicas** y 
 | Núcleo institucional | `entity_registry_personas`, `entity_registry_proyectos`, `entity_registry_convocatorias`, `entity_links` | `entity_registry_personas` y `entity_links` sensibles |
 | Convocatorias y matching | `perfiles_institucionales`, `convocatorias`, `convocatorias_matching_rules`, `convocatorias_matching_institucional` | Público |
 | Vigilancia y analítica | `iaea_inis_monitor`, `arxiv_monitor`, `news_monitor`, `citation_graph`, `europmc_works`, `bertopic_topics`, `bertopic_topic_info`, `citing_papers` | Público |
+| Búsqueda semántica | `paper_embeddings` | Público |
 | Gobernanza de datos | `data_sources` | Público |
 
 ---
@@ -250,6 +252,15 @@ Estos scripts corren cada lunes a las 08:00 UTC:
 | `Scripts/arxiv_monitor.py` | `Data/Vigilancia/arxiv_monitor.csv` | Papers nuevos en arXiv relevantes a CCHEN |
 | `Scripts/news_monitor.py` | `Data/Vigilancia/news_monitor.csv` | Noticias Google sobre CCHEN y energía nuclear |
 | `Scripts/convocatorias_monitor.py` | `Data/Vigilancia/convocatorias_curadas.csv` | Convocatorias abiertas ANID y fondos internacionales |
+| `Scripts/iaea_inis_monitor.py` | `Data/Vigilancia/iaea_inis_monitor.csv` | Vigilancia de literatura nuclear en IAEA INIS |
+
+Comportamiento operativo del workflow `arxiv_monitor.yml`:
+
+- `arXiv` y `news` son rutas principales y se esperan en cada corrida.
+- `convocatorias` e `IAEA INIS` corren en modo `best-effort` con `continue-on-error: true` por dependencia externa (scraping/estabilidad API).
+- La migración `Database/migrate_vigilancia.py` también corre con `continue-on-error: true` y puede registrar `SKIP` por fuente cuando no existe el CSV esperado.
+- El paso de commit agrega solo archivos existentes para evitar errores de `pathspec` cuando una fuente opcional no generó salida.
+- El log incluye un resumen operativo por fuente con estado `OK` o `SKIP`, más conteo de filas cuando aplica.
 
 ---
 
@@ -357,7 +368,7 @@ can_view_sensitive = true
 ### Notas de despliegue
 
 - El archivo canónico para Streamlit Cloud es `requirements.txt` en la raíz del repositorio.
-- Se fija `python-3.11` en `runtime.txt` para evitar problemas de compatibilidad con el stack científico (`sentence-transformers`, `matplotlib`, `pyvis`, `duckdb`).
+- Se fija `python-3.11` en `runtime.txt` para evitar problemas de compatibilidad con el stack científico (`sentence-transformers`, `matplotlib`, `plotly`, `networkx`, `duckdb`).
 - Si el deploy muestra un error del tipo `cannot import name 'load_convocatorias' from 'data_loader'`, la app está corriendo una revisión antigua del repo. En ese caso:
   1. confirma que Streamlit Cloud apunte a la rama `main`,
   2. fuerza un `Redeploy` o `Reboot app`,
@@ -492,7 +503,7 @@ CCHEN/
 │       ├── modelo_gobernanza.py      ← Entidades canónicas y gobernanza
 │       ├── formacion_capacidades.py  ← Capital humano I+D
 │       ├── asistente_id.py           ← Asistente RAG + Groq LLM
-│       └── grafo_citas.py            ← Grafo interactivo pyvis
+│       └── grafo_citas.py            ← Grafo interactivo plotly + networkx
 │
 ├── Scripts/                          ← Scripts de recolección y análisis
 │   ├── fetch_openalex_citations.py   ← Grafo de citas OpenAlex
@@ -517,7 +528,7 @@ CCHEN/
 │   └── enrich_unpaywall.py           ← Acceso abierto Unpaywall
 │
 ├── Database/                         ← Esquema y migración a Supabase
-│   ├── schema.sql                    ← DDL completo PostgreSQL (33 tablas)
+│   ├── schema.sql                    ← DDL completo PostgreSQL (35 tablas)
 │   ├── migrate_to_supabase.py        ← Migración idempotente de tablas principales
 │   ├── migrate_citing_papers.py      ← citing_papers (8.499 filas)
 │   ├── migrate_europmc.py            ← europmc_works (74 filas)
@@ -577,10 +588,10 @@ CCHEN/
 | OpenAlex Citations | `citing_papers` | 8.499 | Trimestral | No |
 | OpenAlex citation graph | `citation_graph` | 877 | Trimestral | No |
 | arXiv RSS | `arxiv_monitor` | ~225 | Semanal (auto) | No |
-| IAEA INIS | `iaea_inis_monitor` | ~109 | Semanal (auto) | No |
+| IAEA INIS | `iaea_inis_monitor` | ~109 | Semanal (auto, best-effort) | No |
 | Google News | `news_monitor` | ~65 | Semanal (auto) | No |
 | BERTopic (NLP local) | `bertopic_topics`, `bertopic_topic_info` | 358 / 23 | Manual | No |
-| Convocatorias curadas | `convocatorias`, `convocatorias_matching_rules` | 26 / 6 | Manual | No |
+| Convocatorias curadas | `convocatorias`, `convocatorias_matching_rules` | 26 / 6 | Semanal (best-effort por scraping) | No |
 | pgvector embeddings | `paper_embeddings` | 877 × 384 dims | Manual | No |
 | Altmetric API | (CSV local) | Variable | Trimestral | Sí (free tier) |
 | PatentsView / USPTO | `patents` | Pendiente | Manual | Sí (registro gratuito) |
