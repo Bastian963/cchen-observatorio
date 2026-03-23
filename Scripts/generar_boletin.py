@@ -68,8 +68,13 @@ def load_cchen_papers(n=5):
             return pd.DataFrame()
     if df.empty:
         return df
-    df["pub_dt"] = pd.to_datetime(df.get("publication_date", pd.Series()), errors="coerce")
-    return df.sort_values("pub_dt", ascending=False).head(n)
+    # Ordenar por publication_date si existe con datos, si no por year
+    if "publication_date" in df.columns and df["publication_date"].notna().any():
+        df["_sort_dt"] = pd.to_datetime(df["publication_date"], errors="coerce")
+        return df.sort_values("_sort_dt", ascending=False, na_position="last").drop(columns=["_sort_dt"]).head(n)
+    elif "year" in df.columns:
+        return df.sort_values("year", ascending=False, na_position="last").head(n)
+    return df.head(n)
 
 
 # ── Helpers HTML ───────────────────────────────────────────────────────────────
@@ -127,14 +132,14 @@ def section_header(title, icon=""):
 
 def news_card(row):
     c = COLORS
-    topic = str(row.get("topic_flag", "GENERAL"))
+    topic = _safe_str(row.get("topic_flag"), "GENERAL")
     bg, col = TOPIC_COLORS.get(topic, TOPIC_COLORS["GENERAL"])
-    title   = str(row.get("title", ""))
-    source  = str(row.get("source_name", ""))
-    snippet = str(row.get("snippet", ""))[:250]
-    link    = str(row.get("link", ""))
+    title   = _strip_tags(_safe_str(row.get("title"), ""))
+    source  = _safe_str(row.get("source_name"), "")
+    snippet = _strip_tags(_safe_str(row.get("snippet"), ""))[:250]
+    link    = _safe_str(row.get("link"), "")
     dt      = row.get("dt")
-    date_s  = dt.strftime("%-d %b %Y") if pd.notna(dt) else ""
+    date_s  = dt.strftime("%-d %b %Y") if dt is not None and pd.notna(dt) else ""
 
     link_html = f'<a href="{link}" style="color:{c["blue"]};font-size:12px;">Leer noticia →</a>' if link else ""
 
@@ -165,15 +170,39 @@ def news_card(row):
     """
 
 
+def _safe_str(val, default="") -> str:
+    """Convierte val a str descartando None/NaN/nan."""
+    if val is None:
+        return default
+    try:
+        import pandas as _pd
+        if _pd.isna(val):
+            return default
+    except (TypeError, ValueError):
+        pass
+    s = str(val).strip()
+    return default if s.lower() in ("none", "nan", "") else s
+
+
+def _strip_tags(text: str) -> str:
+    """Elimina etiquetas HTML/XML (incluyendo MathML) del texto."""
+    import re
+    text = re.sub(r"<[^<>]*>?", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
 def paper_card(row):
     c = COLORS
-    title  = str(row.get("title", "Sin título"))
-    src    = str(row.get("source", ""))[:80]
-    doi    = row.get("doi", "")
+    title  = _strip_tags(_safe_str(row.get("title"), "Sin título"))
+    src    = _safe_str(row.get("source"), "")[:80]
+    doi    = _safe_str(row.get("doi"), "")
     cites  = int(row.get("cited_by_count", 0)) if pd.notna(row.get("cited_by_count")) else 0
     dt     = row.get("pub_dt")
-    date_s = dt.strftime("%-d %b %Y") if pd.notna(dt) else str(row.get("year", ""))
-    link   = f"https://doi.org/{doi}" if doi and pd.notna(doi) else ""
+    _yr    = row.get("year", "")
+    yr_s   = str(int(float(_yr))) if _yr and pd.notna(_yr) else ""
+    date_s = dt.strftime("%-d %b %Y") if dt is not None and pd.notna(dt) else yr_s
+    link   = f"https://doi.org/{doi}" if doi and doi.startswith("10.") else ""
 
     doi_html   = f'<a href="{link}" style="color:{c["blue"]};font-size:12px;">Ver publicación →</a>' if link else ""
     cites_html = f'<span style="font-size:11px;color:{c["gray"]};">⭐ {cites} citas</span>' if cites else ""
