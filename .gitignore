@@ -20,6 +20,11 @@ Codes/
 Bitacora/
 Archive/
 Docs/reports/*.pdf
+Docs/reports/*.aux
+Docs/reports/*.out
+Docs/reports/*.toc
+Docs/reports/*.fdb_latexmk
+Docs/reports/*.fls
 
 # PDFs y ZIPs grandes
 *.zip
