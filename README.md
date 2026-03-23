@@ -27,7 +27,7 @@ El observatorio cubre cinco grandes dimensiones institucionales:
 
 ## Live Demo
 
-El dashboard está desplegado públicamente en Streamlit Cloud:
+El dashboard está desplegado en Streamlit Cloud con acceso beta privado:
 
 **https://cchen-observatorio.streamlit.app**
 
@@ -54,17 +54,17 @@ El dashboard está desplegado públicamente en Streamlit Cloud:
                            │ Database/migrate_to_supabase.py
                            ▼
 ┌──────────────────────────────────────────────────────────────┐
-│  SUPABASE (PostgreSQL)   22 tablas normalizadas              │
+│  SUPABASE (PostgreSQL)   33 tablas operativas                │
 │                          API REST autogenerada               │
-│                          Row Level Security desactivado      │
-│                          (service_role key en producción)    │
+│                          RLS habilitado + policies públicas  │
+│                          y autenticadas                      │
 └──────────────────────────┬───────────────────────────────────┘
                            │ Dashboard/data_loader.py
                            ▼
 ┌──────────────────────────────────────────────────────────────┐
 │  DASHBOARD STREAMLIT     Dashboard/app.py                    │
 │  11 secciones modulares  Dashboard/sections/*.py             │
-│  Groq LLM · RAG · pyvis  Scripts/semantic_search.py         │
+│  Login beta · Groq · RAG · pyvis  Scripts/semantic_search.py │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -74,7 +74,7 @@ El dashboard está desplegado públicamente en Streamlit Cloud:
 |------|-----------|-----|
 | Frontend | Streamlit 1.50 | Dashboard interactivo modular |
 | Lógica | Python 3.10+, pandas 2.3, plotly 6.6 | Procesamiento y visualización |
-| Base de datos | Supabase (PostgreSQL 15) | Almacenamiento persistente, 22 tablas |
+| Base de datos | Supabase (PostgreSQL 15) | Almacenamiento persistente, 33 tablas con RLS |
 | Lector local | DuckDB | Consultas analíticas rápidas sobre CSV |
 | LLM principal | Groq API — llama-3.3-70b-versatile | Asistente I+D conversacional |
 | LLM auxiliar | Groq API — llama-3.1-8b-instant | Decisiones de gráficos en PDF |
@@ -127,32 +127,20 @@ Visualización interactiva con pyvis del grafo de citas OpenAlex: 714 papers CCH
 
 ## Database Schema
 
-La base de datos Supabase contiene 22 tablas normalizadas. El DDL completo está en `Database/schema.sql`.
+La base de datos Supabase contiene **33 tablas operativas**: **29 públicas** y **4 sensibles**. El DDL completo está en `Database/schema.sql`.
 
-| Tabla | Registros aprox. | Fuente | Descripción |
-|-------|-----------------|--------|-------------|
-| `publications` | 877 | OpenAlex API | Publicaciones científicas CCHEN (1990–2025) |
-| `publications_enriched` | 616 | OpenAlex + SJR | Publicaciones con cuartil, colaboración y metadatos extra |
-| `authorships` | 7.971 | OpenAlex API | Autorías individuales con afiliación institucional |
-| `crossref_data` | 764 | CrossRef API | Financiadores externos, referencias y abstracts |
-| `concepts` | 21.348 | OpenAlex API | Conceptos y áreas temáticas por paper |
-| `patents` | Variable | PatentsView / INAPI | Patentes y registros de propiedad intelectual |
-| `anid_projects` | 24 | ANID Repositorio | Proyectos adjudicados con monto y año |
-| `capital_humano` | 97+ | Registro interno | Personas en formación I+D (2022–2025) |
-| `researchers_orcid` | 48 | ORCID API | Perfiles ORCID de investigadores CCHEN |
-| `convenios_nacionales` | 84 | datos.gob.cl | Convenios nacionales suscritos |
-| `acuerdos_internacionales` | 91 | datos.gob.cl | Acuerdos internacionales e instrumentos |
-| `institution_registry` | 697 | ROR + OpenAlex + ORCID | Registro institucional con ancla ROR |
-| `institution_registry_pending_review` | 48 | Curaduría ROR | Cola de instituciones pendientes de revisión |
-| `datacite_outputs` | Variable | DataCite API | Datasets y outputs DOI vía ROR CCHEN |
-| `openaire_outputs` | Variable | OpenAIRE Graph | Outputs complementarios vía ORCID |
-| `funding_complementario` | Variable | Dataset curado | Fuentes de financiamiento más allá de ANID |
-| `entity_registry_personas` | 604 | Núcleo institucional | Registro canónico de personas |
-| `entity_registry_proyectos` | 24 | Núcleo institucional | Registro canónico de proyectos |
-| `entity_registry_convocatorias` | 26 | Núcleo institucional | Registro canónico de convocatorias |
-| `entity_links` | 657 | Núcleo institucional | Enlaces operativos entre entidades |
-| `convocatorias_matching_institucional` | 26 | Mesa institucional | Matching formal convocatoria–perfil CCHEN |
-| `citing_papers` | 8.499 | OpenAlex citation graph | Papers externos que citan a publicaciones CCHEN |
+| Módulo | Tablas principales | Acceso |
+|-------|--------------------|--------|
+| Producción científica | `publications`, `publications_enriched`, `authorships`, `crossref_data`, `concepts` | Público |
+| Propiedad intelectual | `patents` | Público |
+| Financiamiento | `anid_projects`, `funding_complementario` | `funding_complementario` sensible |
+| Capital humano e investigadores | `capital_humano`, `researchers_orcid` | `capital_humano` sensible |
+| Ecosistema institucional | `convenios_nacionales`, `acuerdos_internacionales`, `institution_registry`, `institution_registry_pending_review` | Público |
+| Outputs de investigación | `datacite_outputs`, `openaire_outputs` | Público |
+| Núcleo institucional | `entity_registry_personas`, `entity_registry_proyectos`, `entity_registry_convocatorias`, `entity_links` | `entity_registry_personas` y `entity_links` sensibles |
+| Convocatorias y matching | `perfiles_institucionales`, `convocatorias`, `convocatorias_matching_rules`, `convocatorias_matching_institucional` | Público |
+| Vigilancia y analítica | `iaea_inis_monitor`, `arxiv_monitor`, `news_monitor`, `citation_graph`, `europmc_works`, `bertopic_topics`, `bertopic_topic_info`, `citing_papers` | Público |
+| Gobernanza de datos | `data_sources` | Público |
 
 ---
 
@@ -265,13 +253,29 @@ pip install -r requirements.txt
 
 # 3. Configurar secrets
 mkdir -p .streamlit
+cp .streamlit/secrets.toml.example .streamlit/secrets.toml
+
+# Editar .streamlit/secrets.toml con una configuración mínima:
 cat > .streamlit/secrets.toml << EOF
 GROQ_API_KEY = "gsk_..."        # Obtener gratis en https://console.groq.com
 
 [supabase]
 url         = "https://xxxx.supabase.co"
 anon_key    = "eyJ..."
+service_role_key = "sb_service_role_..."   # requerido para datasets sensibles en beta privada
 data_source = "auto"             # auto | local | supabase_public
+
+[internal_auth]
+enabled = true
+beta_badge = "Beta interna"
+beta_title = "Observatorio Tecnológico CCHEN"
+beta_message = "Acceso privado para revisión funcional, validación de datos sensibles y migración progresiva del observatorio."
+
+[[internal_auth.users]]
+username = "tu.usuario"
+password = "cambiar-por-una-clave-segura"
+role = "admin"
+can_view_sensitive = true
 EOF
 
 # 4. (Opcional) Configurar ruta de datos si Data/ no está junto a Dashboard/
@@ -287,9 +291,9 @@ El dashboard soporta tres modos configurables via `data_source` en secrets.toml:
 
 | Modo | Comportamiento |
 |------|---------------|
-| `auto` (recomendado) | Intenta leer desde Supabase; si falla, usa CSVs locales |
+| `auto` (recomendado) | Intenta leer tablas públicas desde Supabase; si falla, usa CSVs locales. Las tablas sensibles usan `service_role_key` si está disponible |
 | `local` | Solo usa archivos locales en `Data/` (sin Supabase) |
-| `supabase_public` | Fuerza lectura remota; falla si Supabase no está disponible |
+| `supabase_public` | Fuerza lectura remota de tablas públicas; falla si Supabase no está disponible. Las tablas sensibles siguen requiriendo `service_role_key` |
 
 ### Despliegue en Streamlit Cloud
 
@@ -297,7 +301,7 @@ El dashboard soporta tres modos configurables via `data_source` en secrets.toml:
 2. Ir a [share.streamlit.io](https://share.streamlit.io) → New app
 3. Seleccionar repo, rama `main`, archivo `Dashboard/app.py`
 4. Streamlit Cloud instalará automáticamente el `requirements.txt` de la raíz del repo
-5. En **Secrets**, agregar:
+5. En **Secrets**, agregar una configuración de beta privada:
 
 ```toml
 GROQ_API_KEY = "gsk_..."
@@ -305,7 +309,20 @@ GROQ_API_KEY = "gsk_..."
 [supabase]
 url         = "https://xxxx.supabase.co"
 anon_key    = "eyJ..."
-data_source = "supabase_public"
+service_role_key = "sb_service_role_..."
+data_source = "auto"
+
+[internal_auth]
+enabled = true
+beta_badge = "Beta interna"
+beta_title = "Observatorio Tecnológico CCHEN"
+beta_message = "Acceso privado para revisión funcional, validación de datos sensibles y migración progresiva del observatorio."
+
+[[internal_auth.users]]
+username = "tu.usuario"
+password = "cambiar-por-una-clave-segura"
+role = "admin"
+can_view_sensitive = true
 ```
 
 ### Notas de despliegue
@@ -342,8 +359,10 @@ data_source = "supabase_public"
 |----------|-------------|-------------|-----------|
 | `GROQ_API_KEY` | API key de Groq (LLM) | Sí | [console.groq.com](https://console.groq.com) |
 | `supabase.url` | URL del proyecto Supabase | Para modo remoto | Dashboard Supabase |
-| `supabase.anon_key` | Anon key pública de Supabase | Para modo remoto | Dashboard Supabase → API |
-| `SUPABASE_KEY` | Service role key (solo para migración) | Para scripts Database/ | Dashboard Supabase → API |
+| `supabase.anon_key` | Anon key pública de Supabase | Para lectura pública remota | Dashboard Supabase → API |
+| `supabase.service_role_key` | Service role key para datasets sensibles en el dashboard beta | Solo si quieres capital humano y vistas sensibles en cloud | Dashboard Supabase → API |
+| `internal_auth.*` | Usuarios, claves y roles de ingreso beta | Recomendada en Streamlit Cloud | Secrets del dashboard |
+| `SUPABASE_KEY` | Service role key para scripts de migración Database/ | Solo scripts Database/ | Dashboard Supabase → API |
 
 ### Activación final de Supabase
 
@@ -383,7 +402,20 @@ GROQ_API_KEY = "gsk_..."
 [supabase]
 url = "https://uhoeftavcvuzcqhukshi.supabase.co"
 anon_key = "tu_anon_key_publica"
-data_source = "supabase_public"
+service_role_key = "tu_service_role_key"
+data_source = "auto"
+
+[internal_auth]
+enabled = true
+beta_badge = "Beta interna"
+beta_title = "Observatorio Tecnológico CCHEN"
+beta_message = "Acceso privado para revisión funcional, validación de datos sensibles y migración progresiva del observatorio."
+
+[[internal_auth.users]]
+username = "tu.usuario"
+password = "cambiar-por-una-clave-segura"
+role = "admin"
+can_view_sensitive = true
 ```
 
 7. Levantar localmente o redeployar Streamlit Cloud.
@@ -395,7 +427,7 @@ data_source = "supabase_public"
 - Los valores esperados son:
   - `Supabase pública`: está saliendo desde tu instancia remota.
   - `Fallback local`: intentó Supabase pero cayó al CSV local.
-  - `Solo local / autenticado`: no está expuesto públicamente o sigue siendo interno.
+  - `Solo local / autenticado`: el dataset es sensible o no se expone por la ruta pública; puede venir de la capa privada del dashboard o de un CSV local.
 
 ---
 

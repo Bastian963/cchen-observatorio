@@ -39,7 +39,7 @@ El Observatorio Tecnológico CCHEN es un sistema de inteligencia de datos con **
 | Dataframes | pandas | 2.3.3 | Carga principal de datos |
 | Visualización | plotly | 6.6.0 | Gráficos interactivos |
 | Álgebra lineal | numpy | 2.0.2 | Embeddings semánticos |
-| Base de datos | Supabase (PostgreSQL) | supabase-py 2.28.3 | 22 tablas, RLS desactivado |
+| Base de datos | Supabase (PostgreSQL) | supabase-py 2.28.3 | 33 tablas operativas, RLS habilitado |
 | Query local | DuckDB | — | Fallback y consultas analíticas |
 | LLM principal | Groq (llama-3.3-70b-versatile) | groq>=0.11.0 | Asistente I+D |
 | LLM auxiliar | Groq (llama-3.1-8b-instant) | groq>=0.11.0 | Decisión de gráficos PDF |
@@ -118,10 +118,11 @@ Scimago SJR (CSV anual)
                                 ▼
 ┌───────────────────────────────────────────────────────┐
 │  SUPABASE (PostgreSQL 15)                             │
-│  22 tablas normalizadas, relaciones FK                │
+│  33 tablas operativas, relaciones FK y vistas         │
 │  API REST autogenerada con autenticación JWT          │
-│  Row Level Security: desactivado (service_role key)   │
-│  Lectura: anon key pública o service_role             │
+│  RLS habilitado: políticas públicas y autenticadas    │
+│  Lectura: anon key para público; service_role para    │
+│  beta privada y migración                             │
 │  Paginación: 1.000 filas por página (SUPABASE_PAGE_SIZE) │
 └───────────────────────────────┬───────────────────────┘
                                 │ data_loader.py
@@ -179,9 +180,22 @@ PUBLIC_TABLE_CONFIG = {
 }
 ```
 
+### SENSITIVE_TABLE_CONFIG
+
+Tablas que no se exponen por la ruta pública y se cargan mediante `service_role` desde el backend del dashboard:
+
+```python
+SENSITIVE_TABLE_CONFIG = {
+    "capital_humano": {"order_by": "id"},
+    "funding_complementario": {"order_by": "funding_id"},
+    "entity_registry_personas": {"order_by": "persona_id"},
+    "entity_links": {"order_by": "origin_type"},
+}
+```
+
 ### _load_public_table(table_name, local_path)
 
-Función central de carga con tres modos:
+Función central de carga de tablas públicas con tres modos:
 
 ```
 modo "local"          → _read_csv_fast(local_path)
@@ -189,7 +203,17 @@ modo "supabase_public" → _fetch_supabase_table(table_name)  [falla si Supabase
 modo "auto" (default) → intenta Supabase; si falla → _read_csv_fast(local_path)
 ```
 
-### _fetch_supabase_table(table_name)
+### _load_sensitive_table(table_name, local_path)
+
+Ruta de carga para tablas sensibles:
+
+```
+modo "local"           → _read_csv_fast(local_path)
+modo "auto"            → intenta service_role; si falla y existe CSV → fallback local
+modo "supabase_public" → intenta service_role; si falla y no hay CSV → error
+```
+
+### _fetch_supabase_table(table_name, use_service_role=False)
 
 Implementa **paginación completa** de Supabase:
 - Primera página: `range(0, 999)` con `count="exact"` para obtener total
@@ -208,81 +232,57 @@ con.execute(f"SELECT * FROM read_csv_auto('{path}', HEADER=TRUE, SAMPLE_SIZE=-1)
 
 ## 4. Esquema de tablas Supabase
 
-El DDL completo está en `Database/schema.sql`. La estructura de módulos es:
+El DDL completo está en `Database/schema.sql`. La base actual contiene **33 tablas operativas**, distribuidas en **29 tablas públicas** y **4 tablas sensibles**.
 
-### Módulo: Publicaciones Científicas
+### Distribución por módulos
 
-```sql
-publications          -- 877 papers: openalex_id (PK), doi, title, year, source,
-                      --             cited_by_count, is_oa, oa_status, oa_url
-publications_enriched -- 616 filas: work_id (FK→publications), quartile, sjr_num,
-                      --             areas, has_international_collab, n_cchen_authors
-authorships           -- 7.971 filas: work_id (FK), author_name, institution_name,
-                      --             institution_country_code, is_cchen_affiliation
-crossref_data         -- 764 filas: doi (FK via publications.doi), funder_names,
-                      --             references_count, abstract
-concepts              -- 21.348 filas: work_id (FK), concept_name, concept_score,
-                      --              concept_level (L0–L5)
+```text
+Publicaciones científicas
+  publications, publications_enriched, authorships, crossref_data, concepts
+
+Propiedad intelectual
+  patents
+
+Financiamiento
+  anid_projects, funding_complementario
+
+Capital humano e investigadores
+  capital_humano, researchers_orcid
+
+Institucional y territorial
+  convenios_nacionales, acuerdos_internacionales,
+  institution_registry, institution_registry_pending_review
+
+Outputs de investigación
+  datacite_outputs, openaire_outputs
+
+Núcleo institucional
+  entity_registry_personas, entity_registry_proyectos,
+  entity_registry_convocatorias, entity_links
+
+Convocatorias y matching
+  perfiles_institucionales, convocatorias,
+  convocatorias_matching_rules, convocatorias_matching_institucional
+
+Vigilancia y analítica científica
+  iaea_inis_monitor, arxiv_monitor, news_monitor,
+  citation_graph, europmc_works, bertopic_topics,
+  bertopic_topic_info, citing_papers
+
+Gobernanza
+  data_sources
 ```
 
-### Módulo: Proyectos y Financiamiento
+### Tablas sensibles
 
-```sql
-anid_projects         -- 24 proyectos: proyecto (PK), titulo, instrumento_full,
-                      --              anio_concurso, monto_programa_num
-funding_complementario -- Variable: funding_id (PK), fuente, titulo, instrumento,
-                      --           area_cchen, elegibilidad_base, source_confidence
+```text
+capital_humano
+funding_complementario
+entity_registry_personas
+entity_links
 ```
 
-### Módulo: Capital Humano e Investigadores
-
-```sql
-capital_humano        -- 97+ personas: id (serial PK), nombre, tipo_norm, centro_norm,
-                      --              universidad, tutor, anio_hoja, duracion_dias
-researchers_orcid     -- 48 perfiles: orcid_id (PK), full_name, orcid_works_count,
-                      --             current_affiliation, area_expertise
-```
-
-### Módulo: Institucional y Territorial
-
-```sql
-institution_registry  -- 697 filas: normalized_key (PK), canonical_name, ror_id,
-                      --           country_code, type, source_list
-institution_registry_pending_review  -- 48 filas: instituciones pendientes de revisión ROR
-convenios_nacionales  -- 84 filas: id (serial PK), contraparte, objeto, vigencia
-acuerdos_internacionales -- 91 filas: id (serial PK), pais, instrumento, firma, vigencia
-```
-
-### Módulo: Gobernanza y Entidades Canónicas
-
-```sql
-entity_registry_personas     -- 604 personas canónicas con rol, área y centro
-entity_registry_proyectos    -- 24 proyectos canónicos (ANID + otros)
-entity_registry_convocatorias -- 26 convocatorias canónicas
-entity_links                 -- 657 enlaces (persona→proyecto, proyecto→convocatoria, etc.)
-```
-
-### Módulo: Matching Institucional
-
-```sql
-convocatorias_matching_institucional  -- 26 filas: conv_id + perfil_id (PK compuesta),
-                                      --  score_total, eligibility_status, readiness_status,
-                                      --  owner_unit, recommended_action
-```
-
-### Módulo: Outputs de Investigación
-
-```sql
-datacite_outputs   -- datasets y outputs DOI vía ROR https://ror.org/03hv95d67
-openaire_outputs   -- outputs OpenAIRE indexados por ORCID de investigadores CCHEN
-```
-
-### Módulo: Grafo de Citas
-
-```sql
-citing_papers      -- 8.499 filas: citing_id + cited_cchen_id (PK compuesta),
-                   --              citing_doi, citing_title, citing_year, citing_institutions
-```
+Estas tablas tienen políticas `authenticated` en Supabase y, en la beta privada actual, el dashboard decide si cargarlas según el login interno y el flag `can_view_sensitive`.
 
 ### Relaciones FK principales
 
@@ -550,8 +550,21 @@ GROQ_API_KEY = "gsk_..."          # Groq LLM — gratis en console.groq.com
 [supabase]
 url         = "https://xxxx.supabase.co"
 anon_key    = "eyJ..."            # Anon key (lectura pública)
+service_role_key = "sb_service_role_..."  # beta privada / tablas sensibles
 data_source = "auto"              # auto | local | supabase_public
 # data_root = "/ruta/absoluta/a/Data"  # solo si Data/ no está junto a Dashboard/
+
+[internal_auth]
+enabled = true
+beta_badge = "Beta interna"
+beta_title = "Observatorio Tecnológico CCHEN"
+beta_message = "Acceso privado para revisión funcional, validación de datos sensibles y migración progresiva del observatorio."
+
+[[internal_auth.users]]
+username = "tu.usuario"
+password = "cambiar-por-una-clave-segura"
+role = "admin"
+can_view_sensitive = true
 ```
 
 ```bash
@@ -564,24 +577,33 @@ SUPABASE_KEY=eyJ...               # service_role key (escribe datos, bypasses RL
 
 ```
 OBSERVATORIO_DATA_SOURCE=auto          (default)
-    → Supabase disponible: usa tablas remotas
-    → Supabase no disponible: fallback a CSVs locales
+    → Tablas públicas: intenta Supabase y usa fallback local si falla
+    → Tablas sensibles: usa service_role si está configurado
 
 OBSERVATORIO_DATA_SOURCE=local
     → Solo CSVs locales, sin intentar Supabase
 
 OBSERVATORIO_DATA_SOURCE=supabase_public
-    → Fuerza Supabase, falla si no está disponible
-    → Recomendado en Streamlit Cloud (producción)
+    → Tablas públicas: fuerza Supabase y falla si no está disponible
+    → Tablas sensibles: siguen requiriendo service_role
+    → Útil para validaciones estrictas de conectividad remota
 ```
+
+### Modelo de acceso actual
+
+- El observatorio opera en **beta privada** mediante `internal_auth` en Streamlit.
+- El login interno controla la entrada a la app y el flag `can_view_sensitive`.
+- Las tablas públicas se consultan con `anon_key`.
+- Las tablas sensibles se consultan desde el backend del dashboard con `service_role_key`.
+- Este login interno **no emite un JWT de Supabase por usuario**; la autorización fina ocurre en la capa de aplicación y Supabase conserva sus políticas RLS para la base.
 
 ### Tokens de APIs externas
 
 | API | Token | Requerido para |
 |-----|-------|---------------|
 | Groq API | Sí (gratis) | Asistente I+D completo |
-| Supabase | Anon key (gratis) | Lectura remota |
-| Supabase | Service role key (privado) | Migración de datos |
+| Supabase | Anon key (gratis) | Lectura remota de tablas públicas |
+| Supabase | Service role key (privado) | Migración de datos y vistas sensibles en beta privada |
 | Altmetric | Sí (free tier) | `fetch_altmetric.py` |
 | PatentsView | Sí (gratis con registro) | `fetch_patentsview_patents.py` |
 | OpenAlex | No (polite email recomendado) | Todos los scripts OpenAlex |
@@ -675,7 +697,7 @@ TRL 7: Sistema en entorno real con conectividad estable institucional
 ### Hitos alcanzados en TRL 5 (marzo 2026)
 
 - Dashboard modularizado en 11 secciones independientes
-- Supabase con 22 tablas y paginación completa implementada
+- Supabase con 33 tablas operativas, paginación completa y RLS aplicado
 - Grafo de citas OpenAlex: 714 papers × 9.840 citas × 8.499 papers citantes
 - EuroPMC: 74 papers con PMID/PMCID integrados
 - RAG con sentence-transformers multilingüe
@@ -697,7 +719,7 @@ TRL 7: Sistema en entorno real con conectividad estable institucional
 | sentence-transformers | OpenAI embeddings, Cohere | Sin costo, ejecutable offline, multilingüe (español nativo) |
 | GitHub | GitLab, Bitbucket | GitHub Actions para ETL automatizado; ecosistema familiar |
 | Data/ gitignoreado | Subir datos al repo | Datos institucionales sensibles; tamaño excede límites GitHub |
-| service_role key | anon key | Bypassa RLS para lectura en producción sin configurar políticas complejas |
+| Gate interno + `service_role` para tablas sensibles | Exponer todo vía `anon` | Permite beta privada con datasets sensibles sin abrirlos públicamente en Streamlit Cloud |
 | Paginación manual | Supabase SDK helper | Control explícito sobre el proceso; logging de progreso; gestión de errores |
 
 ---
