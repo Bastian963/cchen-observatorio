@@ -1,0 +1,39 @@
+name: Semantic Index Refresh
+
+on:
+  schedule:
+    - cron: "15 10 * * *"
+  workflow_dispatch:
+    inputs:
+      force_refresh:
+        description: "Forzar rebuild completo del índice semántico"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  refresh-semantic-index:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v5
+
+      - name: Configurar Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: "runtime.txt"
+
+      - name: Instalar dependencias
+        run: pip install --quiet -r requirements.txt
+
+      - name: Refrescar índice semántico si está desfasado
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.force_refresh }}" == "true" ]]; then
+            python Scripts/refresh_semantic_index.py --force
+          else
+            python Scripts/refresh_semantic_index.py
+          fi
