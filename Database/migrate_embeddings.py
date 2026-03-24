@@ -71,6 +71,7 @@ if __name__ == "__main__":
             "doi":         _clean(row.get("doi", "")),
             "title":       _clean(row.get("title", "")),
             "year":        _clean(pd.to_numeric(row.get("year"), errors="coerce")),
+            "abstract":    _clean(row.get("abstract", "")),
             "embedding":   emb[i].astype(float).tolist(),  # list[float] → pgvector
         })
 
