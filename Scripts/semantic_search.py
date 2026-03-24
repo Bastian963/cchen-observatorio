@@ -13,6 +13,8 @@ Uso como script:
 from __future__ import annotations
 import argparse
 import os
+import re
+import unicodedata
 from pathlib import Path
 
 import numpy as np
@@ -29,6 +31,37 @@ _MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 _embeddings: np.ndarray | None = None
 _meta: pd.DataFrame | None = None
 _model = None
+_PROFILE_QUERY_TERMS = (
+    "medicina nuclear",
+    "nuclear medicine",
+)
+_PROFILE_STRONG_TERMS = (
+    "medicina nuclear",
+    "nuclear medicine",
+    "pet/ct",
+    "dotatate",
+    "177lu",
+    "166ho",
+    "radiopharmaceutical",
+    "radiofarmaceut",
+    "gamma camera",
+    "99mtc",
+    "18f-fdg",
+)
+_PROFILE_SECONDARY_TERMS = (
+    "imagenologia",
+    "imaginologia",
+    "pet",
+    "spect",
+    "molecular imaging",
+    "neuroendocr",
+)
+_PROFILE_NEGATIVE_TERMS = (
+    "radiodiagnostico",
+    "radiodiagnosis",
+    "intervencionismo",
+    "cardiologia intervencion",
+)
 
 
 def _result_columns() -> list[str]:
@@ -67,6 +100,64 @@ def _encode_query(query: str) -> "np.ndarray | None":
         return None
 
 
+def _normalize_match_text(value: object) -> str:
+    text = unicodedata.normalize("NFKD", str(value or ""))
+    text = "".join(char for char in text if not unicodedata.combining(char))
+    return re.sub(r"\s+", " ", text).strip().lower()
+
+
+def _uses_nuclear_medicine_profile(query: str) -> bool:
+    normalized_query = _normalize_match_text(query)
+    return any(term in normalized_query for term in _PROFILE_QUERY_TERMS)
+
+
+def _candidate_count(top_k: int, query: str) -> int:
+    if _uses_nuclear_medicine_profile(query):
+        return max(top_k, top_k * 5, 15)
+    return top_k
+
+
+def _profile_bonus(title: str, abstract: str) -> float:
+    title_text = _normalize_match_text(title)
+    combined_text = _normalize_match_text(f"{title} {abstract}")
+
+    strong_hits = sum(term in combined_text for term in _PROFILE_STRONG_TERMS)
+    secondary_hits = sum(term in combined_text for term in _PROFILE_SECONDARY_TERMS)
+    negative_hits = sum(term in combined_text for term in _PROFILE_NEGATIVE_TERMS)
+    title_has_strong_signal = any(term in title_text for term in _PROFILE_STRONG_TERMS)
+
+    positive_bonus = (strong_hits * 0.06) + (secondary_hits * 0.02)
+    if title_has_strong_signal:
+        positive_bonus += 0.04
+
+    if strong_hits:
+        negative_penalty = min(negative_hits, 1) * 0.01
+    else:
+        negative_penalty = negative_hits * 0.03
+
+    return positive_bonus - negative_penalty
+
+
+def _rerank_profile_results(results: pd.DataFrame, query: str, top_k: int) -> pd.DataFrame:
+    if results.empty or not _uses_nuclear_medicine_profile(query):
+        return results.head(top_k).reset_index(drop=True)
+
+    reranked = results.copy()
+    reranked["base_score"] = pd.to_numeric(reranked.get("score", 0), errors="coerce").fillna(0.0)
+    reranked["title"] = reranked.get("title", "").fillna("").astype(str)
+    reranked["abstract"] = reranked.get("abstract", "").fillna("").astype(str)
+    reranked["profile_bonus"] = reranked.apply(
+        lambda row: _profile_bonus(row["title"], row["abstract"]),
+        axis=1,
+    )
+    reranked["score"] = (reranked["base_score"] + reranked["profile_bonus"]).round(4)
+    reranked = reranked.sort_values(
+        by=["score", "profile_bonus", "base_score"],
+        ascending=[False, False, False],
+    )
+    return reranked.head(top_k)[[c for c in _result_columns() if c in reranked.columns]].reset_index(drop=True)
+
+
 def _resolve_supabase_credentials() -> tuple[str, str]:
     url = os.getenv("SUPABASE_URL") or os.getenv("supabase_url", "")
     key = os.getenv("SUPABASE_KEY") or os.getenv("supabase_key", "")
@@ -95,9 +186,10 @@ def _search_supabase(query: str, top_k: int) -> pd.DataFrame:
             return _empty_result()
 
         client = create_client(url, key)
+        candidate_count = _candidate_count(top_k, query)
         resp = client.rpc(
             "match_papers",
-            {"query_embedding": q_vec.tolist(), "match_count": top_k},
+            {"query_embedding": q_vec.tolist(), "match_count": candidate_count},
         ).execute()
         if not resp.data:
             return _empty_result()
@@ -105,7 +197,8 @@ def _search_supabase(query: str, top_k: int) -> pd.DataFrame:
         df = df.rename(columns={"similarity": "score"})
         if "abstract" not in df.columns:
             df["abstract"] = ""
-        return df[[c for c in _result_columns() if c in df.columns]]
+        df = df[[c for c in _result_columns() if c in df.columns]]
+        return _rerank_profile_results(df, query=query, top_k=top_k)
     except Exception:
         return _empty_result()
 
@@ -123,10 +216,12 @@ def search(query: str, top_k: int = 10) -> pd.DataFrame:
         if q_vec is None:
             return _empty_result()
         scores = emb @ q_vec
-        top_idx = np.argsort(scores)[::-1][:top_k]
+        candidate_count = _candidate_count(top_k, query)
+        top_idx = np.argsort(scores)[::-1][:candidate_count]
         result = meta.iloc[top_idx].copy()
         result["score"] = scores[top_idx].round(4)
-        return result[[c for c in _result_columns() if c in result.columns]].reset_index(drop=True)
+        result = result[[c for c in _result_columns() if c in result.columns]].reset_index(drop=True)
+        return _rerank_profile_results(result, query=query, top_k=top_k)
 
     # Ruta Supabase: cuando los archivos locales no existen (Streamlit Cloud)
     return _search_supabase(query, top_k)

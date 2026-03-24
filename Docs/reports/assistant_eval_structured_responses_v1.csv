@@ -1,0 +1,212 @@
+run_label,run_started_at,query_id,query,evaluation_mode,expected_focus,expected_data_sources,structured_eval_applicable,structured_expected_source_count,structured_available_source_count,structured_available_source_ratio,structured_available_sources,structured_missing_sources,structured_source_rows,structured_synthesis_type,structured_actionability_expected,assistant_response,context_trace,response_ms,heuristic_sources_mentioned,score_structured_source_grounding,score_structured_synthesis,score_structured_actionability,structured_review_notes
+structured_responses_v1,2026-03-24T00:55:47,Q01,Diagnostica la produccion cientifica reciente de CCHEN y sus areas mas activas.,structured_or_hybrid,produccion_cientifica,publications;bertopic_topics,True,2,2,1.0,publications;bertopic_topics,,publications:826;bertopic_topics:358,cross_source_synthesis,False,"**Producción Científica Reciente de CCHEN**
+
+Según los datos proporcionados, la Comisión Chilena de Energía Nuclear (CCHEN) ha demostrado una producción científica notable en los últimos años. Los indicadores clave de esta producción son:
+
+* **Total de publicaciones**: 826 trabajos publicados entre 1990 y 2025.
+* **Citas totales**: 9,840 citas recibidas, con un promedio de 11.9 citas por artículo.
+* **Distribución de cuartiles SJR**: 86.7% de los artículos publicados se encuentran en cuartiles Q1 y Q2, lo que indica una alta calidad de la producción científica.
+* **Acceso Abierto**: 46.6% de los artículos publicados están disponibles en acceso abierto.
+
+**Áreas más Activas**
+
+Las áreas de investigación más activas de CCHEN se pueden identificar a partir de la distribución de publicaciones por áreas de conocimiento:
+
+* **Física y Astronomía**: 213 publicaciones, lo que representa aproximadamente el 25% de la producción total de CCHEN.
+* **Materiales Ciencia**: 81 publicaciones, lo que representa aproximadamente el 10% de la producción total de CCHEN.
+* **Ingeniería**: 75 publicaciones, lo que representa aproximadamente el 9% de la producción total de CCHEN.
+* **Química**: 64 publicaciones, lo que representa aproximadamente el 8% de la producción total de CCHEN.
+* **Medicina**: 63 publicaciones, lo que representa aproximadamente el 7% de la producción total de CCHEN.
+* **Energía**: 52 publicaciones, lo que representa aproximadamente el 6% de la producción total de CCHEN.
+
+Estas áreas de investigación son las más prominentes en la producción científica de CCHEN, lo que sugiere que la institución tiene una fuerte presencia en la investigación científica y tecnológica relacionada con la energía nuclear y sus aplicaciones.
+
+**Top Journal**
+
+Los journal más frecuentemente publicados por CCHEN son:
+
+* **Journal of Physics Conference Series**: 41 publicaciones.
+* **AIP conference proceedings**: 39 publicaciones.
+* **IEEE Transactions on Plasma Science**: 17 publicaciones.
+* **Physics of Plasmas**: 16 publicaciones.
+* **Radiation Protection Dosimetry**: 10 publicaciones.
+
+Estos journal son líderes en sus respectivas áreas de conocimiento y la publicación en ellos refleja la calidad y el impacto de la investigación realizada por CCHEN.","{""pub"": 826, ""pub_enr"": 580, ""anid"": 24, ""ch"": 112, ""orcid"": 48, ""conv_calls"": 26, ""conv_open"": 4, ""matching_formal"": 26, ""portfolio"": 6, ""patents"": 4, ""funding_plus"": 2, ""iaea_tc"": 1, ""entity_personas"": 604, ""convenios"": 84, ""acuerdos"": 41, ""datacite"": 12, ""openaire"": 867}",2596,0,,,,
+structured_responses_v1,2026-03-24T00:55:47,Q02,Que oportunidades de financiamiento ANID y complementario son mas estrategicas para CCHEN?,structured_or_hybrid,financiamiento_y_matching,convocatorias;convocatorias_matching_institucional;perfiles_institucionales,True,3,3,1.0,convocatorias;convocatorias_matching_institucional;perfiles_institucionales,,convocatorias:26;convocatorias_matching_institucional:26;perfiles_institucionales:6,multi_source_synthesis,True,"**Oportunidades de Financiamiento ANID y Complementario para CCHEN**
+
+Considerando el perfil institucional y las áreas de investigación de la Comisión Chilena de Energía Nuclear (CCHEN), se identifican las siguientes oportunidades de financiamiento ANID y complementario como estratégicas:
+
+### Financiamiento ANID
+
+1. **Fondecyt Regular**: Es una de las convocatorias más importantes para la investigación científica en Chile. CCHEN puede presentar proyectos en áreas como física, ingeniería, biomedicina, entre otras.
+2. **Fondecyt Iniciación**: Esta convocatoria es ideal para jóvenes investigadores que buscan iniciar su carrera en la investigación. CCHEN puede apoyar a sus investigadores en esta etapa.
+3. **Anillos de Investigación**: Estos proyectos permiten la colaboración entre investigadores de diferentes instituciones para abordar problemas complejos. CCHEN puede liderar o participar en anillos relacionados con la energía nuclear, la física de partículas, la medicina nuclear, entre otros.
+4. **Fonis**: El Fondo de Innovación para la Competitividad (Fonis) financia proyectos de investigación y desarrollo en áreas estratégicas para el país. CCHEN puede presentar proyectos en areas como la energía, la salud y la seguridad.
+
+### Financiamiento Complementario
+
+1. **CORFO**: La Corporación de Fomento de la Producción (CORFO) ofrece instrumentos de financiamiento para el desarrollo de proyectos de innovación y tecnología. CCHEN puede acceder a estos fondos para desarrollar proyectos de transferencia tecnológica y innovación.
+2. **IAEA Technical Cooperation**: La Agencia Internacional de Energía Atómica (IAEA) ofrece cooperación técnica y financiamiento para proyectos relacionados con la energía nuclear y sus aplicaciones pacíficas. CCHEN puede acceder a estos fondos para desarrollar proyectos en áreas como la seguridad nuclear, la medicina nuclear y la energía nuclear.
+3. **Programas de cooperación internacional**: CCHEN puede acceder a programas de cooperación internacional con instituciones y agencias de otros países para desarrollar proyectos de investigación y desarrollo en áreas como la energía nuclear, la física de partículas y la medicina nuclear.
+
+**Conclusión**
+
+En resumen, las oportunidades de financiamiento ANID y complementario más estratégicas para CCHEN son aquellas que permiten la investigación científica y el desarrollo tecnológico en áreas relacionadas con la energía nuclear, la física de partículas, la medicina nuclear y la seguridad nuclear. Es importante que CCHEN identifique las convocatorias y proyectos que se alineen con sus objetivos institucionales y priorice la presentación de proyectos en estas áreas.","{""pub"": 826, ""pub_enr"": 580, ""anid"": 24, ""ch"": 112, ""orcid"": 48, ""conv_calls"": 26, ""conv_open"": 4, ""matching_formal"": 26, ""portfolio"": 6, ""patents"": 4, ""funding_plus"": 2, ""iaea_tc"": 1, ""entity_personas"": 604, ""convenios"": 84, ""acuerdos"": 41, ""datacite"": 12, ""openaire"": 867}",9052,1,,,,
+structured_responses_v1,2026-03-24T00:55:47,Q03,Resume riesgos y fortalezas del capital humano I+D en CCHEN.,structured_or_hybrid,capital_humano,researchers;capital_humano,True,2,2,1.0,researchers;capital_humano,,researchers:48;capital_humano:112,cross_source_synthesis,False,"**Resumen de Riesgos y Fortalezas del Capital Humano I+D en CCHEN**
+
+### Fortalezas:
+
+*   **Diversidad de perfiles**: Se cuenta con una variedad de perfiles de investigadores y personal con experiencia en diferentes áreas, como física, ingeniería, biología y química.
+*   **Experiencia en proyectos ANID**: La institución tiene una trayectoria de participación en proyectos financiados por ANID, lo que indica una capacidad comprobada para desarrollar y ejecutar proyectos de investigación y desarrollo.
+*   **Colaboraciones internacionales**: La CCHEN tiene acuerdos y convenios con instituciones internacionales, lo que facilita el intercambio de conocimientos y la colaboración en proyectos de investigación.
+*   **Formación avanzada**: La institución oferta programas de formación avanzada, como doctorados y posdoctorados, lo que contribuye a fortalecer el capital humano en I+D.
+
+### Riesgos:
+
+*   **Dependencia de financiamiento externo**: La CCHEN depende en gran medida del financiamiento externo para sus proyectos de investigación y desarrollo, lo que puede generar inestabilidad en la continuidad de los proyectos.
+*   **Rotación de personal**: La institución puede enfrentar riesgos de rotación de personal, especialmente si no se ofrecen oportunidades de crecimiento y desarrollo atractivas para los investigadores y personal.
+*   **Limitaciones en la capacitación**: Aunque se ofrecen programas de formación avanzada, es posible que no se cubran todas las necesidades de capacitación y actualización de los investigadores y personal en áreas específicas.
+*   **Desafíos en la retención de talento**: La institución puede enfrentar desafíos en la retención de talento, especialmente si no se ofrece un ambiente de trabajo atractivo y oportunidades de crecimiento y desarrollo.
+
+Es importante destacar que estos riesgos y fortalezas son una síntesis de la información disponible y que la situación real puede variar dependiendo de factores internos y externos. Es fundamental que la institución realice un análisis detallado y continuo de su capital humano para identificar áreas de fortaleza y debilidad, y desarrollar estrategias para mitigar los riesgos y potenciar las fortalezas.","{""pub"": 826, ""pub_enr"": 580, ""anid"": 24, ""ch"": 112, ""orcid"": 48, ""conv_calls"": 26, ""conv_open"": 4, ""matching_formal"": 26, ""portfolio"": 6, ""patents"": 4, ""funding_plus"": 2, ""iaea_tc"": 1, ""entity_personas"": 604, ""convenios"": 84, ""acuerdos"": 41, ""datacite"": 12, ""openaire"": 867}",34526,0,,,,
+structured_responses_v1,2026-03-24T00:55:47,Q05,Analiza colaboracion internacional de CCHEN: instituciones y paises principales.,structured_or_hybrid,colaboracion_internacional,publications;researchers,True,2,2,1.0,publications;researchers,,publications:826;researchers:48,cross_source_synthesis,False,"**Resumen de la colaboración internacional de CCHEN**
+
+La Comisión Chilena de Energía Nuclear (CCHEN) tiene una colaboración internacional significativa, con un total de 652 instituciones colaboradoras externas y 91 acuerdos internacionales. A continuación, se presentan los detalles de la colaboración internacional de CCHEN:
+
+**Instituciones colaboradoras internacionales**
+
+* Total de instituciones colaboradoras internacionales: 652
+* Top 10 instituciones colaboradoras internacionales por número de colaboraciones:
+ + University of Chile (487)
+ + Pontificia Universidad Católica de Chile (304)
+ + Universidad Andrés Bello (260)
+ + RIKEN Nishina Center (246)
+ + Universidad de Santiago de Chile (198)
+ + University of Concepción (192)
+ + Instituto de Física Corpuscular (184)
+ + Centre National de la Recherche Scientifique (162)
+ + Universitat de València (135)
+ + Laboratoire de Physique des deux infinis Bordeaux (130)
+
+**Países colaboradores**
+
+* Total de países colaboradores: 41
+* Top 10 países colaboradores por número de colaboraciones:
+ + Francia (162)
+ + España (135)
+ + Japón (130)
+ + Estados Unidos (121)
+ + Alemania (115)
+ + Reino Unido (104)
+ + Italia (93)
+ + Canadá (86)
+ + Australia (79)
+ + China (74)
+
+**Acuerdos internacionales**
+
+* Total de acuerdos internacionales: 91
+* Tipos de acuerdos internacionales:
+ + Acuerdos de cooperación técnica (41)
+ + Acuerdos de colaboración científica (30)
+ + Acuerdos de intercambio de estudiantes y personal (15)
+ + Acuerdos de cooperación en seguridad nuclear (5)
+
+**Observaciones**
+
+* La colaboración internacional de CCHEN se centra principalmente en instituciones y países de Europa, América del Norte y América Latina.
+* La Universidad de Chile y la Pontificia Universidad Católica de Chile son las instituciones chilenas más colaboradoras con instituciones internacionales.
+* La RIKEN Nishina Center y el Centre National de la Recherche Scientifique son dos de las instituciones internacionales más colaboradoras con CCHEN.
+
+En resumen, la colaboración internacional de CCHEN es extensa y diversa, con una fuerte presencia de instituciones y países de Europa, América del Norte y América Latina. Esto refleja la importancia de la colaboración internacional en la investigación y el desarrollo de la energía nuclear en Chile.","{""pub"": 826, ""pub_enr"": 580, ""anid"": 24, ""ch"": 112, ""orcid"": 48, ""conv_calls"": 26, ""conv_open"": 4, ""matching_formal"": 26, ""portfolio"": 6, ""patents"": 4, ""funding_plus"": 2, ""iaea_tc"": 1, ""entity_personas"": 604, ""convenios"": 84, ""acuerdos"": 41, ""datacite"": 12, ""openaire"": 867}",35391,0,,,,
+structured_responses_v1,2026-03-24T00:55:47,Q07,Que temas de BERTopic dominan y como se relacionan con prioridades institucionales?,structured_or_hybrid,bertopic_temas,bertopic_topics;publications,True,2,2,1.0,bertopic_topics;publications,,bertopic_topics:358;publications:826,cross_source_synthesis,False,"Basándome en los datos proporcionados, he realizado un análisis de los temas que podrían ser relevantes para la Comisión Chilena de Energía Nuclear (CCHEN) y su relación con las prioridades institucionales.
+
+**Temas dominantes:**
+
+1. **Energía Nuclear y Aplicaciones**: La producción científica de la CCHEN se centra en gran medida en la energía nuclear, incluyendo temas como la fisión, la fusión, la radiación y la seguridad nuclear. Esto se refleja en los 10 papers más citados, que abordan temas como la encapsulación de materiales de cambio de fase, la física del plasma y la emisión de neutrones.
+2. **Física y Ciencia de Materiales**: La CCHEN tiene una fuerte presencia en la investigación en física y ciencia de materiales, lo que se refleja en la publicación de artículos en revistas como el Journal of Physics Conference Series y el IEEE Transactions on Plasma Science.
+3. **Innovación y Desarrollo Tecnológico**: La CCHEN participa en proyectos de innovación y desarrollo tecnológico, como el proyecto ""CCHEN 360 — Observatorio Tecnológico"" financiado por CORFO, que busca fortalecer las capacidades de I+D en inteligencia científica y tecnológica.
+4. **Cooperación Internacional y Seguridad Nuclear**: La CCHEN participa en acuerdos internacionales y cooperación técnica en materia de seguridad nuclear, como el Convenio entre el Gobierno de Chile y el Gobierno de la Federación de Rusia sobre Cooperación para la Utilización Pacífica de la Energía Atómica.
+
+**Relación con prioridades institucionales:**
+
+1. **Desarrollo de capacidades I+D**: La CCHEN prioriza el desarrollo de capacidades de I+D en inteligencia científica y tecnológica, lo que se refleja en la participación en proyectos como el Observatorio Tecnológico y la colaboración con instituciones internacionales.
+2. **Seguridad nuclear y cooperación internacional**: La CCHEN prioriza la seguridad nuclear y la cooperación internacional, lo que se refleja en la participación en acuerdos internacionales y la colaboración con instituciones internacionales en materia de seguridad nuclear.
+3. **Innovación y transferencia tecnológica**: La CCHEN busca promover la innovación y la transferencia tecnológica, lo que se refleja en la participación en proyectos de innovación y desarrollo tecnológico y la colaboración con instituciones internacionales.
+4. **Fortalecimiento de la gestión institucional**: La CCHEN busca fortalecer su gestión institucional, lo que se refleja en la implementación de un modelo unificado de gobernanza y la creación de un registro institucional ROR.
+
+En resumen, los temas dominantes en la producción científica y la participación institucional de la CCHEN se relacionan con prioridades institucionales como el desarrollo de capacidades I+D, la seguridad nuclear y la cooperación internacional, la innovación y la transferencia tecnológica, y el fortalecimiento de la gestión institucional.","{""pub"": 826, ""pub_enr"": 580, ""anid"": 24, ""ch"": 112, ""orcid"": 48, ""conv_calls"": 26, ""conv_open"": 4, ""matching_formal"": 26, ""portfolio"": 6, ""patents"": 4, ""funding_plus"": 2, ""iaea_tc"": 1, ""entity_personas"": 604, ""convenios"": 84, ""acuerdos"": 41, ""datacite"": 12, ""openaire"": 867}",35983,0,,,,
+structured_responses_v1,2026-03-24T00:55:47,Q08,Cuales son las convocatorias abiertas con mejor calce para perfiles institucionales?,structured_or_hybrid,convocatorias_matching,convocatorias;convocatorias_matching_institucional;perfiles_institucionales,True,3,3,1.0,convocatorias;convocatorias_matching_institucional;perfiles_institucionales,,convocatorias:26;convocatorias_matching_institucional:26;perfiles_institucionales:6,multi_source_synthesis,True,"Existen varias convocatorias abiertas que tienen un buen calce con los perfiles institucionales de la Comisión Chilena de Energía Nuclear (CCHEN). A continuación, se presentan algunas de las convocatorias más relevantes:
+
+1. **Concurso Tiempo Telescopio GEMINI Sur – Semestre 2026-B**: Esta convocatoria tiene un score total de 100 y se encuentra en el perfil de ""Cooperación / movilidad"". Es una excelente oportunidad para que la CCHEN participe en investigaciones astrofísicas y colabore con otros centros de investigación.
+2. **Proyectos de Investigación y Desarrollo en Salud (Fonis) 2026**: Esta convocatoria tiene un score total de 95 y se encuentra en el perfil de ""PI / ciencia"". La CCHEN puede participar en proyectos de investigación en salud que involucren la aplicación de tecnologías nucleares.
+3. **Concurso VIU 2026**: Esta convocatoria tiene un score total de 95 y se encuentra en el perfil de ""Innovación / transferencia"". La CCHEN puede participar en proyectos de innovación y transferencia tecnológica que involucren la aplicación de tecnologías nucleares en diferentes áreas.
+4. **Segundo Llamado de Beneficios Complementarios 2026**: Esta convocatoria tiene un score total de 90 y se encuentra en el perfil de ""Doctorado y formación avanzada"". La CCHEN puede participar en proyectos de formación avanzada y beneficiarse de los recursos complementarios ofrecidos por esta convocatoria.
+
+En cuanto a la elegibilidad y preparación para estas convocatorias, la CCHEN cumple con los requisitos básicos y tiene un grado de preparación avanzado. Sin embargo, es importante que la institución revise detalladamente los requisitos y condiciones de cada convocatoria para asegurarse de que cumple con todos los requisitos y está lista para presentar una propuesta competitiva.
+
+**Resumen de las convocatorias:**
+
+* Concurso Tiempo Telescopio GEMINI Sur – Semestre 2026-B: Score 100, perfil ""Cooperación / movilidad""
+* Proyectos de Investigación y Desarrollo en Salud (Fonis) 2026: Score 95, perfil ""PI / ciencia""
+* Concurso VIU 2026: Score 95, perfil ""Innovación / transferencia""
+* Segundo Llamado de Beneficios Complementarios 2026: Score 90, perfil ""Doctorado y formación avanzada""
+
+**Evidencia que respalda la elegibilidad:**
+
+* La CCHEN tiene una larga trayectoria en investigaciones científicas y tecnológicas, lo que la hace elegible para participar en estas convocatorias.
+* La institución cuenta con una amplia experiencia en la aplicación de tecnologías nucleares en diferentes áreas, lo que la hace un candidato competitivo para estas convocatorias.
+* La CCHEN tiene un equipo de investigadores y técnicos capacitados y experimentados, lo que garantiza la calidad y el éxito de los proyectos que se presenten.","{""pub"": 826, ""pub_enr"": 580, ""anid"": 24, ""ch"": 112, ""orcid"": 48, ""conv_calls"": 26, ""conv_open"": 4, ""matching_formal"": 26, ""portfolio"": 6, ""patents"": 4, ""funding_plus"": 2, ""iaea_tc"": 1, ""entity_personas"": 604, ""convenios"": 84, ""acuerdos"": 41, ""datacite"": 12, ""openaire"": 867}",35921,1,,,,
+structured_responses_v1,2026-03-24T00:55:47,Q09,Que evidencia de transferencia tecnologica existe y que vacios persisten?,structured_or_hybrid,transferencia,patents;transferencia;publications,True,3,3,1.0,patents;transferencia;publications,,patents:4;transferencia:6;publications:826,multi_source_synthesis,True,"**Evidencia de transferencia tecnológica**
+
+Existen varias evidencias de transferencia tecnológica en la Comisión Chilena de Energía Nuclear (CCHEN). A continuación, se presentan algunas de ellas:
+
+* **Activos semilla en portafolio**: Se han identificado 6 activos semilla en el portafolio de transferencia tecnológica de la CCHEN. Estos activos semilla son proyectos o tecnologías que tienen potencial para ser transferidos a la industria o a otros sectores.
+* **Fondos complementarios registrados**: Se han registrado 2 fondos complementarios que apoyan la transferencia tecnológica en la CCHEN.
+* **Registros IAEA TC**: Se ha identificado 1 registro de la Agencia Internacional de Energía Atómica (IAEA) relacionado con la cooperación técnica en la CCHEN.
+* **Patentes y registros de propiedad intelectual**: Se han detectado 4 patentes o registros de propiedad intelectual cargados en el sistema de la CCHEN.
+* **Outputs DataCite asociados a CCHEN**: Se han identificado 12 outputs DataCite asociados a la CCHEN, incluyendo datasets y artículos de revistas.
+* **Outputs OpenAIRE asociados a investigadores CCHEN**: Se han identificado 867 outputs OpenAIRE asociados a investigadores de la CCHEN, incluyendo publicaciones y datasets.
+
+**Vacíos que persisten**
+
+A pesar de las evidencias de transferencia tecnológica mencionadas anteriormente, existen algunos vacíos que persisten en la CCHEN. A continuación, se presentan algunos de ellos:
+
+* **Falta de un portafolio de transferencia tecnológica formal**: Aunque se han identificado activos semilla y fondos complementarios, no existe un portafolio de transferencia tecnológica formal en la CCHEN.
+* **Limitaciones en la capacidad de registro de patentes y propiedad intelectual**: La CCHEN no tiene una capacidad de registro de patentes y propiedad intelectual propia, lo que limita su capacidad para proteger y transferir sus tecnologías.
+* **Necesidad de una estrategia de transferencia tecnológica clara**: La CCHEN no tiene una estrategia de transferencia tecnológica clara y definida, lo que dificulta la identificación de oportunidades de transferencia y la evaluación de su impacto.
+* **Falta de recursos y capacidad para la transferencia tecnológica**: La CCHEN no tiene los recursos y la capacidad necesarios para realizar la transferencia tecnológica de manera efectiva, lo que limita su capacidad para transferir sus tecnologías a la industria y otros sectores.
+* **Necesidad de una mayor colaboración con la industria y otros sectores**: La CCHEN necesita aumentar su colaboración con la industria y otros sectores para identificar oportunidades de transferencia tecnológica y desarrollar soluciones que respondan a las necesidades del mercado.
+
+En resumen, aunque existen algunas evidencias de transferencia tecnológica en la CCHEN, persisten varios vacíos que necesitan ser abordados para aumentar la capacidad de la institución para transferir sus tecnologías y conocimientos a la industria y otros sectores.","{""pub"": 826, ""pub_enr"": 580, ""anid"": 24, ""ch"": 112, ""orcid"": 48, ""conv_calls"": 26, ""conv_open"": 4, ""matching_formal"": 26, ""portfolio"": 6, ""patents"": 4, ""funding_plus"": 2, ""iaea_tc"": 1, ""entity_personas"": 604, ""convenios"": 84, ""acuerdos"": 41, ""datacite"": 12, ""openaire"": 867}",36247,1,,,,
+structured_responses_v1,2026-03-24T00:55:47,Q10,Dame un resumen ejecutivo para directivos con hallazgos accionables.,structured_or_hybrid,resumen_ejecutivo,publications;convocatorias;researchers;patents,True,4,4,1.0,publications;convocatorias;researchers;patents,,publications:826;convocatorias:26;researchers:48;patents:4,multi_source_synthesis,True,"**Resumen Ejecutivo: Hallazgos Accionables para Directivos**
+
+**Introducción**
+
+El Observatorio Tecnológico de la Comisión Chilena de Energía Nuclear (CCHEN) ha recopilado y analizado una amplia gama de datos relacionados con la producción científica, colaboraciones institucionales, financiamiento, transferencia tecnológica y gobernanza. A continuación, se presentan los hallazgos más relevantes y accionables para los directivos.
+
+**Hallazgos Clave**
+
+1. **Producción Científica**: La CCHEN cuenta con 826 publicaciones, con un promedio de 11.9 citas por artículo. Los temas más prominentes incluyen Física y Astronomía, Materiales, Ingeniería, Química y Energía.
+2. **Colaboraciones Institucionales**: Se han identificado 653 instituciones colaboradoras, con un total de 84 convenios nacionales y 41 acuerdos internacionales. La Universidad de Chile, Pontificia Universidad Católica de Chile y Universidad Andrés Bello son nuestras principales contrapartes.
+3. **Financiamiento**: Se han detectado 24 proyectos con financiamiento ANID, con un monto total de $1337 MM CLP. Además, se han identificado oportunidades de financiamiento complementario, como el proyecto ""CCHEN 360 — Observatorio Tecnológico"" de CORFO.
+4. **Transferencia Tecnológica**: El portafolio tecnológico actual incluye 6 activos semilla, con un enfoque en física médica, materiales y aplicaciones nucleares. Se requiere validación técnica para consolidar este portafolio.
+5. **Gobernanza**: Se ha definido un modelo unificado con 11 entidades y 12 relaciones. Se necesitan esfuerzos adicionales para integrar los datos y establecer un grafo persistente.
+
+**Recomendaciones**
+
+1. **Fortalecer la producción científica**: Fomentar la colaboración entre investigadores y instituciones para aumentar la producción científica y la visibilidad internacional.
+2. **Diversificar las colaboraciones institucionales**: Establecer convenios y acuerdos con instituciones de otros países y regiones para ampliar la red de colaboraciones.
+3. **Explorar oportunidades de financiamiento**: Identificar y perseguir oportunidades de financiamiento complementario para apoyar la investigación y la transferencia tecnológica.
+4. **Consolidar el portafolio tecnológico**: Validar técnica y comercialmente los activos semilla para establecer un portafolio tecnológico sólido.
+5. **Mejorar la gobernanza**: Integrar los datos y establecer un grafo persistente para mejorar la toma de decisiones y la gestión de la información.
+
+**Próximos Pasos**
+
+1. **Revisar y priorizar las recomendaciones**: Los directivos deben revisar y priorizar las recomendaciones para establecer un plan de acción.
+2. **Asignar responsabilidades**: Asignar responsabilidades a los equipos y personas clave para implementar las recomendaciones.
+3. **Establecer indicadores de progreso**: Establecer indicadores de progreso para monitorear y evaluar el impacto de las acciones implementadas.
+
+**Conclusión**
+
+El Observatorio Tecnológico de la CCHEN ha proporcionado una visión integral de la situación actual de la institución. Los hallazgos y recomendaciones presentados ofrecen una oportunidad para fortalecer la producción científica, diversificar las colaboraciones institucionales, explorar oportunidades de financiamiento, consolidar el portafolio tecnológico y mejorar la gobernanza. Los directivos deben revisar y priorizar las recomendaciones para establecer un plan de acción que impulse el crecimiento y el desarrollo de la institución.","{""pub"": 826, ""pub_enr"": 580, ""anid"": 24, ""ch"": 112, ""orcid"": 48, ""conv_calls"": 26, ""conv_open"": 4, ""matching_formal"": 26, ""portfolio"": 6, ""patents"": 4, ""funding_plus"": 2, ""iaea_tc"": 1, ""entity_personas"": 604, ""convenios"": 84, ""acuerdos"": 41, ""datacite"": 12, ""openaire"": 867}",35617,0,,,,

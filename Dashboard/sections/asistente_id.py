@@ -33,91 +33,105 @@ except Exception:
     _SEM_AVAILABLE = False
 
 
-def render(ctx: dict) -> None:
-    """Render the Asistente I+D section."""
-    pub              = ctx["pub"]
-    pub_enr          = ctx["pub_enr"]
-    auth             = ctx["auth"]
-    anid             = ctx["anid"]
-    ch               = ctx["ch"]
-    ch_ej            = ctx["ch_ej"]
-    ch_adv           = ctx["ch_adv"]
-    orcid            = ctx["orcid"]
-    ror_registry     = ctx["ror_registry"]
-    ror_pending_review = ctx["ror_pending_review"]
-    funding_plus     = ctx["funding_plus"]
-    iaea_tc          = ctx["iaea_tc"]
-    matching_inst    = ctx["matching_inst"]
-    entity_personas  = ctx["entity_personas"]
-    entity_projects  = ctx["entity_projects"]
-    entity_convocatorias = ctx["entity_convocatorias"]
-    entity_links     = ctx["entity_links"]
-    acuerdos         = ctx["acuerdos"]
-    convenios        = ctx["convenios"]
-    patents          = ctx["patents"]
-    datacite         = ctx["datacite"]
-    openaire         = ctx["openaire"]
+def _build_assistant_system_prompt(ctx: dict, patents_key: str = "") -> tuple:
+    """Build the assistant system prompt from context data.
 
-    assistant_access = _access_context()
-    st.title("Asistente I+D — CCHEN")
-    st.caption("Analiza las capas integradas del observatorio y genera informes técnicos con IA")
-    st.divider()
-
-    if assistant_access["auth_enabled"] and not assistant_access["can_view_sensitive"]:
-        st.warning(
-            "El asistente queda restringido mientras no exista una sesión autorizada, "
-            "porque el prompt incorpora contexto de capital humano y otros datos internos."
-        )
-        if assistant_access.get("auth_mode") == "internal":
-            st.info("Tu usuario beta no tiene habilitado el acceso sensible requerido para esta sección.")
-        elif assistant_access["auth_supported"] and not assistant_access["is_logged_in"]:
-            if st.button("Iniciar sesión para habilitar el asistente", key="assistant_login"):
-                st.login()
-        st.stop()
+    Returns (system_prompt_str, context_trace_dict).
+    Callable outside Streamlit — does not import st or use st.secrets/st.session_state.
+    """
+    pub              = ctx.get("pub", pd.DataFrame())
+    pub_enr          = ctx.get("pub_enr", pd.DataFrame())
+    auth             = ctx.get("auth", pd.DataFrame())
+    anid             = ctx.get("anid", pd.DataFrame())
+    ch               = ctx.get("ch", pd.DataFrame())
+    ch_ej            = ctx.get("ch_ej", {})
+    ch_adv           = ctx.get("ch_adv", {})
+    orcid            = ctx.get("orcid", pd.DataFrame())
+    ror_registry     = ctx.get("ror_registry", pd.DataFrame())
+    ror_pending_review = ctx.get("ror_pending_review", pd.DataFrame())
+    funding_plus     = ctx.get("funding_plus", pd.DataFrame())
+    iaea_tc          = ctx.get("iaea_tc", pd.DataFrame())
+    matching_inst    = ctx.get("matching_inst", pd.DataFrame())
+    entity_personas  = ctx.get("entity_personas", pd.DataFrame())
+    entity_projects  = ctx.get("entity_projects", pd.DataFrame())
+    entity_convocatorias = ctx.get("entity_convocatorias", pd.DataFrame())
+    entity_links     = ctx.get("entity_links", pd.DataFrame())
+    acuerdos         = ctx.get("acuerdos", pd.DataFrame())
+    convenios        = ctx.get("convenios", pd.DataFrame())
+    patents          = ctx.get("patents", pd.DataFrame())
+    datacite         = ctx.get("datacite", pd.DataFrame())
+    openaire         = ctx.get("openaire", pd.DataFrame())
 
     # ── Contexto de datos para el sistema ──
-    _kpis_ch  = ch_ej.get("kpis", {})
-    _adv      = ch_adv
+    _kpis_ch  = ch_ej.get("kpis", {}) if isinstance(ch_ej, dict) else {}
+    _adv      = ch_adv if isinstance(ch_adv, dict) else {}
     _cap      = _adv.get("concentracion", {}) if _adv else {}
-    _monto_mm = anid["monto_programa_num"].sum() / 1e6
+    _monto_mm = anid["monto_programa_num"].sum() / 1e6 if not anid.empty and "monto_programa_num" in anid.columns else 0.0
     _top_areas_raw = {}
-    for _row in pub_enr["areas"].dropna():
-        for _a in str(_row).split(";"):
-            _a = _a.strip()
-            if _a:
-                _top_areas_raw[_a] = _top_areas_raw.get(_a, 0) + 1
+    if not pub_enr.empty and "areas" in pub_enr.columns:
+        for _row in pub_enr["areas"].dropna():
+            for _a in str(_row).split(";"):
+                _a = _a.strip()
+                if _a:
+                    _top_areas_raw[_a] = _top_areas_raw.get(_a, 0) + 1
     _top_areas = sorted(_top_areas_raw.items(), key=lambda x: -x[1])[:8]
     _top_journals = (
         pub_enr["source_title"].value_counts().head(5).to_dict()
-        if "source_title" in pub_enr.columns
-        else pub["source"].value_counts().head(5).to_dict()
+        if not pub_enr.empty and "source_title" in pub_enr.columns
+        else (pub["source"].value_counts().head(5).to_dict() if not pub.empty and "source" in pub.columns else {})
     )
 
     # Investigadores con afiliación CCHEN (desde authorships)
-    _auth_cchen = auth[auth["is_cchen_affiliation"] == True]
-    _top_inv = (_auth_cchen.groupby("author_name")["work_id"]
-                .nunique().sort_values(ascending=False).head(25))
+    if not auth.empty and "is_cchen_affiliation" in auth.columns:
+        _auth_cchen = auth[auth["is_cchen_affiliation"] == True]
+    else:
+        _auth_cchen = pd.DataFrame()
+    _top_inv = (
+        _auth_cchen.groupby("author_name")["work_id"].nunique().sort_values(ascending=False).head(25)
+        if not _auth_cchen.empty and "author_name" in _auth_cchen.columns and "work_id" in _auth_cchen.columns
+        else pd.Series(dtype=int)
+    )
     _inv_lista = ", ".join(f"{n} ({p} papers)" for n, p in _top_inv.items())
-    _n_inv_unicos = _auth_cchen["author_name"].nunique()
+    _n_inv_unicos = _auth_cchen["author_name"].nunique() if not _auth_cchen.empty and "author_name" in _auth_cchen.columns else 0
 
     # Datos adicionales para el contexto
-    _top_papers = pub.nlargest(10, "cited_by_count")[["title", "year", "source", "cited_by_count"]]
-    _papers_ctx = "\n".join(
-        f"  - ({r.year}) {str(r.title)[:90]} | {int(r.cited_by_count)} citas | {r.source}"
-        for _, r in _top_papers.iterrows()
-    )
+    if not pub.empty and "cited_by_count" in pub.columns:
+        _top_papers = pub.nlargest(10, "cited_by_count")[["title", "year", "source", "cited_by_count"]]
+        _papers_ctx = "\n".join(
+            f"  - ({r.year}) {str(r.title)[:90]} | {int(r.cited_by_count)} citas | {r.source}"
+            for _, r in _top_papers.iterrows()
+        )
+    else:
+        _papers_ctx = "  - Sin datos de publicaciones disponibles."
     _anid_ctx = "\n".join(
         f"  - ({int(r.anio_concurso) if pd.notna(r.anio_concurso) else 'sin año'}) "
         f"{str(r.titulo)[:80]} | {r.instrumento_norm} | "
         f"{'$'+str(round(r.monto_programa_num/1e6,1))+'MM' if pd.notna(r.monto_programa_num) and r.monto_programa_num > 0 else 'sin monto'}"
         for _, r in anid.iterrows()
+    ) if not anid.empty else "  - Sin proyectos ANID cargados."
+    _collab_inst = (
+        auth[auth["is_cchen_affiliation"] == False]["institution_name"].value_counts().head(12)
+        if not auth.empty and "is_cchen_affiliation" in auth.columns and "institution_name" in auth.columns
+        else pd.Series(dtype=int)
     )
-    _collab_inst = auth[auth["is_cchen_affiliation"] == False]["institution_name"].value_counts().head(12)
-    _collab_ctx = ", ".join(f"{i} ({n})" for i, n in _collab_inst.items())
-    _tutores_ctx = ", ".join(f"{t} ({n} alumnos)" for t, n in ch["tutor"].value_counts().head(10).items())
-    _centros_ctx = ", ".join(f"{c} ({n})" for c, n in ch["centro_norm"].value_counts().items())
-    _univs_ctx   = ", ".join(f"{u} ({n})" for u, n in ch["universidad"].value_counts().head(10).items())
-    _conv_df, _conv_mode_assistant, _conv_path_assistant = _load_convocatorias_data()
+    _collab_ctx = ", ".join(f"{i} ({n})" for i, n in _collab_inst.items()) if not _collab_inst.empty else "Sin colaboraciones registradas"
+    _tutores_ctx = (
+        ", ".join(f"{t} ({n} alumnos)" for t, n in ch["tutor"].value_counts().head(10).items())
+        if not ch.empty and "tutor" in ch.columns else "Sin tutores registrados"
+    )
+    _centros_ctx = (
+        ", ".join(f"{c} ({n})" for c, n in ch["centro_norm"].value_counts().items())
+        if not ch.empty and "centro_norm" in ch.columns else "Sin centros registrados"
+    )
+    _univs_ctx = (
+        ", ".join(f"{u} ({n})" for u, n in ch["universidad"].value_counts().head(10).items())
+        if not ch.empty and "universidad" in ch.columns else "Sin universidades registradas"
+    )
+
+    try:
+        _conv_df, _conv_mode_assistant, _conv_path_assistant = _load_convocatorias_data()
+    except Exception:
+        _conv_df, _conv_mode_assistant, _conv_path_assistant = pd.DataFrame(), "sin_datos", None
     _conv_calls = _conv_df[_conv_df["tipo_registro"] == "convocatoria"].copy() if not _conv_df.empty else pd.DataFrame()
     if not _conv_calls.empty:
         _conv_calls = _conv_calls.sort_values(["estado", "cierre_dt", "apertura_dt", "orden"], na_position="last")
@@ -136,7 +150,7 @@ def render(ctx: dict) -> None:
             )
     _conv_ctx = "\n".join(_conv_ctx_rows) if _conv_ctx_rows else "  - Sin convocatorias curadas disponibles."
 
-    _matching_formal = matching_inst.copy() if matching_inst is not None else pd.DataFrame()
+    _matching_formal = matching_inst.copy() if matching_inst is not None and not (isinstance(matching_inst, pd.DataFrame) and matching_inst.empty) else pd.DataFrame()
     if not _matching_formal.empty and "score_total" in _matching_formal.columns:
         _matching_formal["score_total"] = pd.to_numeric(_matching_formal["score_total"], errors="coerce").fillna(0)
     _matching_summary_df = _build_matching_profiles_summary(_matching_formal) if not _matching_formal.empty else pd.DataFrame()
@@ -162,13 +176,19 @@ def render(ctx: dict) -> None:
         else "sin fecha"
     )
 
-    _portfolio_df = _load_portafolio_seed()
+    try:
+        _portfolio_df = _load_portafolio_seed()
+    except Exception:
+        _portfolio_df = pd.DataFrame()
     _portfolio_ctx = "\n".join(
         f"  - {r.nombre_activo} | TRL estimado {r.trl_estimado} | {r.potencial_transferencia}"
         for _, r in _portfolio_df.head(6).iterrows()
     ) if not _portfolio_df.empty else "  - No hay portafolio tecnológico cargado."
 
-    _entity_df, _rel_df = _load_entity_model_tables()
+    try:
+        _entity_df, _rel_df = _load_entity_model_tables()
+    except Exception:
+        _entity_df, _rel_df = pd.DataFrame(), pd.DataFrame()
     _entity_counts = _build_entity_observed_counts(
         pub=pub, ch=ch, auth=auth,
         entity_personas=entity_personas,
@@ -235,13 +255,12 @@ def render(ctx: dict) -> None:
         f"  - {str(r.get('proyecto_tc') or r.get('titulo') or r.get('fuente') or 'Proyecto TC')}"
         for _, r in iaea_tc.head(8).iterrows()
     ) if not iaea_tc.empty else "  - Sin registros IAEA TC cargados."
-    _patents_key = os.environ.get("PATENTSVIEW_API_KEY") or st.secrets.get("PATENTSVIEW_API_KEY", "")
     _patents_ctx = (
         f"Se detectaron {len(patents)} patentes o registros de PI cargados."
         if not patents.empty else (
             "No hay patentes integradas en la base actual; la ruta oficial existe en "
             "`Scripts/fetch_patentsview_patents.py`, pero sigue pendiente la credencial `PATENTSVIEW_API_KEY`."
-            if not _patents_key else
+            if not patents_key else
             "No hay patentes integradas en la base actual; no se debe inferir un portafolio de PI todavía."
         )
     )
@@ -354,16 +373,34 @@ def render(ctx: dict) -> None:
         _ror_pending_priority_ctx = "Sin cola priorizada cargada"
         _ror_pending_top_ctx = "Sin instituciones priorizadas resumidas"
 
+    _cited_by_total = int(pub["cited_by_count"].sum()) if not pub.empty and "cited_by_count" in pub.columns else 0
+    _cited_by_mean = pub["cited_by_count"].mean() if not pub.empty and "cited_by_count" in pub.columns else 0.0
+    _oa_mean = round(100 * pub["is_oa"].mean(), 1) if not pub.empty and "is_oa" in pub.columns else 0.0
+    _pub_enr_q1 = len(pub_enr[pub_enr["quartile"] == "Q1"]) if not pub_enr.empty and "quartile" in pub_enr.columns else 0
+    _pub_enr_q2 = len(pub_enr[pub_enr["quartile"] == "Q2"]) if not pub_enr.empty and "quartile" in pub_enr.columns else 0
+    _pub_enr_q3 = len(pub_enr[pub_enr["quartile"] == "Q3"]) if not pub_enr.empty and "quartile" in pub_enr.columns else 0
+    _pub_enr_q4 = len(pub_enr[pub_enr["quartile"] == "Q4"]) if not pub_enr.empty and "quartile" in pub_enr.columns else 0
+    _pub_enr_q12_pct = (
+        round(100 * len(pub_enr[pub_enr["quartile"].isin(["Q1", "Q2"])]) / max(1, len(pub_enr[pub_enr["quartile"].notna()])), 1)
+        if not pub_enr.empty and "quartile" in pub_enr.columns else 0.0
+    )
+    _ch_nombre_nunique = ch["nombre"].nunique() if not ch.empty and "nombre" in ch.columns else 0
+    _ch_universidad_nunique = ch["universidad"].nunique() if not ch.empty and "universidad" in ch.columns else 0
+    _ch_tipo_norm_ctx = (
+        ", ".join(f"{k} ({v})" for k, v in ch["tipo_norm"].value_counts().items())
+        if not ch.empty and "tipo_norm" in ch.columns else "Sin modalidades registradas"
+    )
+
     _system_prompt = f"""Eres el asistente del Observatorio Tecnológico de la Comisión Chilena de Energía Nuclear (CCHEN), Chile. Apoyas al equipo de I+D con análisis de datos, redacción de informes técnicos y vigilancia tecnológica.
 
 ## Datos actuales del observatorio (cifras reales, extraídas de OpenAlex + ANID + registros internos)
 
 ### Producción Científica
 - Total publicaciones: {len(pub)} trabajos (1990–2025)
-- Citas totales: {int(pub['cited_by_count'].sum()):,} | Promedio: {pub['cited_by_count'].mean():.1f} citas/paper
-- Papers con cuartil SJR: {len(pub_enr)} → Q1: {len(pub_enr[pub_enr['quartile']=='Q1'])}, Q2: {len(pub_enr[pub_enr['quartile']=='Q2'])}, Q3: {len(pub_enr[pub_enr['quartile']=='Q3'])}, Q4: {len(pub_enr[pub_enr['quartile']=='Q4'])}
-- % Q1+Q2: {round(100*len(pub_enr[pub_enr['quartile'].isin(['Q1','Q2'])])/max(1,len(pub_enr[pub_enr['quartile'].notna()])),1)}%
-- Acceso Abierto: {round(100*pub['is_oa'].mean(),1)}%
+- Citas totales: {_cited_by_total:,} | Promedio: {_cited_by_mean:.1f} citas/paper
+- Papers con cuartil SJR: {len(pub_enr)} → Q1: {_pub_enr_q1}, Q2: {_pub_enr_q2}, Q3: {_pub_enr_q3}, Q4: {_pub_enr_q4}
+- % Q1+Q2: {_pub_enr_q12_pct}%
+- Acceso Abierto: {_oa_mean}%
 - Top áreas: {', '.join(f"{a} ({n} papers)" for a,n in _top_areas)}
 - Top journals: {', '.join(f"{j} ({n})" for j,n in list(_top_journals.items())[:5])}
 
@@ -380,8 +417,8 @@ def render(ctx: dict) -> None:
 - Monto total: ${_monto_mm:.0f} MM CLP
 
 ### Capital Humano I+D (2022–2025)
-- Registros: {len(ch)} | Personas únicas: {ch['nombre'].nunique()} | Universidades: {ch['universidad'].nunique()}
-- Modalidades: {', '.join(f"{k} ({v})" for k,v in ch['tipo_norm'].value_counts().items())}
+- Registros: {len(ch)} | Personas únicas: {_ch_nombre_nunique} | Universidades: {_ch_universidad_nunique}
+- Modalidades: {_ch_tipo_norm_ctx}
 - Centros receptores: {_centros_ctx}
 - Tutores principales: {_tutores_ctx}
 - Universidades de origen (top 10): {_univs_ctx}
@@ -455,6 +492,74 @@ def render(ctx: dict) -> None:
 - Para comparaciones internacionales usa tu conocimiento general aclarando que es referencial.
 - No inventes cifras que no estén arriba. Si algo no está en los datos, dilo explícitamente.
 """
+
+    _context_trace = {
+        "pub": len(pub),
+        "pub_enr": len(pub_enr),
+        "anid": len(anid),
+        "ch": len(ch),
+        "orcid": len(orcid),
+        "conv_calls": len(_conv_calls),
+        "conv_open": len(_conv_open),
+        "matching_formal": len(_matching_formal),
+        "portfolio": len(_portfolio_df),
+        "patents": len(patents),
+        "funding_plus": len(funding_plus),
+        "iaea_tc": len(iaea_tc),
+        "entity_personas": len(entity_personas),
+        "convenios": len(convenios),
+        "acuerdos": len(acuerdos),
+        "datacite": len(datacite),
+        "openaire": len(openaire),
+    }
+
+    return _system_prompt, _context_trace
+
+
+def render(ctx: dict) -> None:
+    """Render the Asistente I+D section."""
+    pub              = ctx["pub"]
+    pub_enr          = ctx["pub_enr"]
+    auth             = ctx["auth"]
+    anid             = ctx["anid"]
+    ch               = ctx["ch"]
+    ch_ej            = ctx["ch_ej"]
+    ch_adv           = ctx["ch_adv"]
+    orcid            = ctx["orcid"]
+    ror_registry     = ctx["ror_registry"]
+    ror_pending_review = ctx["ror_pending_review"]
+    funding_plus     = ctx["funding_plus"]
+    iaea_tc          = ctx["iaea_tc"]
+    matching_inst    = ctx["matching_inst"]
+    entity_personas  = ctx["entity_personas"]
+    entity_projects  = ctx["entity_projects"]
+    entity_convocatorias = ctx["entity_convocatorias"]
+    entity_links     = ctx["entity_links"]
+    acuerdos         = ctx["acuerdos"]
+    convenios        = ctx["convenios"]
+    patents          = ctx["patents"]
+    datacite         = ctx["datacite"]
+    openaire         = ctx["openaire"]
+
+    assistant_access = _access_context()
+    st.title("Asistente I+D — CCHEN")
+    st.caption("Analiza las capas integradas del observatorio y genera informes técnicos con IA")
+    st.divider()
+
+    if assistant_access["auth_enabled"] and not assistant_access["can_view_sensitive"]:
+        st.warning(
+            "El asistente queda restringido mientras no exista una sesión autorizada, "
+            "porque el prompt incorpora contexto de capital humano y otros datos internos."
+        )
+        if assistant_access.get("auth_mode") == "internal":
+            st.info("Tu usuario beta no tiene habilitado el acceso sensible requerido para esta sección.")
+        elif assistant_access["auth_supported"] and not assistant_access["is_logged_in"]:
+            if st.button("Iniciar sesión para habilitar el asistente", key="assistant_login"):
+                st.login()
+        st.stop()
+
+    _patents_key = os.environ.get("PATENTSVIEW_API_KEY") or st.secrets.get("PATENTSVIEW_API_KEY", "")
+    _system_prompt, _ctx_trace = _build_assistant_system_prompt(ctx, patents_key=_patents_key)
 
     # ── API Key (Groq) ──
     api_key = os.environ.get("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY", "")
