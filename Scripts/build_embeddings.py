@@ -38,6 +38,22 @@ DEFAULT_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"  # 480 MB, soporta espa�
 BATCH_SIZE    = 64
 
 
+def _best_abstract(df: pd.DataFrame, candidates: list[str]) -> pd.Series:
+    present = [c for c in candidates if c in df.columns]
+    if not present:
+        return pd.Series([""] * len(df), index=df.index)
+
+    tmp = df[present].copy()
+    for col in present:
+        s = tmp[col].astype(str).str.strip()
+        s = s.replace({"nan": "", "None": "", "null": "", "NaN": ""})
+        tmp[col] = s
+
+    # Toma el primer abstract no vacío por fila según prioridad en `candidates`.
+    best = tmp.replace("", pd.NA).bfill(axis=1).iloc[:, 0].fillna("")
+    return best.astype(str)
+
+
 def _load_embedding_corpus_from_data_loader() -> pd.DataFrame:
     try:
         import data_loader
@@ -63,12 +79,10 @@ def _load_embedding_corpus_from_data_loader() -> pd.DataFrame:
             )
             pub = pub.merge(bertopic_docs, on="openalex_id", how="left", suffixes=("", "_bt"))
 
-    if "abstract_best" in pub.columns and pub["abstract_best"].astype(str).str.strip().ne("").any():
-        pub["abstract_for_embeddings"] = pub["abstract_best"]
-    elif "abstract" in pub.columns:
-        pub["abstract_for_embeddings"] = pub["abstract"]
-    else:
-        pub["abstract_for_embeddings"] = ""
+    pub["abstract_for_embeddings"] = _best_abstract(
+        pub,
+        ["abstract_best", "abstract", "abstract_cr", "abstract_pf", "tldr"],
+    )
 
     return pub
 
@@ -96,12 +110,10 @@ def _load_embedding_corpus() -> pd.DataFrame:
                     abs_df[col] = abs_df[col].where(abs_df[col].astype(str).str.strip() != "", abs_df[works_col])
                     abs_df = abs_df.drop(columns=[works_col])
 
-        if "abstract_best" in abs_df.columns and abs_df["abstract_best"].astype(str).str.strip().ne("").any():
-            abs_df["abstract_for_embeddings"] = abs_df["abstract_best"]
-        elif "abstract" in abs_df.columns:
-            abs_df["abstract_for_embeddings"] = abs_df["abstract"]
-        else:
-            abs_df["abstract_for_embeddings"] = ""
+        abs_df["abstract_for_embeddings"] = _best_abstract(
+            abs_df,
+            ["abstract_best", "abstract", "abstract_cr", "abstract_pf", "tldr"],
+        )
 
         return abs_df
 
