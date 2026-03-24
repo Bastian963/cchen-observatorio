@@ -10,6 +10,11 @@ on:
         required: false
         type: boolean
         default: false
+      min_abstract_coverage:
+        description: "Umbral mínimo de cobertura de abstracts (%) para warning"
+        required: false
+        type: string
+        default: "45"
 
 jobs:
   refresh-semantic-index:
@@ -31,10 +36,15 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-          MIN_ABSTRACT_COVERAGE: "45"
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.force_refresh }}" == "true" ]]; then
-            python Scripts/refresh_semantic_index.py --force --min-abstract-coverage "$MIN_ABSTRACT_COVERAGE"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            THRESHOLD="${{ inputs.min_abstract_coverage }}"
           else
-            python Scripts/refresh_semantic_index.py --min-abstract-coverage "$MIN_ABSTRACT_COVERAGE"
+            THRESHOLD="45"
+          fi
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.force_refresh }}" == "true" ]]; then
+            python Scripts/refresh_semantic_index.py --force --min-abstract-coverage "$THRESHOLD"
+          else
+            python Scripts/refresh_semantic_index.py --min-abstract-coverage "$THRESHOLD"
           fi
