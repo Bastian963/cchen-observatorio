@@ -5,6 +5,12 @@ on:
     # Cada lunes a las 08:00 UTC (05:00 Chile)
     - cron: "0 8 * * 1"
   workflow_dispatch:  # Permite ejecución manual desde GitHub
+    inputs:
+      send_real_email:
+        description: "Enviar boletin real por Brevo (si no, queda en dry-run)"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   monitor:
@@ -44,9 +50,22 @@ jobs:
 
       # ── Módulo Difusión: boletín semanal HTML ────────────────────────────
 
-      - name: Generar boletín semanal
+      - name: Generar boletín semanal (+ Brevo en modo seguro)
         continue-on-error: true
-        run: python Scripts/generar_boletin.py
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          BREVO_FROM_EMAIL: ${{ secrets.BREVO_FROM_EMAIL }}
+          BREVO_FROM_NAME: Observatorio CCHEN
+          BREVO_TO_EMAILS: b.ayalainostroza@gmail.com
+          BREVO_REPLY_TO: b.ayalainostroza@gmail.com
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.send_real_email }}" == "true" ]]; then
+            echo "Modo: envio real Brevo (workflow manual)"
+            python Scripts/generar_boletin.py --send-brevo --confirm-send
+          else
+            echo "Modo: dry-run Brevo (sin envio real)"
+            python Scripts/generar_boletin.py --send-brevo --dry-run
+          fi
 
       - name: Publicar boletín en docs/ (GitHub Pages)
         continue-on-error: true
