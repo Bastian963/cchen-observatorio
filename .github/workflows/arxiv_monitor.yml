@@ -120,23 +120,9 @@ jobs:
         run: |
           git config user.name  "CCHEN Observatory Bot"
           git config user.email "observatory@cchen.cl"
-          FILES=(
-            Data/Vigilancia/arxiv_monitor.csv
-            Data/Vigilancia/arxiv_state.json
-            Data/Vigilancia/news_monitor.csv
-            Data/Vigilancia/news_state.json
-            Data/Vigilancia/convocatorias_curadas.csv
-            Data/Vigilancia/iaea_inis_monitor.csv
-            Data/Vigilancia/iaea_inis_state.json
-            Data/Vigilancia/calidad_datos.csv
-          )
 
-          for f in "${FILES[@]}"; do
-            if [ -f "$f" ]; then
-              git add "$f"
-            fi
-          done
-
+          # Solo los archivos tracked (Docs/) se commitean.
+          # Data/ está en .gitignore → los CSVs de vigilancia van a Supabase, no al repo.
           if [ -d "Docs/boletines" ]; then
             git add Docs/boletines/ Docs/index.html
           fi
@@ -144,7 +130,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "Sin cambios para commit."
           else
-            git commit -m "chore(data): vigilancia + boletin update $(date +%Y-%m-%d)"
+            git commit -m "chore(docs): boletin semanal $(date +%Y-%m-%d)"
             git push
           fi
 
