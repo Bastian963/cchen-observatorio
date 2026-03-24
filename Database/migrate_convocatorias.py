@@ -61,7 +61,10 @@ def _migrate(table, csv_path, pk, cols):
     df = pd.read_csv(csv_path, low_memory=False)
     print(f"  Leídas: {len(df)} filas")
     df = df[[c for c in cols if c in df.columns]]
-    df = df.dropna(subset=[pk]).drop_duplicates(subset=[pk])
+
+    # pk puede ser "col1" o "col1,col2" (PK compuesta)
+    pk_cols = [c.strip() for c in pk.split(",")]
+    df = df.dropna(subset=pk_cols).drop_duplicates(subset=pk_cols)
 
     # Convertir booleanos a string para evitar conflictos de tipo
     for col in df.select_dtypes(include=["bool"]).columns:
@@ -97,6 +100,26 @@ if __name__ == "__main__":
         cols     = ["rule_id", "perfil_id", "exact_aliases", "secondary_aliases",
                     "requiere_doctorado", "requiere_institucion", "requiere_transferencia",
                     "requiere_red_internacional", "requiere_capacidad_instrumental", "notes"],
+    )
+
+    errors += _migrate(
+        table    = "convocatorias_matching_institucional",
+        csv_path = ROOT / "Data" / "Vigilancia" / "convocatorias_matching_institucional.csv",
+        pk       = "conv_id,perfil_id",
+        cols     = ["conv_id", "convocatoria_titulo", "estado", "categoria", "organismo",
+                    "perfil_objetivo", "perfil_id", "perfil_nombre", "owner_unit",
+                    "score_total", "score_breakdown", "eligibility_status",
+                    "readiness_status", "recommended_action", "deadline_class",
+                    "evidence_summary", "url", "relevancia_cchen",
+                    "apertura_iso", "cierre_iso", "match_type", "last_evaluated_at"],
+    )
+
+    errors += _migrate(
+        table    = "perfiles_institucionales",
+        csv_path = ROOT / "Data" / "Vigilancia" / "perfiles_institucionales_cchen.csv",
+        pk       = "perfil_id",
+        cols     = ["perfil_id", "perfil_nombre", "owner_unit", "profile_aliases",
+                    "secondary_aliases", "descripcion"],
     )
 
     print(f"\n{'[OK] Migración completa.' if errors == 0 else f'[WARN] {errors} errores.'}")

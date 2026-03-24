@@ -114,6 +114,17 @@ jobs:
             echo "[WARN] Migracion vigilancia fallo; se continua sin bloquear el workflow"
           fi
 
+      - name: Migrar convocatorias y matching a Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          if python Database/migrate_convocatorias.py; then
+            echo "Migracion convocatorias OK"
+          else
+            echo "[WARN] Migracion convocatorias fallo; se continua sin bloquear el workflow"
+          fi
+
       # ── Commit y push ────────────────────────────────────────────────────
 
       - name: Commit y push si hay cambios
