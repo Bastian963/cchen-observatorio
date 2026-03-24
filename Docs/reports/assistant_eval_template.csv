@@ -1,0 +1,11 @@
+query_id,query,expected_focus,must_include_keywords,score_context_relevance,score_answer_quality,hallucination_flag,reviewer_notes
+Q01,"Diagnostica la produccion cientifica reciente de CCHEN y sus areas mas activas.",produccion_cientifica,"publicaciones;areas;citas",,,,
+Q02,"Que oportunidades de financiamiento ANID y complementario son mas estrategicas para CCHEN?",financiamiento_y_matching,"ANID;matching;score_total",,,,
+Q03,"Resume riesgos y fortalezas del capital humano I+D en CCHEN.",capital_humano,"capital humano;riesgo;fortaleza",,,,
+Q04,"Que evidencia hay sobre dosimetria y seguridad radiologica en publicaciones CCHEN?",seguridad_radiologica,"dosimetria;seguridad;radiologica",,,,
+Q05,"Analiza colaboracion internacional de CCHEN: instituciones y paises principales.",colaboracion_internacional,"colaboracion;instituciones;paises",,,,
+Q06,"Identifica tendencias en medicina nuclear e imagenologia en el corpus CCHEN.",medicina_nuclear,"medicina nuclear;imagenologia;tendencia",,,,
+Q07,"Que temas de BERTopic dominan y como se relacionan con prioridades institucionales?",bertopic_temas,"BERTopic;tema;prioridad",,,,
+Q08,"Cuales son las convocatorias abiertas con mejor calce para perfiles institucionales?",convocatorias_matching,"convocatorias;abiertas;recommended_action",,,,
+Q09,"Que evidencia de transferencia tecnologica existe y que vacios persisten?",transferencia,"transferencia;portafolio;vacios",,,,
+Q10,"Dame un resumen ejecutivo para directivos con hallazgos accionables.",resumen_ejecutivo,"resumen ejecutivo;accionable;recomendaciones",,,,
