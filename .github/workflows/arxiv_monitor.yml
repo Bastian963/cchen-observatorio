@@ -48,6 +48,10 @@ jobs:
         continue-on-error: true
         run: python Scripts/generar_boletin.py
 
+      - name: Publicar boletín en docs/ (GitHub Pages)
+        continue-on-error: true
+        run: python Scripts/build_boletines_index.py
+
       # ── Módulo Gobernanza: calidad de datos ─────────────────────────────
 
       - name: Verificar calidad de datos
@@ -90,6 +94,10 @@ jobs:
 
           if [ -d "Data/Boletines" ]; then
             git add Data/Boletines/
+          fi
+
+          if [ -d "docs" ]; then
+            git add docs/
           fi
 
           if git diff --staged --quiet; then
