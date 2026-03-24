@@ -33,12 +33,20 @@ jobs:
       # ── Módulo Vigilancia ────────────────────────────────────────────────
 
       - name: Ejecutar monitor arXiv
-        continue-on-error: true
-        run: python Scripts/arxiv_monitor.py
+        run: |
+          if python Scripts/arxiv_monitor.py; then
+            echo "arXiv monitor OK"
+          else
+            echo "[WARN] arXiv monitor fallo; se continua sin bloquear el workflow"
+          fi
 
       - name: Ejecutar monitor de noticias (Google News)
-        continue-on-error: true
-        run: python Scripts/news_monitor.py
+        run: |
+          if python Scripts/news_monitor.py; then
+            echo "News monitor OK"
+          else
+            echo "[WARN] News monitor fallo; se continua sin bloquear el workflow"
+          fi
 
       - name: Ejecutar radar de convocatorias (ANID)
         # continue-on-error porque depende de scraping HTML del sitio de ANID
