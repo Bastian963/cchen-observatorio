@@ -111,10 +111,6 @@ jobs:
             fi
           done
 
-          if [ -d "Data/Boletines" ]; then
-            git add Data/Boletines/
-          fi
-
           if [ -d "Docs/boletines" ]; then
             git add Docs/boletines/ Docs/index.html
           fi
