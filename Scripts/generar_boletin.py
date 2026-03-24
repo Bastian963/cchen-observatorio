@@ -9,13 +9,26 @@ Uso:
     python3 Scripts/generar_boletin.py            # semana actual
     python3 Scripts/generar_boletin.py --weeks 2  # últimas 2 semanas
     python3 Scripts/generar_boletin.py --all       # todo el historial disponible
+  python3 Scripts/generar_boletin.py --send-brevo --dry-run
+  python3 Scripts/generar_boletin.py --send-brevo --confirm-send
+
+Variables de entorno para Brevo:
+  BREVO_API_KEY       (obligatoria para enviar)
+  BREVO_FROM_EMAIL    (obligatoria para enviar)
+  BREVO_FROM_NAME     (opcional, default: Observatorio CCHEN)
+  BREVO_TO_EMAILS     (obligatoria para enviar, lista separada por comas)
+  BREVO_REPLY_TO      (opcional)
+  BREVO_SUBJECT       (opcional)
 """
 
 import datetime
 import argparse
 import sys
+import os
+import json
 import pandas as pd
 from pathlib import Path
+from urllib.request import Request, urlopen
 
 BASE     = Path(__file__).parent.parent
 DATA_PUB = BASE / "Data" / "Publications"
@@ -375,6 +388,110 @@ def generate_html(news_df, papers_df, weeks_back, week_label, news_fallback=Fals
 </html>"""
 
 
+def _split_emails(raw: str) -> list[str]:
+  return [e.strip() for e in str(raw or "").split(",") if e.strip()]
+
+
+def send_via_brevo(
+  html: str,
+  subject: str,
+  to_emails: list[str],
+  from_email: str,
+  from_name: str,
+  api_key: str,
+  reply_to: str = "",
+  dry_run: bool = True,
+) -> bool:
+  """Send bulletin using Brevo transactional email API."""
+  payload = {
+    "sender": {"name": from_name, "email": from_email},
+    "to": [{"email": e} for e in to_emails],
+    "subject": subject,
+    "htmlContent": html,
+  }
+  if reply_to:
+    payload["replyTo"] = {"email": reply_to}
+
+  if dry_run:
+    print("\n[DRY-RUN] Brevo habilitado, pero no se enviará correo real.")
+    print(f"[DRY-RUN] Destinatarios: {', '.join(to_emails)}")
+    print(f"[DRY-RUN] Asunto: {subject}")
+    print(f"[DRY-RUN] Tamaño HTML: {len(html):,} caracteres")
+    return True
+
+  req = Request(
+    "https://api.brevo.com/v3/smtp/email",
+    data=json.dumps(payload).encode("utf-8"),
+    headers={
+      "accept": "application/json",
+      "api-key": api_key,
+      "content-type": "application/json",
+      "user-agent": "CCHEN-Observatorio/0.2",
+    },
+    method="POST",
+  )
+
+  with urlopen(req, timeout=60) as resp:
+    body = resp.read().decode("utf-8", errors="replace")
+    print(f"\n[OK] Brevo envío HTTP {resp.status}")
+    print(f"[OK] Respuesta: {body[:220]}")
+  return True
+
+
+def maybe_send_brevo(html: str, year: int, week: int, args: argparse.Namespace) -> None:
+  if not args.send_brevo:
+    return
+
+  api_key = os.getenv("BREVO_API_KEY", "").strip()
+  from_email = os.getenv("BREVO_FROM_EMAIL", "").strip()
+  from_name = os.getenv("BREVO_FROM_NAME", "Observatorio CCHEN").strip()
+  to_emails = _split_emails(os.getenv("BREVO_TO_EMAILS", ""))
+  reply_to = os.getenv("BREVO_REPLY_TO", "").strip()
+
+  subject = (
+    os.getenv("BREVO_SUBJECT", "").strip()
+    or f"Boletin Cientifico CCHEN - {year} Semana {week:02d}"
+  )
+
+  missing = []
+  if not api_key:
+    missing.append("BREVO_API_KEY")
+  if not from_email:
+    missing.append("BREVO_FROM_EMAIL")
+  if not to_emails:
+    missing.append("BREVO_TO_EMAILS")
+
+  if missing:
+    print("\n[WARN] Envío Brevo omitido. Faltan variables:")
+    for item in missing:
+      print(f"  - {item}")
+    print("[WARN] Consejo: usa --send-brevo --dry-run para validar configuración sin enviar.")
+    return
+
+  dry_run = True
+  if args.confirm_send:
+    dry_run = False
+  if args.dry_run:
+    dry_run = True
+
+  if not dry_run:
+    print("\n[ENVIO REAL] Se enviará correo por Brevo.")
+
+  try:
+    send_via_brevo(
+      html=html,
+      subject=subject,
+      to_emails=to_emails,
+      from_email=from_email,
+      from_name=from_name,
+      api_key=api_key,
+      reply_to=reply_to,
+      dry_run=dry_run,
+    )
+  except Exception as exc:
+    print(f"\n[ERROR] Falló envío Brevo: {exc}")
+
+
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 def main():
@@ -385,6 +502,12 @@ def main():
                         help="Incluir todo el historial disponible")
     parser.add_argument("--output", type=str, default=None,
                         help="Ruta de salida (default: Data/Boletines/boletin_YYYY-WNN.html)")
+    parser.add_argument("--send-brevo", action="store_true",
+              help="Intentar envío por Brevo usando variables de entorno")
+    parser.add_argument("--dry-run", action="store_true",
+              help="Prueba segura: valida configuración Brevo pero no envía correo")
+    parser.add_argument("--confirm-send", action="store_true",
+              help="Confirma envío real por Brevo (sin este flag, queda en modo seguro)")
     args = parser.parse_args()
 
     weeks_back = 0 if args.all else args.weeks
@@ -415,6 +538,9 @@ def main():
     out_path.write_text(html, encoding="utf-8")
     print(f"\n✓ Boletín guardado en: {out_path}")
     print(f"  Abre en tu navegador o adjunta al correo.")
+
+    maybe_send_brevo(html=html, year=year, week=week, args=args)
+
     return str(out_path)
 
 
