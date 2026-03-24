@@ -20,10 +20,10 @@ jobs:
 
     steps:
       - name: Checkout repositorio
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configurar Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -33,9 +33,11 @@ jobs:
       # ── Módulo Vigilancia ────────────────────────────────────────────────
 
       - name: Ejecutar monitor arXiv
+        continue-on-error: true
         run: python Scripts/arxiv_monitor.py
 
       - name: Ejecutar monitor de noticias (Google News)
+        continue-on-error: true
         run: python Scripts/news_monitor.py
 
       - name: Ejecutar radar de convocatorias (ANID)
