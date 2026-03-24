@@ -138,6 +138,17 @@ def get_table_load_status() -> dict[str, dict]:
 
 def _read_csv_fast(path: Path) -> pd.DataFrame:
     """Lee CSVs con DuckDB si está disponible; si no, usa pandas."""
+    try:
+        mtime_ns = path.stat().st_mtime_ns
+    except OSError:
+        mtime_ns = -1
+    # Retornamos copia para evitar mutaciones compartidas entre llamadas cacheadas.
+    return _read_csv_fast_cached(str(path), int(mtime_ns)).copy()
+
+
+@lru_cache(maxsize=128)
+def _read_csv_fast_cached(path_str: str, mtime_ns: int) -> pd.DataFrame:
+    path = Path(path_str)
     if duckdb is None:
         return pd.read_csv(path)
 
@@ -218,16 +229,10 @@ def _fetch_supabase_table(table_name: str, use_service_role: bool = False) -> pd
 
     table_config = SENSITIVE_TABLE_CONFIG if use_service_role else PUBLIC_TABLE_CONFIG
     order_by = table_config.get(table_name, {}).get("order_by")
-    query = client.table(table_name).select("*", count="exact")
-    if order_by:
-        query = query.order(order_by)
+    rows: list[dict] = []
+    start = 0
 
-    first = query.range(0, SUPABASE_PAGE_SIZE - 1).execute()
-    rows = list(first.data or [])
-    total = int(first.count or len(rows))
-
-    start = SUPABASE_PAGE_SIZE
-    while start < total:
+    while True:
         page = client.table(table_name).select("*")
         if order_by:
             page = page.order(order_by)
@@ -236,6 +241,8 @@ def _fetch_supabase_table(table_name: str, use_service_role: bool = False) -> pd
         if not batch:
             break
         rows.extend(batch)
+        if len(batch) < SUPABASE_PAGE_SIZE:
+            break
         start += SUPABASE_PAGE_SIZE
 
     return pd.DataFrame(rows)

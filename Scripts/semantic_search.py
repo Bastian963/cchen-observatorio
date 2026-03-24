@@ -12,19 +12,31 @@ Uso como script:
 """
 from __future__ import annotations
 import argparse
+import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from dotenv import load_dotenv
 
 ROOT    = Path(__file__).resolve().parents[1]
 PUB_DIR = ROOT / "Data" / "Publications"
 EMB_FILE  = PUB_DIR / "cchen_embeddings.npy"
 META_FILE = PUB_DIR / "cchen_embeddings_meta.csv"
+load_dotenv(ROOT / "Database" / ".env")
 
 _MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 _embeddings: np.ndarray | None = None
 _meta: pd.DataFrame | None = None
+_model = None
+
+
+def _result_columns() -> list[str]:
+    return ["openalex_id", "doi", "title", "year", "abstract", "score"]
+
+
+def _empty_result() -> pd.DataFrame:
+    return pd.DataFrame(columns=_result_columns())
 
 
 def _load_artifacts() -> tuple[np.ndarray, pd.DataFrame] | tuple[None, None]:
@@ -34,39 +46,53 @@ def _load_artifacts() -> tuple[np.ndarray, pd.DataFrame] | tuple[None, None]:
             return None, None
         _embeddings = np.load(EMB_FILE)
         _meta = pd.read_csv(META_FILE).fillna("")
+        if "abstract" not in _meta.columns:
+            _meta["abstract"] = ""
     return _embeddings, _meta
+
+
+def _get_model():
+    global _model
+    if _model is None:
+        from sentence_transformers import SentenceTransformer
+        _model = SentenceTransformer(_MODEL_NAME)
+    return _model
 
 
 def _encode_query(query: str) -> "np.ndarray | None":
     try:
-        from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer(_MODEL_NAME)
+        model = _get_model()
         return model.encode([query], normalize_embeddings=True)[0]
     except Exception:
         return None
+
+
+def _resolve_supabase_credentials() -> tuple[str, str]:
+    url = os.getenv("SUPABASE_URL") or os.getenv("supabase_url", "")
+    key = os.getenv("SUPABASE_KEY") or os.getenv("supabase_key", "")
+    if url and key:
+        return url, key
+
+    try:
+        import streamlit as st
+        _sb_cfg = st.secrets.get("supabase", {})
+        url = url or _sb_cfg.get("url", "")
+        key = key or _sb_cfg.get("anon_key", "") or _sb_cfg.get("service_role_key", "")
+    except Exception:
+        pass
+    return url, key
 
 
 def _search_supabase(query: str, top_k: int) -> pd.DataFrame:
     """Búsqueda vectorial vía Supabase pgvector (fallback cuando no hay .npy local)."""
     q_vec = _encode_query(query)
     if q_vec is None:
-        return pd.DataFrame(columns=["openalex_id", "doi", "title", "year", "score"])
+        return _empty_result()
     try:
-        import os
         from supabase import create_client
-        url = os.getenv("SUPABASE_URL") or os.getenv("supabase_url", "")
-        key = os.getenv("SUPABASE_KEY") or os.getenv("supabase_key", "")
-        # En Streamlit Cloud los secrets se exponen como variables de entorno
+        url, key = _resolve_supabase_credentials()
         if not url or not key:
-            try:
-                import streamlit as st
-                _sb_cfg = st.secrets.get("supabase", {})
-                url = url or _sb_cfg.get("url", "")
-                key = key or _sb_cfg.get("anon_key", "") or _sb_cfg.get("service_role_key", "")
-            except Exception:
-                pass
-        if not url or not key:
-            return pd.DataFrame(columns=["openalex_id", "doi", "title", "year", "score"])
+            return _empty_result()
 
         client = create_client(url, key)
         resp = client.rpc(
@@ -74,12 +100,14 @@ def _search_supabase(query: str, top_k: int) -> pd.DataFrame:
             {"query_embedding": q_vec.tolist(), "match_count": top_k},
         ).execute()
         if not resp.data:
-            return pd.DataFrame(columns=["openalex_id", "doi", "title", "year", "score"])
+            return _empty_result()
         df = pd.DataFrame(resp.data)
         df = df.rename(columns={"similarity": "score"})
-        return df[["openalex_id", "doi", "title", "year", "score"]]
+        if "abstract" not in df.columns:
+            df["abstract"] = ""
+        return df[[c for c in _result_columns() if c in df.columns]]
     except Exception:
-        return pd.DataFrame(columns=["openalex_id", "doi", "title", "year", "score"])
+        return _empty_result()
 
 
 def search(query: str, top_k: int = 10) -> pd.DataFrame:
@@ -93,12 +121,12 @@ def search(query: str, top_k: int = 10) -> pd.DataFrame:
         # Ruta local: más rápida
         q_vec = _encode_query(query)
         if q_vec is None:
-            return pd.DataFrame(columns=["openalex_id", "doi", "title", "year", "score"])
+            return _empty_result()
         scores = emb @ q_vec
         top_idx = np.argsort(scores)[::-1][:top_k]
         result = meta.iloc[top_idx].copy()
         result["score"] = scores[top_idx].round(4)
-        return result.reset_index(drop=True)
+        return result[[c for c in _result_columns() if c in result.columns]].reset_index(drop=True)
 
     # Ruta Supabase: cuando los archivos locales no existen (Streamlit Cloud)
     return _search_supabase(query, top_k)
@@ -108,17 +136,8 @@ def is_available() -> bool:
     """True si la búsqueda semántica está disponible (local o Supabase)."""
     if EMB_FILE.exists() and META_FILE.exists():
         return True
-    # Verificar si Supabase está configurado
-    try:
-        import os
-        url = os.getenv("SUPABASE_URL") or os.getenv("supabase_url", "")
-        if url:
-            return True
-        import streamlit as st
-        _sb_cfg = st.secrets.get("supabase", {})
-        return bool(_sb_cfg.get("url"))
-    except Exception:
-        return False
+    url, key = _resolve_supabase_credentials()
+    return bool(url and key)
 
 
 if __name__ == "__main__":

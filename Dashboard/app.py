@@ -520,6 +520,9 @@ def _bootstrap_dashboard_env():
 _bootstrap_dashboard_env()
 
 
+_LOGO_PATH = Path(__file__).parent / "assets" / "logo_cchen360.png"
+
+
 def _render_beta_access_gate() -> None:
     auth_cfg = _internal_auth_config()
     if not auth_cfg.get("enabled"):
@@ -528,6 +531,11 @@ def _render_beta_access_gate() -> None:
     access = _access_context()
     if access.get("is_logged_in"):
         return
+
+    if _LOGO_PATH.exists():
+        col_l, col_logo, col_r = st.columns([1, 1, 1])
+        with col_logo:
+            st.image(str(_LOGO_PATH), width=220)
 
     st.markdown(
         f"""
@@ -909,7 +917,7 @@ _DATASET_METADATA = {
 _ACTIVE_SECTION_CTX = None
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=900, max_entries=256)
 def _load_dataset_cached(dataset_key: str, can_view_sensitive: bool):
     loader = _DATASET_LOADERS.get(dataset_key)
     if loader is None:
@@ -917,16 +925,21 @@ def _load_dataset_cached(dataset_key: str, can_view_sensitive: bool):
     return loader(can_view_sensitive)
 
 
+@st.cache_data(show_spinner=False, ttl=900, max_entries=64)
+def _load_section_datasets_cached(section_name: str, can_view_sensitive: bool) -> dict:
+    dataset_keys = _SECTION_DATASETS.get(section_name, ())
+    return {
+        key: _load_dataset_cached(key, can_view_sensitive)
+        for key in dataset_keys
+    }
+
+
 def _current_section_name() -> str:
     return str(globals().get("seccion") or "Panel de Indicadores")
 
 
 def _build_section_ctx(section_name: str, can_view_sensitive: bool) -> dict:
-    dataset_keys = _SECTION_DATASETS.get(section_name, ())
-    ctx = {
-        key: _load_dataset_cached(key, can_view_sensitive)
-        for key in dataset_keys
-    }
+    ctx = dict(_load_section_datasets_cached(section_name, can_view_sensitive))
     ctx["render_operational_strip"] = render_operational_strip
     ctx["open_dataset_inspector"] = open_dataset_inspector
     return ctx
@@ -2024,15 +2037,18 @@ def semaforo_badge(valor):
 
 with st.sidebar:
     access = _access_context()
-    st.markdown(
-        "<div style='padding:8px 4px 4px'>"
-        f"<div style='font-size:0.65rem;font-weight:600;letter-spacing:1.8px;"
-        f"text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:2px'>CCHEN</div>"
-        f"<div style='font-size:1.1rem;font-weight:700;color:#FFFFFF;line-height:1.3'>"
-        f"Observatorio<br>Tecnológico</div>"
-        f"</div>",
-        unsafe_allow_html=True
-    )
+    if _LOGO_PATH.exists():
+        st.image(str(_LOGO_PATH), width=160)
+    else:
+        st.markdown(
+            "<div style='padding:8px 4px 4px'>"
+            f"<div style='font-size:0.65rem;font-weight:600;letter-spacing:1.8px;"
+            f"text-transform:uppercase;color:rgba(255,255,255,0.45);margin-bottom:2px'>CCHEN</div>"
+            f"<div style='font-size:1.1rem;font-weight:700;color:#FFFFFF;line-height:1.3'>"
+            f"Observatorio<br>Tecnológico</div>"
+            f"</div>",
+            unsafe_allow_html=True
+        )
     st.markdown("---")
     seccion = st.radio("Sección del observatorio", [
         "Panel de Indicadores",

@@ -576,7 +576,7 @@ def render(ctx: dict) -> None:
                     )
                 else:
                     reply = (
-                        f"⚠️ El servicio LLM (Anthropic) no está disponible en este momento: `{e}`\n\n"
+                        f"⚠️ El servicio LLM (Groq) no está disponible en este momento: `{e}`\n\n"
                         f"Puedes explorar los datos directamente en las secciones del panel lateral."
                     )
                 st.markdown(reply)

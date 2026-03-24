@@ -25,11 +25,53 @@ import pandas as pd
 
 ROOT    = Path(__file__).resolve().parents[1]
 PUB_DIR = ROOT / "Data" / "Publications"
+WORKS_CSV = PUB_DIR / "cchen_openalex_works.csv"
+ABS_CSV   = PUB_DIR / "cchen_abstracts_merged.csv"
 OUT_EMB = PUB_DIR / "cchen_embeddings.npy"
 OUT_META= PUB_DIR / "cchen_embeddings_meta.csv"
 
 DEFAULT_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"  # 480 MB, soporta español e inglés
 BATCH_SIZE    = 64
+
+
+def _load_embedding_corpus() -> pd.DataFrame:
+    if ABS_CSV.exists():
+        abs_df = pd.read_csv(ABS_CSV, low_memory=False).fillna("")
+        abs_df = abs_df.drop_duplicates(subset=["openalex_id"])
+
+        if WORKS_CSV.exists():
+            works_df = pd.read_csv(WORKS_CSV, low_memory=False).fillna("")
+            works_df = works_df.drop_duplicates(subset=["openalex_id"])
+            merge_cols = [c for c in ["openalex_id", "doi", "title", "year"] if c in works_df.columns]
+            abs_df = abs_df.merge(
+                works_df[merge_cols],
+                on="openalex_id",
+                how="left",
+                suffixes=("", "_works"),
+            )
+            for col in ["doi", "title", "year"]:
+                works_col = f"{col}_works"
+                if works_col in abs_df.columns:
+                    if col not in abs_df.columns:
+                        abs_df[col] = ""
+                    abs_df[col] = abs_df[col].where(abs_df[col].astype(str).str.strip() != "", abs_df[works_col])
+                    abs_df = abs_df.drop(columns=[works_col])
+
+        if "abstract_best" in abs_df.columns and abs_df["abstract_best"].astype(str).str.strip().ne("").any():
+            abs_df["abstract_for_embeddings"] = abs_df["abstract_best"]
+        elif "abstract" in abs_df.columns:
+            abs_df["abstract_for_embeddings"] = abs_df["abstract"]
+        else:
+            abs_df["abstract_for_embeddings"] = ""
+
+        return abs_df
+
+    if not WORKS_CSV.exists():
+        return pd.DataFrame()
+
+    works_df = pd.read_csv(WORKS_CSV, low_memory=False).fillna("")
+    works_df["abstract_for_embeddings"] = ""
+    return works_df
 
 def main() -> None:
     parser = argparse.ArgumentParser()
@@ -38,16 +80,14 @@ def main() -> None:
     args = parser.parse_args()
 
     # Cargar publicaciones
-    in_csv = PUB_DIR / "cchen_openalex_works.csv"
-    if not in_csv.exists():
-        print(f"✗ No encontrado: {in_csv}")
+    pub = _load_embedding_corpus()
+    if pub.empty:
+        print(f"✗ No encontrado: {ABS_CSV} ni {WORKS_CSV}")
         return
-
-    pub = pd.read_csv(in_csv).fillna("")
 
     # Columna de texto: título + abstract
     text_col = "title" if "title" in pub.columns else "display_name"
-    abstract_col = "abstract" if "abstract" in pub.columns else None
+    abstract_col = "abstract_for_embeddings" if "abstract_for_embeddings" in pub.columns else None
 
     if abstract_col and abstract_col in pub.columns:
         pub["_text"] = (pub[text_col] + " " + pub[abstract_col]).str.strip()
@@ -92,7 +132,8 @@ def main() -> None:
     np.save(OUT_EMB, embeddings.astype("float32"))
 
     id_col = "openalex_id" if "openalex_id" in pub.columns else "id"
-    meta_cols = [c for c in [id_col, "doi", text_col, "year"] if c in pub.columns]
+    pub["abstract"] = pub[abstract_col] if abstract_col in pub.columns else ""
+    meta_cols = [c for c in [id_col, "doi", text_col, "year", "abstract"] if c in pub.columns]
     pub[meta_cols].to_csv(OUT_META, index=False)
 
     print(f"\n✓ Embeddings guardados:")
