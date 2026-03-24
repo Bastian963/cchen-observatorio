@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import datetime
 from pathlib import Path
+import sys
 
 import numpy as np
 import pandas as pd
@@ -29,9 +30,47 @@ WORKS_CSV = PUB_DIR / "cchen_openalex_works.csv"
 ABS_CSV   = PUB_DIR / "cchen_abstracts_merged.csv"
 OUT_EMB = PUB_DIR / "cchen_embeddings.npy"
 OUT_META= PUB_DIR / "cchen_embeddings_meta.csv"
+_DASHBOARD_DIR = ROOT / "Dashboard"
+if str(_DASHBOARD_DIR) not in sys.path:
+    sys.path.insert(0, str(_DASHBOARD_DIR))
 
 DEFAULT_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"  # 480 MB, soporta español e inglés
 BATCH_SIZE    = 64
+
+
+def _load_embedding_corpus_from_data_loader() -> pd.DataFrame:
+    try:
+        import data_loader
+    except Exception:
+        return pd.DataFrame()
+
+    try:
+        pub = data_loader.load_publications().copy().fillna("")
+    except Exception:
+        return pd.DataFrame()
+
+    try:
+        bertopic_docs = data_loader.load_bertopic_topics().copy().fillna("")
+    except Exception:
+        bertopic_docs = pd.DataFrame()
+
+    if not bertopic_docs.empty and "openalex_id" in bertopic_docs.columns:
+        abstract_cols = [c for c in ["abstract_best", "abstract"] if c in bertopic_docs.columns]
+        if abstract_cols:
+            bertopic_docs = (
+                bertopic_docs[["openalex_id", *abstract_cols]]
+                .drop_duplicates(subset=["openalex_id"])
+            )
+            pub = pub.merge(bertopic_docs, on="openalex_id", how="left", suffixes=("", "_bt"))
+
+    if "abstract_best" in pub.columns and pub["abstract_best"].astype(str).str.strip().ne("").any():
+        pub["abstract_for_embeddings"] = pub["abstract_best"]
+    elif "abstract" in pub.columns:
+        pub["abstract_for_embeddings"] = pub["abstract"]
+    else:
+        pub["abstract_for_embeddings"] = ""
+
+    return pub
 
 
 def _load_embedding_corpus() -> pd.DataFrame:
@@ -67,7 +106,7 @@ def _load_embedding_corpus() -> pd.DataFrame:
         return abs_df
 
     if not WORKS_CSV.exists():
-        return pd.DataFrame()
+        return _load_embedding_corpus_from_data_loader()
 
     works_df = pd.read_csv(WORKS_CSV, low_memory=False).fillna("")
     works_df["abstract_for_embeddings"] = ""
