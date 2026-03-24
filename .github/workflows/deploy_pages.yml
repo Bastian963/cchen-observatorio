@@ -1,0 +1,46 @@
+name: Publicar boletines en GitHub Pages
+
+on:
+  # Se activa automáticamente cuando el workflow semanal actualiza docs/
+  push:
+    branches: [main]
+    paths:
+      - "Docs/boletines/**"
+      - "Docs/index.html"
+  # También se puede lanzar manualmente
+  workflow_dispatch:
+
+# Permisos requeridos para GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Solo un deploy a la vez
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Subir artefacto de Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Publica desde Docs/ (donde está index.html y boletines/)
+          path: Docs/
+
+      - name: Desplegar en GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

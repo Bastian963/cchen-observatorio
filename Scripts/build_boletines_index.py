@@ -13,8 +13,8 @@ from pathlib import Path
 
 ROOT        = Path(__file__).resolve().parents[1]
 SRC_DIR     = ROOT / "Data" / "Boletines"
-DOCS_DIR    = ROOT / "docs" / "boletines"
-INDEX_TMPL  = ROOT / "docs" / "index.html"
+DOCS_DIR    = ROOT / "Docs" / "boletines"
+INDEX_TMPL  = ROOT / "Docs" / "index.html"
 
 DOCS_DIR.mkdir(parents=True, exist_ok=True)
 

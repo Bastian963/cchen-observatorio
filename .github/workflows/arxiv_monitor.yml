@@ -96,8 +96,8 @@ jobs:
             git add Data/Boletines/
           fi
 
-          if [ -d "docs" ]; then
-            git add docs/
+          if [ -d "Docs/boletines" ]; then
+            git add Docs/boletines/ Docs/index.html
           fi
 
           if git diff --staged --quiet; then
