@@ -1,0 +1,32 @@
+fuente,archivo,existe,filas,duplicados,cols_faltantes,completeness_min,year_fuera_rango,alertas,estado
+OpenAlex works,Data/Publications/cchen_openalex_works.csv,True,877,0,,source: 86%,50,"50 filas con año fuera de [1990, 2026]",OK
+Publications enriched,Data/Publications/cchen_publications_with_quartile_sjr.csv,True,616,0,,quartile: 67%,36,"36 filas con año fuera de [1990, 2026]",OK
+Authorships enriched,Data/Publications/cchen_authorships_enriched.csv,True,7971,0,,institution_country_code: 92%,0,,OK
+CrossRef enriched,Data/Publications/cchen_crossref_enriched.csv,True,764,0,,crossref_funders: 25%,0,Baja completeness en 'crossref_funders': 25% (umbral: 30%),ADVERTENCIA
+OpenAlex concepts,Data/Publications/cchen_openalex_concepts.csv,True,21348,0,,work_id: 100%,0,,OK
+Publications with concepts,Data/Publications/cchen_publications_with_concepts.csv,True,877,0,,year: 100%,0,,OK
+Publications full,Data/Publications/cchen_publications_full.csv,True,877,0,,year: 100%,0,,OK
+OpenAlex grants,Data/Publications/cchen_openalex_grants.csv,True,0,0,,,0,Archivo CSV vacío,ADVERTENCIA
+ANID proyectos,Data/ANID/RepositorioAnid_con_monto.csv,True,30,6,,monto_programa_num: 77%,0,6 duplicados en 'proyecto',OK
+Funding complementario,Data/Funding/cchen_funding_complementario.csv,True,2,0,,funding_id: 100%,0,,OK
+IAEA TC,Data/Funding/cchen_iaea_tc.csv,True,1,0,,proyecto_tc: 100%,0,,OK
+Funding complementario operativo,Data/Funding/cchen_funding_complementario.csv,True,2,0,,,0,,OK
+Convocatorias curadas,Data/Vigilancia/convocatorias_curadas.csv,True,26,0,,conv_id: 100%,0,,OK
+Perfiles institucionales,Data/Vigilancia/perfiles_institucionales_cchen.csv,True,6,0,,perfil_id: 100%,0,,OK
+Reglas de matching,Data/Vigilancia/convocatorias_matching_rules.csv,True,6,0,,rule_id: 100%,0,,OK
+Matching institucional,Data/Vigilancia/convocatorias_matching_institucional.csv,True,26,0,,conv_id: 100%,0,,OK
+Cobertura matching convocatorias,Data/Vigilancia/convocatorias_matching_institucional.csv,True,26,0,,,0,,OK
+Dataset maestro CH,Data/Capital humano CCHEN/salida_dataset_maestro/dataset_maestro_limpio.csv,True,112,0,,tipo_norm: 98%,0,,OK
+ORCID researchers,Data/Researchers/cchen_researchers_orcid.csv,True,48,0,,orcid_id: 100%,0,,OK
+Convenios nacionales,Data/Institutional/clean_Convenios_suscritos_por_la_Com.csv,True,84,0,,CONTRAPARTE DEL CONVENIO: 100%,0,,OK
+Acuerdos internacionales,Data/Institutional/clean_Acuerdos_e_instrumentos_intern.csv,True,91,0,,,0,,OK
+Institution registry ROR,Data/Institutional/cchen_institution_registry.csv,True,697,0,,canonical_name: 100%,0,,OK
+ROR pending review,Data/Institutional/ror_pending_review.csv,True,48,0,,canonical_name: 100%,0,,OK
+ROR pending review operativo,Data/Institutional/ror_pending_review.csv,True,48,0,,,0,,OK
+Entity registry personas,Data/Gobernanza/entity_registry_personas.csv,True,604,0,,persona_id: 100%,0,,OK
+Entity registry proyectos,Data/Gobernanza/entity_registry_proyectos.csv,True,24,0,,project_id: 100%,0,,OK
+Entity registry convocatorias,Data/Gobernanza/entity_registry_convocatorias.csv,True,26,0,,convocatoria_id: 100%,0,,OK
+Entity links,Data/Gobernanza/entity_links.csv,True,657,0,,origin_type: 100%,0,,OK
+INTEGRIDAD: authorships → publications,Publications/*,True,7971,0,,,0,,OK
+INTEGRIDAD: concepts → publications,Publications/*,True,21348,0,,,0,,OK
+Integridad entity_links,Data/Gobernanza/entity_links.csv,True,657,0,,,0,,OK

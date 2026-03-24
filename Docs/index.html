@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Observatorio Tecnológico I+D+i — CCHEN 360°</title>
+  <style>
+    :root {
+      --blue: #1a4f8a;
+      --red:  #c0392b;
+      --light: #f4f7fb;
+      --border: #dde3ec;
+      --text: #1e2533;
+      --muted: #6b7a99;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--light);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    header {
+      background: var(--blue);
+      color: #fff;
+      padding: 2rem 2.5rem 1.5rem;
+      border-bottom: 4px solid var(--red);
+    }
+    header .tag {
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.65);
+      margin-bottom: 0.4rem;
+    }
+    header h1 { font-size: 1.6rem; font-weight: 700; }
+    header p  { margin-top: 0.4rem; font-size: 0.95rem; color: rgba(255,255,255,0.8); }
+    main { max-width: 780px; margin: 2.5rem auto; padding: 0 1.5rem 4rem; }
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .card-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      text-decoration: none;
+      color: inherit;
+      transition: box-shadow 0.15s, border-color 0.15s;
+    }
+    .card:hover {
+      box-shadow: 0 2px 12px rgba(26,79,138,0.10);
+      border-color: var(--blue);
+    }
+    .card-icon {
+      font-size: 1.6rem;
+      flex-shrink: 0;
+      width: 2.5rem;
+      text-align: center;
+    }
+    .card-body { flex: 1; }
+    .card-title { font-weight: 600; font-size: 0.97rem; }
+    .card-desc  { font-size: 0.83rem; color: var(--muted); margin-top: 0.2rem; }
+    .badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      background: var(--light);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .badge.new { background: #e8f3ff; color: var(--blue); border-color: #b8d4f5; }
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="tag">Comisión Chilena de Energía Nuclear · Unidad I+D</div>
+  <h1>Observatorio Tecnológico I+D+i CCHEN 360°</h1>
+  <p>Boletines semanales de vigilancia tecnológica, publicaciones y convocatorias</p>
+</header>
+
+<main>
+  <p class="section-title">Boletines disponibles</p>
+  <div class="card-list" id="boletin-list">
+    <!-- generado por el workflow semanal -->
+  </div>
+</main>
+
+<footer>
+  Observatorio CCHEN 360° · Beta v0.2 · TRL 5 ·
+  <a href="https://github.com/Bastian963/cchen-observatorio" style="color:inherit">GitHub</a>
+</footer>
+
+<script>
+  // Lista de boletines — actualizada automáticamente por el workflow semanal
+  const boletines = [{"url": "boletines/boletin_2026-S13.html", "label": "Semana 13 · 2026", "semana": "Semana 13 · 2026"}, {"url": "boletines/boletin_2026-S12.html", "label": "Semana 12 · 2026", "semana": "Semana 12 · 2026"}];
+
+  const list = document.getElementById("boletin-list");
+  if (!boletines || boletines.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted);font-size:0.9rem">No hay boletines publicados aún.</p>';
+  } else {
+    boletines.forEach((b, i) => {
+      const isNew = i === 0;
+      list.innerHTML += `
+        <a class="card" href="${b.url}">
+          <div class="card-icon">📋</div>
+          <div class="card-body">
+            <div class="card-title">${b.label}</div>
+            <div class="card-desc">Vigilancia tecnológica · Publicaciones · Convocatorias ANID</div>
+          </div>
+          ${isNew ? '<span class="badge new">Último</span>' : '<span class="badge">' + b.semana + '</span>'}
+        </a>`;
+    });
+  }
+</script>
+
+</body>
+</html>

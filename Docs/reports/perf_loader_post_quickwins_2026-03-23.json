@@ -1,0 +1,87 @@
+{
+  "mode": "local",
+  "cold": {
+    "publications": {
+      "seconds": 0.0403,
+      "rows": 826
+    },
+    "publications_enriched": {
+      "seconds": 0.0308,
+      "rows": 580
+    },
+    "authorships": {
+      "seconds": 0.0422,
+      "rows": 7971
+    },
+    "concepts": {
+      "seconds": 0.0369,
+      "rows": 21348
+    },
+    "anid": {
+      "seconds": 0.0133,
+      "rows": 30
+    },
+    "convocatorias": {
+      "seconds": 0.0087,
+      "rows": 26
+    },
+    "matching": {
+      "seconds": 0.0087,
+      "rows": 26
+    },
+    "citation_graph": {
+      "seconds": 0.0503,
+      "rows": 877
+    },
+    "news_monitor": {
+      "seconds": 0.0105,
+      "rows": 130
+    },
+    "arxiv_monitor": {
+      "seconds": 0.0142,
+      "rows": 225
+    }
+  },
+  "warm": {
+    "publications": {
+      "seconds": 0.0011,
+      "rows": 826
+    },
+    "publications_enriched": {
+      "seconds": 0.0008,
+      "rows": 580
+    },
+    "authorships": {
+      "seconds": 0.0005,
+      "rows": 7971
+    },
+    "concepts": {
+      "seconds": 0.0007,
+      "rows": 21348
+    },
+    "anid": {
+      "seconds": 0.0007,
+      "rows": 30
+    },
+    "convocatorias": {
+      "seconds": 0.0001,
+      "rows": 26
+    },
+    "matching": {
+      "seconds": 0.0001,
+      "rows": 26
+    },
+    "citation_graph": {
+      "seconds": 0.0003,
+      "rows": 877
+    },
+    "news_monitor": {
+      "seconds": 0.0,
+      "rows": 130
+    },
+    "arxiv_monitor": {
+      "seconds": 0.0,
+      "rows": 225
+    }
+  }
+}
