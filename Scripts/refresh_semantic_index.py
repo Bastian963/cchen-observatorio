@@ -61,6 +61,46 @@ def _fetch_ids(client, table: str, id_col: str) -> set[str]:
     return ids
 
 
+def _fetch_abstract_coverage(client) -> tuple[int, int, float]:
+    page_size = 1000
+    start = 0
+    total = 0
+    with_abstract = 0
+
+    while True:
+        end = start + page_size - 1
+        resp = (
+            client.table("paper_embeddings")
+            .select("openalex_id,abstract")
+            .order("openalex_id")
+            .range(start, end)
+            .execute()
+        )
+        rows = resp.data or []
+        if not rows:
+            break
+
+        total += len(rows)
+        for row in rows:
+            abstract = str(row.get("abstract") or "").strip()
+            if abstract:
+                with_abstract += 1
+
+        if len(rows) < page_size:
+            break
+        start += page_size
+
+    coverage = (100.0 * with_abstract / total) if total else 0.0
+    return total, with_abstract, coverage
+
+
+def _warn(message: str) -> None:
+    if os.getenv("GITHUB_ACTIONS") == "true":
+        print(f"::warning::{message}")
+    else:
+        print(f"[WARN] {message}")
+
+
 def _run_step(command: list[str], extra_env: dict[str, str] | None = None) -> None:
     env = os.environ.copy()
     if extra_env:
@@ -73,6 +113,12 @@ def _run_step(command: list[str], extra_env: dict[str, str] | None = None) -> No
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--force", action="store_true", help="Recalcular y migrar aunque no se detecten diferencias")
+    parser.add_argument(
+        "--min-abstract-coverage",
+        type=float,
+        default=float(os.getenv("MIN_ABSTRACT_COVERAGE", "45")),
+        help="Umbral mínimo de cobertura de abstracts (en %). Solo genera warning.",
+    )
     args = parser.parse_args()
 
     client = _get_client()
@@ -84,6 +130,14 @@ def main() -> int:
 
     print(f"publications: {len(pub_ids)}")
     print(f"paper_embeddings: {len(emb_ids)}")
+
+    total, with_abstract, coverage = _fetch_abstract_coverage(client)
+    print(f"paper_embeddings con abstract: {with_abstract}/{total} ({coverage:.2f}%)")
+    if coverage < args.min_abstract_coverage:
+        _warn(
+            "Cobertura de abstracts por debajo del umbral "
+            f"({coverage:.2f}% < {args.min_abstract_coverage:.2f}%)."
+        )
 
     if only_publications:
         print(f"[INFO] IDs sin embedding (muestra): {only_publications}")
@@ -103,6 +157,16 @@ def main() -> int:
 
     print("[INFO] Subiendo embeddings actualizados a Supabase pgvector...")
     _run_step([sys.executable, "Database/migrate_embeddings.py"])
+
+    # Re-chequeo post-refresh para observar mejora y alertar si sigue bajo umbral.
+    client = _get_client()
+    total, with_abstract, coverage = _fetch_abstract_coverage(client)
+    print(f"post-refresh abstracts: {with_abstract}/{total} ({coverage:.2f}%)")
+    if coverage < args.min_abstract_coverage:
+        _warn(
+            "Post-refresh: cobertura de abstracts sigue bajo umbral "
+            f"({coverage:.2f}% < {args.min_abstract_coverage:.2f}%)."
+        )
 
     print("[OK] Refresco del índice semántico completado.")
     return 0
