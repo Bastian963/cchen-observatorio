@@ -49,19 +49,24 @@ jobs:
           fi
 
       - name: Ejecutar radar de convocatorias (ANID)
-        # continue-on-error porque depende de scraping HTML del sitio de ANID
-        continue-on-error: true
-        run: python Scripts/convocatorias_monitor.py
+        run: |
+          if python Scripts/convocatorias_monitor.py; then
+            echo "Convocatorias monitor OK"
+          else
+            echo "[WARN] Convocatorias monitor fallo; se continua sin bloquear el workflow"
+          fi
 
       - name: Ejecutar monitor IAEA INIS
-        # continue-on-error porque depende de la API pública de INIS
-        continue-on-error: true
-        run: python Scripts/iaea_inis_monitor.py
+        run: |
+          if python Scripts/iaea_inis_monitor.py; then
+            echo "IAEA INIS monitor OK"
+          else
+            echo "[WARN] IAEA INIS monitor fallo; se continua sin bloquear el workflow"
+          fi
 
       # ── Módulo Difusión: boletín semanal HTML ────────────────────────────
 
       - name: Generar boletín semanal (+ Brevo en modo seguro)
-        continue-on-error: true
         env:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
           BREVO_FROM_EMAIL: ${{ secrets.BREVO_FROM_EMAIL }}
@@ -78,25 +83,36 @@ jobs:
           fi
 
       - name: Publicar boletín en docs/ (GitHub Pages)
-        continue-on-error: true
-        run: python Scripts/build_boletines_index.py
+        run: |
+          if python Scripts/build_boletines_index.py; then
+            echo "Docs/boletines actualizado"
+          else
+            echo "[WARN] Fallo al publicar boletin en Docs/; se continua"
+          fi
 
       # ── Módulo Gobernanza: calidad de datos ─────────────────────────────
 
       - name: Verificar calidad de datos
-        continue-on-error: true
         run: |
           pip install --quiet pandas openpyxl
-          python Database/data_quality.py --output Data/Vigilancia/calidad_datos.csv
+          if python Database/data_quality.py --output Data/Vigilancia/calidad_datos.csv; then
+            echo "Data quality OK"
+          else
+            echo "[WARN] Data quality fallo; se continua sin bloquear el workflow"
+          fi
 
       # ── Migrar CSVs a Supabase ───────────────────────────────────────────────
 
       - name: Migrar datos de vigilancia a Supabase
-        continue-on-error: true
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
-        run: python Database/migrate_vigilancia.py
+        run: |
+          if python Database/migrate_vigilancia.py; then
+            echo "Migracion vigilancia OK"
+          else
+            echo "[WARN] Migracion vigilancia fallo; se continua sin bloquear el workflow"
+          fi
 
       # ── Commit y push ────────────────────────────────────────────────────
 
