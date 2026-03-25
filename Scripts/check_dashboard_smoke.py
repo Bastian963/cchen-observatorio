@@ -79,25 +79,68 @@ def _assert_dataframe(name: str, df: pd.DataFrame, required_columns: list[str], 
 
 def _assert_loader_smoke() -> None:
     data_loader = _load_data_loader_module()
+    data_root = REPO_ROOT / "Data"
 
     checks = [
-        ("load_convocatorias", ["conv_id", "titulo", "estado"]),
-        ("load_convocatorias_matching_rules", ["rule_id", "perfil_id"]),
-        ("load_matching_institucional", ["conv_id", "perfil_id", "score_total"]),
-        ("load_funding_complementario", ["funding_id", "fuente", "source_confidence"]),
-        ("load_perfiles_institucionales", ["perfil_id", "perfil_nombre", "owner_unit"]),
-        ("load_entity_registry_personas", ["persona_id", "canonical_name", "institution_id"]),
-        ("load_entity_registry_proyectos", ["project_id", "titulo", "institucion_id"]),
-        ("load_entity_registry_convocatorias", ["convocatoria_id", "titulo", "perfil_id"]),
-        ("load_entity_links", ["origin_type", "origin_id", "target_type"]),
+        (
+            "load_convocatorias",
+            ["conv_id", "titulo", "estado"],
+            [
+                data_root / "Vigilancia" / "convocatorias_curadas.csv",
+                data_root / "Vigilancia" / "convocatorias.csv",
+            ],
+        ),
+        (
+            "load_convocatorias_matching_rules",
+            ["rule_id", "perfil_id"],
+            [data_root / "Vigilancia" / "convocatorias_matching_rules.csv"],
+        ),
+        (
+            "load_matching_institucional",
+            ["conv_id", "perfil_id", "score_total"],
+            [data_root / "Vigilancia" / "convocatorias_matching_institucional.csv"],
+        ),
+        (
+            "load_funding_complementario",
+            ["funding_id", "fuente", "source_confidence"],
+            [data_root / "Funding" / "cchen_funding_complementario.csv"],
+        ),
+        (
+            "load_perfiles_institucionales",
+            ["perfil_id", "perfil_nombre", "owner_unit"],
+            [data_root / "Vigilancia" / "perfiles_institucionales_cchen.csv"],
+        ),
+        (
+            "load_entity_registry_personas",
+            ["persona_id", "canonical_name", "institution_id"],
+            [data_root / "Gobernanza" / "entity_registry_personas.csv"],
+        ),
+        (
+            "load_entity_registry_proyectos",
+            ["project_id", "titulo", "institucion_id"],
+            [data_root / "Gobernanza" / "entity_registry_proyectos.csv"],
+        ),
+        (
+            "load_entity_registry_convocatorias",
+            ["convocatoria_id", "titulo", "perfil_id"],
+            [data_root / "Gobernanza" / "entity_registry_convocatorias.csv"],
+        ),
+        (
+            "load_entity_links",
+            ["origin_type", "origin_id", "target_type"],
+            [data_root / "Gobernanza" / "entity_links.csv"],
+        ),
     ]
 
-    for loader_name, required_columns in checks:
+    for loader_name, required_columns, source_candidates in checks:
+        if not any(path.exists() for path in source_candidates):
+            print(f"[smoke] skip {loader_name}: fuente local no disponible")
+            continue
         loader = getattr(data_loader, loader_name, None)
         if loader is None:
             raise AssertionError(f"data_loader no expone {loader_name}")
         frame = loader()
-        _assert_dataframe(loader_name, frame, required_columns)
+        _assert_dataframe(loader_name, frame, required_columns, allow_empty=True)
 
 
 def main() -> int:

@@ -1,0 +1,14 @@
+.git
+.gitignore
+.venv
+**/__pycache__
+**/.pytest_cache
+**/.ipynb_checkpoints
+Docs/
+Notebooks/
+Archive/
+Bitacora/
+*.ipynb
+*.aux
+*.toc
+*.bcf
