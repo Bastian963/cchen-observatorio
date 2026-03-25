@@ -340,17 +340,50 @@ def get_source_timestamps() -> dict:
 
 def load_publications():
     df = _load_public_table("publications", BASE_PUB / "cchen_openalex_works.csv")
-    for col in ["year", "cited_by_count", "title", "openalex_id", "doi"]:
+    required_cols = [
+        "year",
+        "cited_by_count",
+        "title",
+        "openalex_id",
+        "doi",
+        "type",
+        "is_oa",
+        "source",
+        "oa_url",
+    ]
+    for col in required_cols:
         if col not in df.columns:
             df[col] = pd.Series(dtype="object")
+
     df["year"] = pd.to_numeric(df["year"], errors="coerce").astype("Int64")
-    df["cited_by_count"] = df["cited_by_count"].fillna(0).astype(int)
+    df["cited_by_count"] = pd.to_numeric(df["cited_by_count"], errors="coerce").fillna(0).astype(int)
+    df["is_oa"] = (
+        df["is_oa"]
+        .fillna(False)
+        .astype(str)
+        .str.strip()
+        .str.lower()
+        .isin(["true", "1", "yes", "si", "sí"])
+    )
     return df[df["year"].notna() & (df["year"] >= 1990)].copy()
 
 
 def load_publications_enriched():
     df = _load_public_table("publications_enriched", BASE_PUB / "cchen_publications_with_quartile_sjr.csv")
-    for col in ["year_num", "cuartil", "quartile", "journal", "title", "openalex_id"]:
+    required_cols = [
+        "year_num",
+        "cuartil",
+        "quartile",
+        "journal",
+        "title",
+        "openalex_id",
+        "areas",
+        "has_international_collab",
+        "has_outside_cchen_collab",
+        "oa_status",
+        "doi",
+    ]
+    for col in required_cols:
         if col not in df.columns:
             df[col] = pd.Series(dtype="object")
 
@@ -363,11 +396,51 @@ def load_publications_enriched():
     df["quartile"] = df["quartile"].astype(str).str.extract(r"(Q[1-4])", expand=False)
     df["cuartil"] = df["quartile"]
     df["year_num"] = pd.to_numeric(df["year_num"], errors="coerce").astype("Int64")
+    df["has_international_collab"] = (
+        df["has_international_collab"]
+        .fillna(False)
+        .astype(str)
+        .str.strip()
+        .str.lower()
+        .isin(["true", "1", "yes", "si", "sí"])
+    )
+    df["has_outside_cchen_collab"] = (
+        df["has_outside_cchen_collab"]
+        .fillna(False)
+        .astype(str)
+        .str.strip()
+        .str.lower()
+        .isin(["true", "1", "yes", "si", "sí"])
+    )
     return df[df["year_num"].notna() & (df["year_num"] >= 1990)].copy()
 
 
 def load_authorships():
-    return _load_public_table("authorships", BASE_PUB / "cchen_authorships_enriched.csv")
+    df = _load_public_table("authorships", BASE_PUB / "cchen_authorships_enriched.csv")
+    if "work_id" not in df.columns and "openalex_id" in df.columns:
+        df = df.rename(columns={"openalex_id": "work_id"})
+
+    required_cols = [
+        "work_id",
+        "author_id",
+        "author_name",
+        "is_cchen_affiliation",
+        "institution_country_code",
+        "doi",
+    ]
+    for col in required_cols:
+        if col not in df.columns:
+            df[col] = pd.Series(dtype="object")
+
+    df["is_cchen_affiliation"] = (
+        df["is_cchen_affiliation"]
+        .fillna(False)
+        .astype(str)
+        .str.strip()
+        .str.lower()
+        .isin(["true", "1", "yes", "si", "sí"])
+    )
+    return df
 
 
 # ─── ANID ─────────────────────────────────────────────────────────────────────
