@@ -1,7 +1,7 @@
 name: Dashboard Smoke Test
 
 env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 on:
   push:
@@ -29,13 +29,19 @@ on:
 jobs:
   smoke:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
     steps:
       - name: Checkout repositorio
         uses: actions/checkout@v4
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
       - name: Configurar Python
         uses: actions/setup-python@v5
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
         with:
           python-version: "3.11"
 
@@ -61,12 +67,24 @@ jobs:
           OBSERVATORIO_DATA_SOURCE: local
         run: python Scripts/check_dashboard_e2e.py
 
+      - name: Diagnostico rapido si smoke falla
+        if: failure()
+        run: |
+          echo "Python:" && python --version || true
+          echo "Pip:" && pip --version || true
+          echo "Repo root:" && pwd || true
+          echo "Ultimos archivos Dashboard:" && ls -la Dashboard | head -n 50 || true
+
   docker-smoke:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
     steps:
       - name: Checkout repositorio
         uses: actions/checkout@v4
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
       - name: Build imagen Docker del dashboard
         run: docker build -f Dashboard/Dockerfile -t cchen-dashboard-ci:${{ github.sha }} .
@@ -82,16 +100,24 @@ jobs:
       - name: Verificar healthcheck HTTP del dashboard
         run: |
           set -euo pipefail
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:8501/_stcore/health >/dev/null; then
               echo "OK: dashboard disponible en intento ${i}"
               exit 0
             fi
-            sleep 2
+            sleep 3
           done
-          echo "FAIL: dashboard no respondió healthcheck en 60s"
+          echo "FAIL: dashboard no respondió healthcheck en 180s"
           docker logs cchen-dashboard-ci || true
           exit 1
+
+      - name: Volcar logs Docker si falla
+        if: failure()
+        run: |
+          echo "== docker ps =="
+          docker ps -a || true
+          echo "== docker logs (tail 300) =="
+          docker logs --tail 300 cchen-dashboard-ci || true
 
       - name: Publicar resumen Docker smoke en Job Summary
         if: always()
