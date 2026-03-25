@@ -340,6 +340,9 @@ def get_source_timestamps() -> dict:
 
 def load_publications():
     df = _load_public_table("publications", BASE_PUB / "cchen_openalex_works.csv")
+    for col in ["year", "cited_by_count", "title", "openalex_id", "doi"]:
+        if col not in df.columns:
+            df[col] = pd.Series(dtype="object")
     df["year"] = pd.to_numeric(df["year"], errors="coerce").astype("Int64")
     df["cited_by_count"] = df["cited_by_count"].fillna(0).astype(int)
     return df[df["year"].notna() & (df["year"] >= 1990)].copy()
@@ -347,6 +350,9 @@ def load_publications():
 
 def load_publications_enriched():
     df = _load_public_table("publications_enriched", BASE_PUB / "cchen_publications_with_quartile_sjr.csv")
+    for col in ["year_num", "cuartil", "journal", "title", "openalex_id"]:
+        if col not in df.columns:
+            df[col] = pd.Series(dtype="object")
     df["year_num"] = pd.to_numeric(df["year_num"], errors="coerce").astype("Int64")
     return df[df["year_num"].notna() & (df["year_num"] >= 1990)].copy()
 
@@ -359,6 +365,9 @@ def load_authorships():
 
 def load_anid():
     df = _load_public_table("anid_projects", BASE_ANID / "RepositorioAnid_con_monto.csv")
+    for col in ["anio_concurso", "monto_programa_num", "programa_full", "instrumento_full"]:
+        if col not in df.columns:
+            df[col] = pd.Series(dtype="object")
     df["anio_concurso"] = pd.to_numeric(df["anio_concurso"], errors="coerce").astype("Int64")
     df["monto_programa_num"] = pd.to_numeric(df["monto_programa_num"], errors="coerce")
     # Supabase guarda programa_full→programa, instrumento_full→instrumento
