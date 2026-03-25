@@ -190,6 +190,28 @@ python3 Scripts/build_embeddings.py
 python3 Scripts/semantic_search.py "dosimetría radiación reactores nucleares"
 ```
 
+### Evaluación rápida de retrieval (sin Groq)
+
+```bash
+# sanity run publication_rag (filtra automáticamente prompts publication_rag)
+bash Scripts/run_publication_rag_sanity.sh
+
+# con comparación contra corrida previa
+bash Scripts/run_publication_rag_sanity.sh \
+  --compare-with Docs/reports/assistant_eval_run_publication_rag_topk5.csv
+
+# modo salida mínima (CI)
+bash Scripts/run_publication_rag_sanity.sh --quiet
+
+# modo JSON estructurado (CI)
+bash Scripts/run_publication_rag_sanity.sh --json
+```
+
+Salida esperada:
+
+- CSV de corrida en `Docs/reports/assistant_eval_run_<run_label>.csv`
+- Si usas `--compare-with`, CSV comparativo en `Docs/reports/assistant_eval_compare_<run_label>.csv`
+
 ---
 
 ## Data Update Pipeline
@@ -387,6 +409,13 @@ can_view_sensitive = true
   - el login interno con secrets inyectados de prueba,
   - y la navegación de secciones clave (`Panel de Indicadores`, `Convocatorias y Matching`, `Grafo de Citas`) para cubrir la carga lazy por sección.
 - Este E2E debe correrse con **Python 3.11**, igual que el runtime del dashboard.
+- **Estándar operativo recomendado:** ejecutar el E2E local con `uv` para no depender de la versión de Python del sistema ni del `.venv` activo.
+
+```bash
+uv run --python 3.11 --with-requirements requirements.txt python Scripts/check_dashboard_e2e.py
+```
+
+- Este comando crea/usa un entorno efímero aislado y no modifica tu Python global.
 
 ### Contrato de base de datos en CI
 

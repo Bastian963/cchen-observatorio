@@ -7,6 +7,7 @@
 - `st.dialog` para inspección de datasets desde la interfaz.
 - `st.fragment` para el bloque operativo del panel principal.
 - Autenticación OIDC opcional con `st.login()` / `st.logout()` para proteger vistas sensibles.
+- **Asistente I+D (2026-03-24):** spinner mientras espera Groq, expander "📚 Fuentes consultadas" con papers RAG, guard `reply or ""` para evitar crash en stream vacío.
 
 ## Instalación / actualización de dependencias
 
@@ -18,6 +19,70 @@ pip install -r requirements.txt
 ```
 
 Si `duckdb` no está instalado, el dashboard sigue funcionando y hace fallback automático a `pandas`.
+
+## Estándar de tests E2E (recomendado)
+
+Para reproducir el comportamiento de CI sin tocar el Python global del sistema, ejecutar siempre el E2E con `uv` y Python 3.11:
+
+```bash
+cd ..
+uv run --python 3.11 --with-requirements requirements.txt python Scripts/check_dashboard_e2e.py
+```
+
+Notas:
+
+- Evitar `python Scripts/check_dashboard_e2e.py` directo si tu entorno activo no está en 3.11.
+- Este flujo no reemplaza ni rompe tu `.venv` local.
+
+## Ejecución tipo producción (contenedor)
+
+Desde la raíz del repositorio:
+
+```bash
+docker build -f Dashboard/Dockerfile -t cchen-dashboard:latest .
+docker run --rm -p 8501:8501 \
+  --name cchen-dashboard \
+  -e CCHEN_DATA_ROOT=/app/Data \
+  cchen-dashboard:latest
+```
+
+Healthcheck local del contenedor:
+
+```bash
+curl http://localhost:8501/_stcore/health
+```
+
+Notas operativas:
+
+- El contenedor expone `8501` y corre `streamlit run app.py` en modo headless.
+- La imagen copia `Dashboard/`, `Scripts/`, `Data/` y `Database/` para permitir operación local completa.
+- Si prefieres datos remotos (Supabase), configura `Dashboard/.streamlit/secrets.toml` con bloque `[supabase]`.
+
+### Cobertura CI de Docker
+
+- El pipeline [Dashboard Smoke Test](../.github/workflows/dashboard_smoke.yml) incluye un job `docker-smoke`.
+- Este job construye la imagen con `Dashboard/Dockerfile`, levanta el contenedor y valida `/_stcore/health` con reintentos.
+- Si el healthcheck falla, CI publica logs del contenedor para diagnóstico rápido.
+
+## Ejecución producción local (sin Docker)
+
+Si aún no tienes Docker, puedes ejecutar el dashboard en modo headless con el script:
+
+```bash
+bash Scripts/run_dashboard_prod_local.sh
+```
+
+Opcionalmente puedes cambiar host/puerto:
+
+```bash
+HOST=127.0.0.1 PORT=8502 bash Scripts/run_dashboard_prod_local.sh
+```
+
+Healthcheck:
+
+```bash
+curl http://127.0.0.1:8502/_stcore/health
+```
 
 ## Configurar secretos
 
