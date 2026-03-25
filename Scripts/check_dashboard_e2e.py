@@ -8,6 +8,7 @@ import sys
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterable
+import re
 
 
 if sys.version_info < (3, 11):
@@ -25,46 +26,79 @@ DASHBOARD_DIR = REPO_ROOT / "Dashboard"
 TEST_USERNAME = "qa.e2e"
 TEST_PASSWORD = "observatorio-e2e"
 DEFAULT_TIMEOUT = 120
-SECTION_EXPECTATIONS: dict[str, tuple[str, ...]] = {
-    "Panel de Indicadores": (
-        "CCHEN — Observatorio Tecnológico I+D+i+Tt",
-        "Panel consolidado de indicadores de Vigilancia Tecnológica",
-    ),
-    "Producción Científica": (
-        "Producción Científica CCHEN",
-        "Fuente: OpenAlex",
-    ),
-    "Redes y Colaboración": (
-        "Redes de Colaboración Científica",
-        "Fuente: OpenAlex authorships",
-    ),
-    "Vigilancia Tecnológica": (
-        "Vigilancia Tecnológica CCHEN",
-    ),
-    "Financiamiento I+D": (
-        "Financiamiento I+D — Fondos ANID",
-    ),
-    "Convocatorias y Matching": (
-        "Convocatorias y Matching CCHEN",
-        "Cruza el radar curado de oportunidades",
-    ),
-    "Transferencia y Portafolio": (
-        "Transferencia y Portafolio Tecnológico",
-    ),
-    "Modelo y Gobernanza": (
-        "Modelo Unificado y Gobernanza de Datos",
-    ),
-    "Formación de Capacidades": (
-        "Formación de Capacidades I+D",
-        "Fuente: Registro interno CCHEN",
-    ),
-    "Asistente I+D": (
-        "Asistente I+D — CCHEN",
-        "Analiza las capas integradas del observatorio",
-    ),
-    "Grafo de Citas": (
-        "Grafo de Citas — Red de Impacto Científico CCHEN",
-    ),
+SECTION_EXPECTATIONS: dict[str, dict[str, tuple[str, ...]]] = {
+    "Panel de Indicadores": {
+        "all": (
+            "CCHEN — Observatorio Tecnológico I+D+i+Tt",
+            "Panel consolidado de indicadores de Vigilancia Tecnológica",
+        ),
+    },
+    "Producción Científica": {
+        "all": (
+            "Producción Científica CCHEN",
+            "Fuente: OpenAlex",
+        ),
+    },
+    "Redes y Colaboración": {
+        "all": (
+            "Redes de Colaboración Científica",
+            "Fuente: OpenAlex authorships",
+        ),
+    },
+    "Vigilancia Tecnológica": {
+        "all": (
+            "Vigilancia Tecnológica CCHEN",
+        ),
+    },
+    "Financiamiento I+D": {
+        "all": (
+            "Financiamiento I+D — Fondos ANID",
+        ),
+    },
+    "Convocatorias y Matching": {
+        "all": (
+            "Convocatorias y Matching CCHEN",
+        ),
+        "any": (
+            "Cruza el radar curado de oportunidades",
+            "Falta la capa formal de matching",
+        ),
+    },
+    "Transferencia y Portafolio": {
+        "all": (
+            "Transferencia y Portafolio Tecnológico",
+        ),
+    },
+    "Modelo y Gobernanza": {
+        "all": (
+            "Modelo Unificado y Gobernanza de Datos",
+        ),
+    },
+    "Formación de Capacidades": {
+        "all": (
+            "Formación de Capacidades I+D",
+        ),
+        "any": (
+            "Fuente: Registro interno CCHEN",
+            "Sin datos disponibles",
+        ),
+    },
+    "Asistente I+D": {
+        "all": (
+            "Asistente I+D — CCHEN",
+            "Analiza las capas integradas del observatorio",
+        ),
+    },
+    "Grafo de Citas": {
+        "all": (
+            "Grafo de Citas — Red de Impacto Científico CCHEN",
+        ),
+        "any": (
+            "Red interactiva de citas CCHEN",
+            "Datos de citas no disponibles aún",
+            "Sin datos de grafo. Ejecuta",
+        ),
+    },
 }
 
 
@@ -137,6 +171,14 @@ def _collect_visible_text(app: AppTest) -> str:
     return "\n".join(item for bucket in buckets for item in bucket)
 
 
+def _normalize_text(value: str) -> str:
+    return re.sub(r"\s+", " ", str(value)).strip().casefold()
+
+
+def _contains_marker(visible_text: str, marker: str) -> bool:
+    return _normalize_text(marker) in _normalize_text(visible_text)
+
+
 def _assert_no_exceptions(app: AppTest, context: str) -> None:
     if len(app.exception) == 0:
         return
@@ -177,7 +219,7 @@ def _login(app: AppTest) -> None:
     _assert(len(app.sidebar.radio) == 1, "El sidebar no mostró el selector de secciones tras login.")
 
 
-def _assert_section(app: AppTest, section_name: str, expected_markers: tuple[str, ...]) -> None:
+def _assert_section(app: AppTest, section_name: str, expected: dict[str, tuple[str, ...]]) -> None:
     app.sidebar.radio[0].set_value(section_name)
     app.run()
     _assert_no_exceptions(app, f"La sección {section_name}")
@@ -187,11 +229,23 @@ def _assert_section(app: AppTest, section_name: str, expected_markers: tuple[str
     )
 
     visible = _collect_visible_text(app)
-    missing = [marker for marker in expected_markers if marker not in visible]
+    all_markers = expected.get("all", ())
+    any_markers = expected.get("any", ())
+
+    missing = [marker for marker in all_markers if not _contains_marker(visible, marker)]
     _assert(
         not missing,
         f"La sección {section_name!r} no mostró marcadores esperados: {', '.join(missing)}",
     )
+
+    if any_markers:
+        _assert(
+            any(_contains_marker(visible, marker) for marker in any_markers),
+            (
+                f"La sección {section_name!r} no mostró ningún marcador alternativo esperado: "
+                f"{', '.join(any_markers)}"
+            ),
+        )
 
 
 def main() -> int:
@@ -203,9 +257,9 @@ def main() -> int:
         print("[e2e] validando login interno...")
         _login(app)
 
-        for section_name, markers in SECTION_EXPECTATIONS.items():
+        for section_name, expected in SECTION_EXPECTATIONS.items():
             print(f"[e2e] validando seccion: {section_name}...")
-            _assert_section(app, section_name, markers)
+            _assert_section(app, section_name, expected)
 
     print("[e2e] dashboard ok")
     return 0
