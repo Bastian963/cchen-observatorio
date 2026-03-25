@@ -46,7 +46,7 @@ SECTION_EXPECTATIONS: dict[str, tuple[str, ...]] = {
     ),
     "Convocatorias y Matching": (
         "Convocatorias y Matching CCHEN",
-        "Ranking por perfil / unidad",
+        "Cruza el radar curado de oportunidades",
     ),
     "Transferencia y Portafolio": (
         "Transferencia y Portafolio Tecnológico",
@@ -64,7 +64,6 @@ SECTION_EXPECTATIONS: dict[str, tuple[str, ...]] = {
     ),
     "Grafo de Citas": (
         "Grafo de Citas — Red de Impacto Científico CCHEN",
-        "Red interactiva de citas CCHEN",
     ),
 }
 
