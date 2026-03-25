@@ -374,16 +374,30 @@ def load_authorships():
 
 def load_anid():
     df = _load_public_table("anid_projects", BASE_ANID / "RepositorioAnid_con_monto.csv")
-    for col in ["anio_concurso", "monto_programa_num", "programa_full", "instrumento_full"]:
-        if col not in df.columns:
-            df[col] = pd.Series(dtype="object")
-    df["anio_concurso"] = pd.to_numeric(df["anio_concurso"], errors="coerce").astype("Int64")
-    df["monto_programa_num"] = pd.to_numeric(df["monto_programa_num"], errors="coerce")
-    # Supabase guarda programa_full→programa, instrumento_full→instrumento
+    # Supabase puede exponer aliases distintos; normalizamos antes de exigir esquema.
     if "programa_full" not in df.columns and "programa" in df.columns:
         df = df.rename(columns={"programa": "programa_full"})
     if "instrumento_full" not in df.columns and "instrumento" in df.columns:
         df = df.rename(columns={"instrumento": "instrumento_full"})
+    if "estado_full" not in df.columns and "estado" in df.columns:
+        df = df.rename(columns={"estado": "estado_full"})
+
+    required_cols = [
+        "anio_concurso",
+        "monto_programa_num",
+        "programa_full",
+        "instrumento_full",
+        "titulo",
+        "resumen",
+        "autor",
+        "estado_full",
+    ]
+    for col in required_cols:
+        if col not in df.columns:
+            df[col] = pd.Series(dtype="object")
+
+    df["anio_concurso"] = pd.to_numeric(df["anio_concurso"], errors="coerce").astype("Int64")
+    df["monto_programa_num"] = pd.to_numeric(df["monto_programa_num"], errors="coerce")
 
     def norm_programa(p):
         if pd.isna(p):
