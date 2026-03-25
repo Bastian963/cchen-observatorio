@@ -196,21 +196,29 @@ def render(ctx: dict) -> None:
         _auth_c = auth[auth["is_cchen_affiliation"] == True]
         _pub_cites = pub[["openalex_id", "cited_by_count"]].rename(columns={"openalex_id": "work_id"})
         _auth_cites = _auth_c.merge(_pub_cites, on="work_id", how="left")
-        def _hindex_group(g):
-            return calc_hindex(g["cited_by_count"])
-        _hinv_df = (_auth_cites.groupby("author_name")
-                    .apply(_hindex_group, include_groups=False)
-                    .reset_index()
-                    .rename(columns={0: "H-index"})
-                    .sort_values("H-index", ascending=False)
-                    .head(15))
-        fig_hinv = px.bar(
-            _hinv_df.sort_values("H-index"), x="H-index", y="author_name",
-            orientation="h", color_discrete_sequence=[GREEN], text="H-index",
-            height=300, labels={"author_name": ""},
-        )
-        fig_hinv.update_layout(showlegend=False, margin=dict(t=10, b=10))
-        st.plotly_chart(fig_hinv, width="stretch")
+        if _auth_cites.empty:
+            st.info("Sin datos de autorías CCHEN disponibles para el período seleccionado.")
+        else:
+            def _hindex_group(g):
+                return calc_hindex(g["cited_by_count"])
+            _raw = (
+                _auth_cites.groupby("author_name")
+                .apply(_hindex_group, include_groups=False)
+                .reset_index()
+            )
+            # apply() puede devolver columna 0 o "H-index" según versión de pandas
+            if 0 in _raw.columns:
+                _raw = _raw.rename(columns={0: "H-index"})
+            if "H-index" not in _raw.columns:
+                _raw["H-index"] = 0
+            _hinv_df = _raw.sort_values("H-index", ascending=False).head(15)
+            fig_hinv = px.bar(
+                _hinv_df.sort_values("H-index"), x="H-index", y="author_name",
+                orientation="h", color_discrete_sequence=[GREEN], text="H-index",
+                height=300, labels={"author_name": ""},
+            )
+            fig_hinv.update_layout(showlegend=False, margin=dict(t=10, b=10))
+            st.plotly_chart(fig_hinv, width="stretch")
 
     # ── Mapa de colaboración internacional ────────────────────────────────────
     sec("Mapa de colaboración internacional")
