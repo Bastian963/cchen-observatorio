@@ -2,6 +2,9 @@
 Database/.env
 .streamlit/secrets.toml
 Dashboard/.streamlit/secrets.toml
+credentials.json
+token_forms.json
+Scripts/intake_form_id.txt
 
 # Datos locales — demasiado grandes / sensibles para GitHub
 Data/
