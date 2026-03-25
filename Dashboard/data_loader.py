@@ -138,6 +138,9 @@ def get_table_load_status() -> dict[str, dict]:
 
 def _read_csv_fast(path: Path) -> pd.DataFrame:
     """Lee CSVs con DuckDB si está disponible; si no, usa pandas."""
+    if not path.exists():
+        _log.warning("CSV no encontrado en modo local: %s", path)
+        return pd.DataFrame()
     try:
         mtime_ns = path.stat().st_mtime_ns
     except OSError:

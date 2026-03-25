@@ -23,8 +23,7 @@ RUN pip install --upgrade pip && pip install -r /app/Dashboard/requirements.txt
 # Copy application code and required runtime assets.
 COPY Dashboard /app/Dashboard
 COPY Scripts /app/Scripts
-COPY Data /app/Data
-COPY Database /app/Database
+RUN mkdir -p /app/Data /app/Database
 
 EXPOSE 8501
 
