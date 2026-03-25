@@ -6,7 +6,7 @@ Registrar la información mínima faltante para consolidar continuidad operativa
 
 ## Estado
 
-- Estado general: Abierto.
+- Estado general: En piloto (provisorio).
 - Prioridad: Alta (bloquea formalización del flujo semanal).
 - Fecha de registro: 2026-03-24.
 
@@ -37,10 +37,10 @@ Registrar la información mínima faltante para consolidar continuidad operativa
 
 ## Checklist de cierre
 
-- [ ] Titular DGIn confirmado por nombre y correo.
-- [ ] Respaldo DGIn confirmado por nombre y correo.
-- [ ] Regla de reemplazo documentada.
-- [ ] Canal oficial semanal confirmado.
+- [x] Titular DGIn confirmado por nombre y correo (piloto provisorio).
+- [x] Respaldo DGIn confirmado por nombre y correo (piloto provisorio).
+- [x] Regla de reemplazo documentada (piloto provisorio).
+- [x] Canal oficial semanal confirmado (piloto provisorio).
 - [ ] Acta semana 2 actualizada con nombres reales.
 - [ ] Tracker KPI actualizado con responsables reales.
 
@@ -58,14 +58,18 @@ Hasta que esta ficha esté cerrada, la operación semanal puede continuar técni
 
 ### Bloque listo para completar
 
-- Titular DGIn: ______________________________
-- Correo titular: ____________________________
-- Respaldo DGIn: _____________________________
-- Correo respaldo: ___________________________
-- Regla de reemplazo: ________________________
-- Canal oficial semanal: _____________________
-- Fecha de confirmación: _____________________
-- Confirmado por (jefatura DGIn): ____________
+- Titular DGIn: Bastián Ayala Inostroza (provisorio piloto)
+- Correo titular: b.ayalainostroza@gmail.com
+- Respaldo DGIn: Bastián Ayala Inostroza (provisorio piloto)
+- Correo respaldo: b.ayalainostroza@gmail.com
+- Regla de reemplazo: En piloto, si no hay disponibilidad del titular, la sesión se reprograma dentro de 48h hábiles.
+- Canal oficial semanal: Correo (b.ayalainostroza@gmail.com)
+- Fecha de confirmación: 2026-03-25
+- Confirmado por (jefatura DGIn): Pendiente de formalización
+
+### Nota de provisionalidad
+
+Esta asignación aplica solo para continuidad del piloto operativo. Debe reemplazarse por responsables DGIn titular/respaldo formales cuando jefatura confirme nominación oficial.
 
 ### Mensaje breve de solicitud (copiar y enviar)
 
