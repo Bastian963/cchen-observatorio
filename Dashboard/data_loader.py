@@ -425,7 +425,9 @@ def load_authorships():
         "author_id",
         "author_name",
         "is_cchen_affiliation",
+        "institution_name",
         "institution_country_code",
+        "institution_ror",
         "doi",
     ]
     for col in required_cols:
