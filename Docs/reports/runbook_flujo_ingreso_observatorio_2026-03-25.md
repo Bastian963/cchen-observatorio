@@ -117,6 +117,21 @@ Corrección aplicada:
 - Template ahora incluye 10 preguntas en cuerpo.
 - Boton/link se muestra cuando existe `INTAKE_FLOW_FORM_URL`.
 
+### 7.6 Formulario publicado pero cerrado para respuestas
+
+Causa:
+- En `setPublishSettings`, se envió solo `isPublished=true`.
+- Desde cambios recientes de Forms API, al actualizar `publishState` deben enviarse ambos campos.
+
+Corrección aplicada:
+- Publicar con:
+  - `isPublished=true`
+  - `isAcceptingResponses=true`
+  - `updateMask=publishState`
+
+Señal de validación:
+- `publishSettings.publishState.isAcceptingResponses` debe quedar en `true`.
+
 ## 8. Uso de React Email (guia corta)
 
 ### Render local de plantilla

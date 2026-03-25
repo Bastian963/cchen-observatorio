@@ -236,16 +236,26 @@ def main() -> int:
     ).execute()
     print("[OK] Preguntas añadidas.")
 
-    # 3. Publicar el formulario (necesario desde junio 2026, buena práctica ahora)
+    # 3. Publicar y abrir respuestas del formulario.
+    # Desde los cambios de 2026, al actualizar publishState se deben enviar ambos
+    # flags: isPublished e isAcceptingResponses.
     try:
         service.forms().setPublishSettings(
             formId=form_id,
-            body={"publishSettings": {"publishState": {"isPublished": True}}},
+            body={
+                "publishSettings": {
+                    "publishState": {
+                        "isPublished": True,
+                        "isAcceptingResponses": True,
+                    }
+                },
+                "updateMask": "publishState",
+            },
         ).execute()
-        print("[OK] Formulario publicado.")
+        print("[OK] Formulario publicado y abierto para recibir respuestas.")
     except Exception as exc:
-        print(f"[WARN] No se pudo publicar automáticamente: {exc}")
-        print("       Puedes publicarlo manualmente desde la vista del formulario.")
+        print(f"[WARN] No se pudo publicar/abrir automáticamente: {exc}")
+        print("       Puedes abrirlo manualmente con 'Seguir recopilando respuestas'.")
 
     # 4. Obtener estado final y URLs
     result = service.forms().get(formId=form_id).execute()
