@@ -350,9 +350,18 @@ def load_publications():
 
 def load_publications_enriched():
     df = _load_public_table("publications_enriched", BASE_PUB / "cchen_publications_with_quartile_sjr.csv")
-    for col in ["year_num", "cuartil", "journal", "title", "openalex_id"]:
+    for col in ["year_num", "cuartil", "quartile", "journal", "title", "openalex_id"]:
         if col not in df.columns:
             df[col] = pd.Series(dtype="object")
+
+    # Keep both aliases because dashboard sections still mix `quartile` and `cuartil`.
+    if "quartile" not in df.columns and "cuartil" in df.columns:
+        df["quartile"] = df["cuartil"]
+    if "cuartil" not in df.columns and "quartile" in df.columns:
+        df["cuartil"] = df["quartile"]
+
+    df["quartile"] = df["quartile"].astype(str).str.extract(r"(Q[1-4])", expand=False)
+    df["cuartil"] = df["quartile"]
     df["year_num"] = pd.to_numeric(df["year_num"], errors="coerce").astype("Int64")
     return df[df["year_num"].notna() & (df["year_num"] >= 1990)].copy()
 
