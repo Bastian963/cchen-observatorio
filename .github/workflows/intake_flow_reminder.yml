@@ -20,6 +20,23 @@ jobs:
       - name: Checkout repositorio
         uses: actions/checkout@v5
 
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Instalar dependencias React Email
+        run: npm install
+        working-directory: emails
+
+      - name: Compilar plantilla React Email a HTML
+        env:
+          INTAKE_FLOW_FORM_URL: ${{ secrets.INTAKE_FLOW_FORM_URL }}
+        run: |
+          mkdir -p dist/emails
+          npx tsx render.ts > ../dist/emails/intake-flow-reminder.html
+        working-directory: emails
+
       - name: Configurar Python
         uses: actions/setup-python@v6
         with:
@@ -36,8 +53,12 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.send_real_email }}" == "true" ]]; then
             echo "Modo: envio real del recordatorio"
-            python Scripts/send_intake_flow_email.py --send-brevo --confirm-send
+            python Scripts/send_intake_flow_email.py \
+              --send-brevo --confirm-send \
+              --html-file dist/emails/intake-flow-reminder.html
           else
             echo "Modo: dry-run del recordatorio"
-            python Scripts/send_intake_flow_email.py --send-brevo --dry-run
+            python Scripts/send_intake_flow_email.py \
+              --send-brevo --dry-run \
+              --html-file dist/emails/intake-flow-reminder.html
           fi

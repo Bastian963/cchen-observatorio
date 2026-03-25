@@ -170,21 +170,27 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Enviar correo del flujo de ingreso por Brevo")
     parser.add_argument("--to", default=DEFAULT_TO, help="Destinatario o lista separada por comas")
     parser.add_argument("--subject", default=DEFAULT_SUBJECT, help="Asunto del correo")
-    parser.add_argument("--form-url", default=DEFAULT_FORM_URL, help="URL del formulario (opcional)")
+    parser.add_argument("--form-url", default=DEFAULT_FORM_URL, help="URL del formulario (opcional, ignorado si se usa --html-file)")
+    parser.add_argument("--html-file", default="", help="Ruta a HTML precompilado por React Email (omite build_html)")
     parser.add_argument("--send-brevo", action="store_true", help="Intentar envio por Brevo")
     parser.add_argument("--dry-run", action="store_true", help="Validar sin enviar correo real")
     parser.add_argument("--confirm-send", action="store_true", help="Confirma envio real")
     args = parser.parse_args()
 
-    form_url = (args.form_url or os.getenv("INTAKE_FLOW_FORM_URL", "")).strip()
-    html = build_html(form_url=form_url)
+    html_file = (args.html_file or os.getenv("INTAKE_EMAIL_HTML_FILE", "")).strip()
+    if html_file:
+        with open(html_file, encoding="utf-8") as fh:
+            html = fh.read()
+        print(f"[INFO] HTML cargado desde React Email: {html_file}")
+    else:
+        form_url = (args.form_url or os.getenv("INTAKE_FLOW_FORM_URL", "")).strip()
+        html = build_html(form_url=form_url)
     to_emails = _split_emails(args.to) or _split_emails(os.getenv("BREVO_TO_EMAILS", DEFAULT_TO))
 
     if not args.send_brevo:
         print("[INFO] Correo generado localmente. Usa --send-brevo para envio via Brevo.")
         print(f"[INFO] Destinatarios: {', '.join(to_emails)}")
         print(f"[INFO] Asunto: {args.subject}")
-        print(f"[INFO] Form URL: {form_url or '[no definida]'}")
         return 0
 
     api_key = os.getenv("BREVO_API_KEY", "").strip()

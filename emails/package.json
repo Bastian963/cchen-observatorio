@@ -1,0 +1,21 @@
+{
+  "name": "cchen-observatorio-emails",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "render": "tsx render.ts",
+    "dev": "email dev"
+  },
+  "dependencies": {
+    "@react-email/components": "^0.0.30",
+    "@react-email/render": "^1.0.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.4.5"
+  }
+}

@@ -30,6 +30,11 @@ Docs/reports/*.fls
 *.zip
 *.pdf
 
+# Node / React Email
+emails/node_modules/
+emails/package-lock.json
+dist/emails/
+
 # Python
 __pycache__/
 *.py[cod]
