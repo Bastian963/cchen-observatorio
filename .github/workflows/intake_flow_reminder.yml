@@ -33,7 +33,7 @@ jobs:
         env:
           INTAKE_FLOW_FORM_URL: ${{ secrets.INTAKE_FLOW_FORM_URL }}
         run: |
-          mkdir -p dist/emails
+          mkdir -p ../dist/emails
           npx tsx render.ts > ../dist/emails/intake-flow-reminder.html
         working-directory: emails
 
