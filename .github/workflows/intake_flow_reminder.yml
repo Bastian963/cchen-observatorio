@@ -1,0 +1,42 @@
+name: Intake Flow Reminder
+
+on:
+  schedule:
+    # Cada jueves a las 13:00 UTC (~10:00 Chile en horario UTC-3)
+    - cron: "0 13 * * 4"
+  workflow_dispatch:
+    inputs:
+      send_real_email:
+        description: "Enviar correo real por Brevo"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  send-intake-reminder:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v5
+
+      - name: Configurar Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Ejecutar recordatorio del flujo de ingreso
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          BREVO_FROM_EMAIL: ${{ secrets.BREVO_FROM_EMAIL }}
+          BREVO_FROM_NAME: Observatorio CCHEN
+          BREVO_TO_EMAILS: b.ayalainostroza@gmail.com
+          BREVO_REPLY_TO: b.ayalainostroza@gmail.com
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.send_real_email }}" == "true" ]]; then
+            echo "Modo: envio real del recordatorio"
+            python Scripts/send_intake_flow_email.py --send-brevo --confirm-send
+          else
+            echo "Modo: dry-run del recordatorio"
+            python Scripts/send_intake_flow_email.py --send-brevo --dry-run
+          fi
