@@ -1,9 +1,13 @@
 name: Dashboard Smoke Test
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push:
     paths:
       - ".github/workflows/dashboard_smoke.yml"
+      - "Dashboard/Dockerfile"
       - "Scripts/check_dashboard_e2e.py"
       - "Dashboard/**"
       - "Scripts/check_dashboard_smoke.py"
@@ -13,6 +17,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/dashboard_smoke.yml"
+      - "Dashboard/Dockerfile"
       - "Scripts/check_dashboard_e2e.py"
       - "Dashboard/**"
       - "Scripts/check_dashboard_smoke.py"
@@ -32,7 +37,7 @@ jobs:
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version-file: "runtime.txt"
+          python-version: "3.11"
 
       - name: Instalar dependencias
         run: pip install --quiet -r requirements.txt
@@ -55,3 +60,50 @@ jobs:
         env:
           OBSERVATORIO_DATA_SOURCE: local
         run: python Scripts/check_dashboard_e2e.py
+
+  docker-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Build imagen Docker del dashboard
+        run: docker build -f Dashboard/Dockerfile -t cchen-dashboard-ci:${{ github.sha }} .
+
+      - name: Levantar contenedor del dashboard
+        run: |
+          docker run -d --rm \
+            --name cchen-dashboard-ci \
+            -p 8501:8501 \
+            -e CCHEN_DATA_ROOT=/app/Data \
+            cchen-dashboard-ci:${{ github.sha }}
+
+      - name: Verificar healthcheck HTTP del dashboard
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8501/_stcore/health >/dev/null; then
+              echo "OK: dashboard disponible en intento ${i}"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "FAIL: dashboard no respondió healthcheck en 60s"
+          docker logs cchen-dashboard-ci || true
+          exit 1
+
+      - name: Publicar resumen Docker smoke en Job Summary
+        if: always()
+        run: |
+          {
+            echo "## Dashboard Docker Smoke"
+            echo ""
+            echo "- Imagen: cchen-dashboard-ci:${{ github.sha }}"
+            echo "- Health endpoint: /_stcore/health"
+            echo "- Resultado: completado (ver estado del job)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Limpiar contenedor
+        if: always()
+        run: docker rm -f cchen-dashboard-ci || true
