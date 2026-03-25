@@ -23,13 +23,14 @@ from urllib.request import Request, urlopen
 DEFAULT_SUBJECT = "Propuesta breve - Flujo de ingreso de necesidades al Observatorio CCHEN"
 DEFAULT_FROM_NAME = "Observatorio CCHEN"
 DEFAULT_TO = "b.ayalainostroza@gmail.com"
+DEFAULT_FORM_URL = ""
 
 
 def _split_emails(raw: str) -> list[str]:
     return [item.strip() for item in str(raw or "").split(",") if item.strip()]
 
 
-def build_html() -> str:
+def build_html(form_url: str = "") -> str:
     objective_items = [
         "recibir solicitudes de manera formal,",
         "clasificarlas de forma consistente,",
@@ -50,9 +51,34 @@ def build_html() -> str:
         "recepcion y clasificacion por el Observatorio,",
         "e incorporacion al backlog, piloto o flujo de datos correspondiente.",
     ]
+    form_questions = [
+        "Semana de reporte (YYYY-W##)",
+        "Unidad",
+        "Nombre y correo de quien reporta",
+        "Tipo de ingreso (Solicitud nueva / Seguimiento / Idea de mejora / Informacion para compartir)",
+        "Titulo breve",
+        "Descripcion breve",
+        "Urgencia (Alta / Media / Baja / Sin informacion por ahora)",
+        "Impacto esperado (Alto / Medio / Bajo / Sin informacion por ahora)",
+        "Link o evidencia (opcional)",
+        "Ideas o antecedentes adicionales (opcional)",
+    ]
 
     def _list(items: list[str]) -> str:
         return "".join(f"<li>{escape(item)}</li>" for item in items)
+
+    form_url_clean = form_url.strip()
+    button_html = ""
+    link_html = ""
+    if form_url_clean:
+        safe_url = escape(form_url_clean)
+        button_html = (
+            f"<p style=\"margin:14px 0 8px;\">"
+            f"<a href=\"{safe_url}\" style=\"display:inline-block;background:#6d4c41;color:#fffdf8;text-decoration:none;padding:12px 18px;border-radius:6px;font-weight:bold;\">"
+            "Abrir formulario de ingreso"
+            "</a></p>"
+        )
+        link_html = f"<p style=\"margin:0 0 14px;\">Link directo: <a href=\"{safe_url}\">{safe_url}</a></p>"
 
     return f"""<!doctype html>
 <html lang=\"es\">
@@ -78,7 +104,13 @@ def build_html() -> str:
         <ul style=\"padding-left:20px;margin:0 0 18px;\">{_list(sharing_items)}</ul>
         <p>La propuesta considera un flujo simple:</p>
         <ol style=\"padding-left:20px;margin:0 0 18px;\">{''.join(f'<li>{escape(item)}</li>' for item in flow_items)}</ol>
-        <p>El formulario propuesto esta pensado para ser explicativo y simple de responder, incluyendo un campo especifico para registrar ideas o informacion que la unidad pueda compartir aunque todavia no exista un requerimiento formal completamente definido.</p>
+                <p>El formulario propuesto esta pensado para ser explicativo y simple de responder, incluyendo un campo especifico para registrar ideas o informacion que la unidad pueda compartir aunque todavia no exista un requerimiento formal completamente definido.</p>
+
+                <h2 style=\"font-size:21px;margin:22px 0 10px;color:#2d3748;\">Formulario de ingreso (ultra corto)</h2>
+                <p style=\"margin:0 0 10px;\">Si no tienes toda la informacion disponible, marca o escribe \"Sin informacion por ahora\" y envia igual.</p>
+                <ol style=\"padding-left:20px;margin:0 0 18px;\">{''.join(f'<li>{escape(item)}</li>' for item in form_questions)}</ol>
+                {button_html}
+                {link_html}
         <p>Si el enfoque parece adecuado, el siguiente paso seria validar el flujo y pilotearlo con una unidad usuaria prioritaria.</p>
         <p style=\"margin-bottom:0;\">Gracias.</p>
       </td>
@@ -138,18 +170,21 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Enviar correo del flujo de ingreso por Brevo")
     parser.add_argument("--to", default=DEFAULT_TO, help="Destinatario o lista separada por comas")
     parser.add_argument("--subject", default=DEFAULT_SUBJECT, help="Asunto del correo")
+    parser.add_argument("--form-url", default=DEFAULT_FORM_URL, help="URL del formulario (opcional)")
     parser.add_argument("--send-brevo", action="store_true", help="Intentar envio por Brevo")
     parser.add_argument("--dry-run", action="store_true", help="Validar sin enviar correo real")
     parser.add_argument("--confirm-send", action="store_true", help="Confirma envio real")
     args = parser.parse_args()
 
-    html = build_html()
+    form_url = (args.form_url or os.getenv("INTAKE_FLOW_FORM_URL", "")).strip()
+    html = build_html(form_url=form_url)
     to_emails = _split_emails(args.to) or _split_emails(os.getenv("BREVO_TO_EMAILS", DEFAULT_TO))
 
     if not args.send_brevo:
         print("[INFO] Correo generado localmente. Usa --send-brevo para envio via Brevo.")
         print(f"[INFO] Destinatarios: {', '.join(to_emails)}")
         print(f"[INFO] Asunto: {args.subject}")
+        print(f"[INFO] Form URL: {form_url or '[no definida]'}")
         return 0
 
     api_key = os.getenv("BREVO_API_KEY", "").strip()

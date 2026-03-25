@@ -32,6 +32,7 @@ jobs:
           BREVO_FROM_NAME: Observatorio CCHEN
           BREVO_TO_EMAILS: b.ayalainostroza@gmail.com
           BREVO_REPLY_TO: b.ayalainostroza@gmail.com
+          INTAKE_FLOW_FORM_URL: ${{ secrets.INTAKE_FLOW_FORM_URL }}
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.send_real_email }}" == "true" ]]; then
             echo "Modo: envio real del recordatorio"
