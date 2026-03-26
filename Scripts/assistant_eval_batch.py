@@ -20,10 +20,12 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import importlib.util
+import logging
 import numbers
 import os
 import re
 import sys
+import warnings
 from functools import lru_cache
 from pathlib import Path
 from typing import Iterable
@@ -31,6 +33,22 @@ from typing import Iterable
 import pandas as pd
 
 import semantic_search as ss
+
+
+# Reduce noisy third-party warnings in CLI runs (does not change data logic).
+warnings.filterwarnings("ignore", message=r"urllib3 v2 only supports OpenSSL 1\.1\.1\+.*")
+warnings.filterwarnings("ignore", message=r"Python versions below 3\.10 are deprecated.*", category=DeprecationWarning)
+warnings.filterwarnings("ignore", message=r"The 'timeout' parameter is deprecated.*", category=DeprecationWarning)
+warnings.filterwarnings("ignore", message=r"The 'verify' parameter is deprecated.*", category=DeprecationWarning)
+
+# Streamlit cache warnings are expected in non-Streamlit CLI context.
+for _logger_name in (
+    "streamlit",
+    "streamlit.runtime",
+    "streamlit.runtime.caching",
+    "streamlit.runtime.caching.cache_data_api",
+):
+    logging.getLogger(_logger_name).setLevel(logging.ERROR)
 
 
 DEFAULT_INPUT = Path("Docs/reports/assistant_eval_template.csv")
@@ -59,21 +77,31 @@ def _load_module(module_name: str, file_path: Path):
         return None
 
 
-_data_loader_module = _load_module("assistant_eval_data_loader", DASHBOARD_DIR / "data_loader.py")
-_shared_module = _load_module("assistant_eval_shared", SECTIONS_DIR / "shared.py")
-dl = _data_loader_module
-_load_portafolio_seed = getattr(_shared_module, "_load_portafolio_seed", None) if _shared_module is not None else None
+@lru_cache(maxsize=1)
+def _get_structured_loader_handles():
+    """Lazy-load dashboard modules only when structured metrics are needed."""
+    data_loader_module = _load_module("assistant_eval_data_loader", DASHBOARD_DIR / "data_loader.py")
+    shared_module = _load_module("assistant_eval_shared", SECTIONS_DIR / "shared.py")
+    load_portafolio_seed = getattr(shared_module, "_load_portafolio_seed", None) if shared_module is not None else None
+    return data_loader_module, load_portafolio_seed
 
 
 def _normalize_text(value: str) -> str:
     return re.sub(r"\s+", " ", str(value or "")).strip().lower()
 
 
+def _normalize_kw(text: str) -> str:
+    """Lowercase + strip unicode accents so 'dosimetria' matches 'dosimetría'."""
+    import unicodedata
+    return unicodedata.normalize("NFD", text.lower()).encode("ascii", "ignore").decode("ascii")
+
+
 def _keyword_hits(keywords_raw: str, corpus_text: str) -> tuple[int, str]:
     if not str(keywords_raw or "").strip():
         return 0, ""
+    corpus_norm = _normalize_kw(corpus_text)
     keywords = [k.strip().lower() for k in str(keywords_raw).split(";") if k.strip()]
-    hits = [k for k in keywords if k in corpus_text]
+    hits = [k for k in keywords if _normalize_kw(k) in corpus_norm]
     return len(hits), ";".join(hits)
 
 
@@ -127,6 +155,7 @@ def _safe_loader_call(loader) -> pd.DataFrame:
 
 
 def _source_loader_map() -> dict[str, object]:
+    dl, load_portafolio_seed = _get_structured_loader_handles()
     if dl is None:
         return {}
     return {
@@ -138,7 +167,7 @@ def _source_loader_map() -> dict[str, object]:
         "researchers": getattr(dl, "load_orcid_researchers", None),
         "capital_humano": getattr(dl, "load_capital_humano", None),
         "patents": getattr(dl, "load_patents", None),
-        "transferencia": _load_portafolio_seed,
+        "transferencia": load_portafolio_seed,
         "paper_embeddings": ss.search if _normalize_mode(PUBLICATION_RAG) == PUBLICATION_RAG else None,
     }
 
@@ -395,9 +424,11 @@ def main() -> int:
     parser.add_argument("--run-label", default=f"run_{dt.datetime.now().strftime('%Y%m%d_%H%M%S')}")
     parser.add_argument(
         "--evaluation-mode",
+        "--mode",
+        dest="evaluation_mode",
         choices=["all", PUBLICATION_RAG, STRUCTURED_OR_HYBRID],
         default="all",
-        help="Filter prompts by evaluation mode",
+        help="Filter prompts by evaluation mode (alias: --mode)",
     )
     parser.add_argument("--compare-with", default="", help="Previous run CSV to compare against")
     parser.add_argument("--compare-output", default="", help="Comparison output CSV path")

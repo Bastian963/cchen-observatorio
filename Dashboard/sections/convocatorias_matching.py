@@ -1,4 +1,5 @@
 """Section: Convocatorias y Matching — CCHEN Observatorio"""
+import datetime as dt
 from pathlib import Path
 
 import pandas as pd
@@ -178,6 +179,211 @@ def render(ctx: dict) -> None:
                     if _row["url"]:
                         st.markdown(f"[Ver ficha oficial →]({_row['url']})")
 
+        sec("Panel operativo DGIn")
+        st.caption(
+            "Vista de operación para seguimiento semanal: oportunidades activables, próximas a cierre y cola de gestión."
+        )
+
+        _ops_df = _matching.copy()
+        _ops_df["score_total"] = pd.to_numeric(_ops_df.get("score_total", 0), errors="coerce").fillna(0)
+        _ops_df["cierre_dt"] = pd.to_datetime(_ops_df.get("cierre_iso", ""), errors="coerce")
+        _today = pd.Timestamp.utcnow().tz_localize(None)
+        _ops_df["dias_al_cierre"] = (_ops_df["cierre_dt"] - _today).dt.days
+
+        _unit_options = sorted([
+            _text_or_empty(v) for v in _ops_df.get("owner_unit", pd.Series(dtype=str)).dropna().unique().tolist()
+            if _text_or_empty(v)
+        ])
+        _default_unit = [u for u in _unit_options if "dgin" in u.lower()]
+        _default_unit = _default_unit[:1] if _default_unit else []
+        _unit_selected = st.multiselect(
+            "Unidad objetivo",
+            _unit_options,
+            default=_default_unit,
+            key="matching_dgin_unit_select",
+        )
+
+        _ops_view = _ops_df.copy()
+        if _unit_selected:
+            _ops_view = _ops_view[_ops_view["owner_unit"].isin(_unit_selected)]
+
+        _activables = _ops_view[
+            (_ops_view["estado"] == "Abierto") &
+            (_ops_view["readiness_status"] == "Listo para activar")
+        ]
+        _proximas_45 = _ops_view[
+            (_ops_view["estado"].isin(["Abierto", "Próximo"])) &
+            (_ops_view["dias_al_cierre"].notna()) &
+            (_ops_view["dias_al_cierre"] >= 0) &
+            (_ops_view["dias_al_cierre"] <= 45)
+        ]
+        _requiere_prep = _ops_view[_ops_view["readiness_status"] == "Requiere preparación"]
+        _score_abiertas = _ops_view[_ops_view["estado"] == "Abierto"]["score_total"]
+
+        kpi_row(
+            kpi("Activables hoy", f"{len(_activables):,}", "abiertas + listas"),
+            kpi("Cierre ≤45 días", f"{len(_proximas_45):,}", "abiertas o próximas"),
+            kpi("Requieren preparación", f"{len(_requiere_prep):,}", "para planificación de pre-postulación"),
+            kpi("Score medio abiertas", f"{_score_abiertas.mean():.1f}" if not _score_abiertas.empty else "0.0", "unidades filtradas"),
+        )
+
+        _seguimiento_cols = [
+            "conv_id", "convocatoria_titulo", "perfil_nombre", "owner_unit", "estado",
+            "score_total", "eligibility_status", "readiness_status", "deadline_class",
+            "dias_al_cierre", "recommended_action", "url",
+        ]
+        _seguimiento_df = _ops_view[[c for c in _seguimiento_cols if c in _ops_view.columns]].copy()
+        _seguimiento_df.insert(len(_seguimiento_df.columns), "estado_gestion", "Pendiente")
+        _seguimiento_df.insert(len(_seguimiento_df.columns), "responsable_dgin", "")
+        _seguimiento_df.insert(len(_seguimiento_df.columns), "fecha_revision", "")
+        _seguimiento_df.insert(len(_seguimiento_df.columns), "comentarios", "")
+        _seguimiento_df = _seguimiento_df.sort_values(
+            ["score_total", "dias_al_cierre"],
+            ascending=[False, True],
+            na_position="last",
+        )
+
+        st.dataframe(
+            _seguimiento_df.head(30).rename(columns={
+                "convocatoria_titulo": "Convocatoria",
+                "perfil_nombre": "Perfil",
+                "owner_unit": "Unidad",
+                "score_total": "Score",
+                "eligibility_status": "Elegibilidad",
+                "readiness_status": "Preparación",
+                "deadline_class": "Ventana",
+                "dias_al_cierre": "Días al cierre",
+                "recommended_action": "Acción sugerida",
+                "url": "Ficha oficial",
+            }),
+            width="stretch",
+            hide_index=True,
+            height=320,
+            column_config={"Ficha oficial": st.column_config.LinkColumn("Ficha oficial")},
+        )
+
+        _export_stamp = dt.datetime.now().strftime("%Y%m%d_%H%M")
+        _d1, _d2 = st.columns(2)
+        with _d1:
+            st.download_button(
+                "Exportar cola operativa DGIn CSV",
+                make_csv(_seguimiento_df),
+                f"dgin_cola_operativa_convocatorias_{_export_stamp}.csv",
+                "text/csv",
+                disabled=_seguimiento_df.empty,
+            )
+        with _d2:
+            st.download_button(
+                "Exportar base convocatorias curada CSV",
+                make_csv(_conv),
+                f"convocatorias_curadas_{_export_stamp}.csv",
+                "text/csv",
+                disabled=_conv.empty,
+            )
+
+        _plantilla_cols = [
+            "conv_id", "convocatoria_titulo", "perfil_nombre", "owner_unit", "estado",
+            "score_total", "eligibility_status", "readiness_status", "deadline_class",
+            "dias_al_cierre", "recommended_action", "url",
+            "estado_gestion", "responsable_dgin", "fecha_revision", "comentarios",
+        ]
+        _plantilla_df = pd.DataFrame(columns=_plantilla_cols)
+        st.download_button(
+            "Descargar plantilla vacía DGIn CSV",
+            make_csv(_plantilla_df),
+            "dgin_cola_operativa_template.csv",
+            "text/csv",
+        )
+
+        with st.expander("Diccionario de campos (CSV exportables)", expanded=False):
+            _dict_rows = [
+                {
+                    "dataset_csv": f"dgin_cola_operativa_convocatorias_{_export_stamp}.csv",
+                    "campo": "conv_id",
+                    "descripcion": "Identificador unico de convocatoria en el sistema de matching.",
+                    "tipo_dato_esperado": "string",
+                    "ejemplo": "ANID-2026-001",
+                },
+                {
+                    "dataset_csv": f"dgin_cola_operativa_convocatorias_{_export_stamp}.csv",
+                    "campo": "convocatoria_titulo",
+                    "descripcion": "Nombre oficial de la convocatoria.",
+                    "tipo_dato_esperado": "string",
+                    "ejemplo": "FONIS 2026",
+                },
+                {
+                    "dataset_csv": f"dgin_cola_operativa_convocatorias_{_export_stamp}.csv",
+                    "campo": "owner_unit",
+                    "descripcion": "Unidad institucional sugerida como responsable de gestion.",
+                    "tipo_dato_esperado": "string",
+                    "ejemplo": "Gestion I+D",
+                },
+                {
+                    "dataset_csv": f"dgin_cola_operativa_convocatorias_{_export_stamp}.csv",
+                    "campo": "score_total",
+                    "descripcion": "Puntaje de matching institucional para priorizacion operativa.",
+                    "tipo_dato_esperado": "float",
+                    "ejemplo": "95.0",
+                },
+                {
+                    "dataset_csv": f"dgin_cola_operativa_convocatorias_{_export_stamp}.csv",
+                    "campo": "estado_gestion",
+                    "descripcion": "Estado manual de seguimiento DGIn (pendiente, evaluacion, postulacion, cerrada).",
+                    "tipo_dato_esperado": "string (catalogo)",
+                    "ejemplo": "Postulacion en curso",
+                },
+                {
+                    "dataset_csv": f"dgin_cola_operativa_convocatorias_{_export_stamp}.csv",
+                    "campo": "responsable_dgin",
+                    "descripcion": "Responsable nominal para seguimiento de la convocatoria.",
+                    "tipo_dato_esperado": "string",
+                    "ejemplo": "Nombre Apellido",
+                },
+                {
+                    "dataset_csv": f"convocatorias_curadas_{_export_stamp}.csv",
+                    "campo": "estado",
+                    "descripcion": "Estado de apertura de la convocatoria (Abierto o Proximo).",
+                    "tipo_dato_esperado": "string (catalogo)",
+                    "ejemplo": "Abierto",
+                },
+                {
+                    "dataset_csv": f"convocatorias_curadas_{_export_stamp}.csv",
+                    "campo": "relevancia_cchen",
+                    "descripcion": "Nivel de relevancia institucional definido en curaduria.",
+                    "tipo_dato_esperado": "string",
+                    "ejemplo": "Alta",
+                },
+                {
+                    "dataset_csv": f"convocatorias_matching_rules_{_export_stamp}.csv",
+                    "campo": "perfil_id",
+                    "descripcion": "Identificador del perfil institucional asociado a reglas.",
+                    "tipo_dato_esperado": "string",
+                    "ejemplo": "perfil_gestion_id",
+                },
+                {
+                    "dataset_csv": f"convocatorias_matching_rules_{_export_stamp}.csv",
+                    "campo": "notes",
+                    "descripcion": "Notas operativas y criterios complementarios de matching.",
+                    "tipo_dato_esperado": "string",
+                    "ejemplo": "Priorizar cuando cierre <= 45 dias",
+                },
+            ]
+            _dict_df = pd.DataFrame(_dict_rows)
+            st.dataframe(_dict_df, width="stretch", hide_index=True, height=280)
+            st.download_button(
+                "Descargar diccionario de campos CSV (Convocatorias)",
+                make_csv(_dict_df),
+                "diccionario_campos_convocatorias_matching.csv",
+                "text/csv",
+            )
+
+        with st.expander("Guía semanal DGIn (3 pasos)", expanded=False):
+            st.markdown(
+                "1. **Priorizar**: filtrar por unidad, revisar `Activables hoy` y `Cierre <= 45 días`.\n"
+                "2. **Gestionar**: exportar cola DGIn y completar `estado_gestion`, `responsable_dgin`, `fecha_revision`, `comentarios`.\n"
+                "3. **Cerrar**: definir top oportunidades de la semana, responsables y fecha de control siguiente."
+            )
+
         sec("Reglas activas de matching")
         if _rules.empty:
             st.info("No se encontró el archivo de reglas formales de matching.")
@@ -197,6 +403,12 @@ def render(ctx: dict) -> None:
                 width="stretch",
                 hide_index=True,
                 height=250,
+            )
+            st.download_button(
+                "Exportar reglas de matching CSV",
+                make_csv(_rules),
+                f"convocatorias_matching_rules_{_export_stamp}.csv",
+                "text/csv",
             )
 
         sec("Lectura operativa")

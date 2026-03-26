@@ -1,0 +1,55 @@
+# Workflow de actualización automática de datos institucionales
+# Ejecuta los scripts principales de descarga y actualización de outputs CCHEN
+# Programado para correr semanalmente (lunes 08:00 UTC)
+# Notificación por email ante fallos: pendiente de implementar (ver README)
+
+name: Actualización automática de datos CCHEN
+
+on:
+  schedule:
+    - cron: '0 8 * * 1'  # Lunes 08:00 UTC
+  workflow_dispatch:
+
+jobs:
+  actualizar-datos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt || pip install -r Dashboard/requirements.txt
+
+      - name: Descargar outputs Zenodo (combinado)
+        run: |
+          python Scripts/download_zenodo_cchen_combined.py --estimate-only
+          python Scripts/download_zenodo_cchen_combined.py
+
+      - name: Descargar outputs Europe PMC
+        run: |
+          python Scripts/download_europepmc_cchen.py
+
+      - name: Descargar outputs OpenAIRE
+        run: |
+          python Scripts/download_openaire_cchen_full.py
+
+      # Puedes agregar más scripts aquí según evolucione el observatorio
+
+      - name: Commit y push de nuevos datos (si aplica)
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add Data/ || true
+          git commit -m 'Actualización automática de datos institucionales [skip ci]' || echo 'No hay cambios para commitear.'
+          git push || echo 'No se pudo pushear (posible fork o permisos)'
+
+# Notificación por email ante fallos: pendiente de implementar
+# Puedes usar actions como dawidd6/action-send-mail o github-script en el futuro

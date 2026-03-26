@@ -1,0 +1,125 @@
+name: Actualizar Observatorio
+
+# ── Paso 2: ubuntu-latest + apt TeX Live (sin Docker)
+# ── Para Paso 3 (Docker): descomentar la sección "container:" y
+#    comentar el step "Instalar LuaLaTeX".
+#
+# Cuándo corre:
+#   - Cron diario 09:00 UTC (06:00 CLT)
+#   - Manual desde Actions → "Run workflow" (con opción --full)
+#   - NO en push, para evitar loop con el commit del PDF
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    inputs:
+      full_mode:
+        description: "Fetch APIs externas antes de generar (--full)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+jobs:
+  actualizar-observatorio:
+    runs-on: ubuntu-latest
+
+    # ── Paso 3 (Docker): reemplazar runs-on por esto ──
+    # runs-on: ubuntu-latest
+    # container:
+    #   image: texlive/texlive:latest
+
+    permissions:
+      contents: write   # necesario para el git push del PDF
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "runtime.txt"
+
+      - name: Instalar dependencias Python
+        run: pip install --quiet -r requirements.txt
+
+      # ── Paso 3 (Docker): eliminar este step (TeX ya incluido en la imagen) ──
+      - name: Instalar LuaLaTeX y paquetes TeX Live
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            texlive-luatex \
+            texlive-lang-spanish \
+            texlive-latex-recommended \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            texlive-fonts-extra \
+            texlive-pictures
+
+      - name: Generar auto_stats.tex desde CSVs locales
+        run: python Scripts/generar_stats_latex.py
+
+      - name: Compilar PDF (LuaLaTeX, 2 pasadas)
+        working-directory: Docs/reports
+        run: |
+          lualatex -interaction=nonstopmode -halt-on-error \
+            observatorio_cchen_documentacion.tex
+          lualatex -interaction=nonstopmode -halt-on-error \
+            observatorio_cchen_documentacion.tex
+
+      - name: Publicar PDF como artifact descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: observatorio-cchen-${{ github.run_id }}
+          path: Docs/reports/observatorio_cchen_documentacion.pdf
+          retention-days: 30
+
+      # ── Paso 4: commit del PDF versionado al repo ──
+      - name: Commit PDF y auto_stats.tex
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Docs/reports/observatorio_cchen_documentacion.pdf
+          git add Docs/reports/auto_stats.tex
+          if git diff --staged --quiet; then
+            echo "Sin cambios — PDF ya está actualizado."
+          else
+            FECHA=$(date '+%Y-%m-%d')
+            git commit -m "docs: actualización automática observatorio ${FECHA}"
+            git push
+          fi
+
+      - name: Publicar resumen en Job Summary
+        if: always()
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          summary = Path(os.environ["GITHUB_STEP_SUMMARY"])
+          pdf = Path("Docs/reports/observatorio_cchen_documentacion.pdf")
+          stats = Path("Docs/reports/auto_stats.tex")
+
+          lines = ["## Observatorio CCHEN 360° — Actualización\n"]
+
+          if pdf.exists():
+              size_kb = pdf.stat().st_size // 1024
+              lines.append(f"- **PDF generado**: {size_kb} KB")
+          else:
+              lines.append("- **PDF**: no encontrado")
+
+          if stats.exists():
+              for line in stats.read_text().splitlines():
+                  if line.startswith("\\newcommand"):
+                      cmd = line.split("{")[1].split("}")[0]
+                      val = line.split("{")[2].split("}")[0]
+                      lines.append(f"- `{cmd}` = `{val}`")
+
+          summary.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY

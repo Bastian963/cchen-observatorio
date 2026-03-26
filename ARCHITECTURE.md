@@ -834,6 +834,84 @@ TRL 7: Sistema en entorno real con conectividad estable institucional
 
 ---
 
+## 17. Plan de trabajo futuro — Asistente I+D (RAG)
+
+### 17.1 ✅ Ampliar benchmark — COMPLETADO (2026-03-24)
+
+**Estado:** `publication_rag` ampliado a n=5 queries. `top_k=5` confirmado.
+
+**Resultados finales** (`Docs/reports/assistant_eval_run_2026-03-24_012539.csv`):
+
+| query_id | tema | top1_score | avg_score | keyword_hits |
+|---|---|---|---|---|
+| Q04 | dosimetría seguridad | 0.7409 | 0.6789 | 2 |
+| Q06 | medicina nuclear | 0.7372 | 0.5895 | 4 |
+| Q11 | radiaciones ionizantes | 0.7655 | 0.6843 | 2 |
+| Q12 | física de reactores | 0.6272 | 0.5959 | 3 |
+| Q13 | colaboración universidades | 0.6914 | 0.6083 | 1 |
+| **Media** | | **0.7124** | **0.6314** | **2.4** |
+
+**Fixes aplicados para llegar a 5/5 keyword_hits > 0:**
+- Q04: keywords reales desde perfilado de top-5 papers (`dosimetria;dosimetry;radiological protection;radiodiagnosis;cyclotron`)
+- Q13: abreviaciones → nombres completos (`Universidad de Chile;USACH;Pontificia Universidad;colaboracion;coautoria`)
+- `_normalize_kw()` en `assistant_eval_batch.py`: normalización NFD→ASCII para matchear acentos
+
+**Decisión:** `top_k=5` fijado como default explícito. 5/5 queries con keyword_hits > 0.
+
+### 17.2 Mejorar cobertura de datos estructurados
+
+**`heuristic_sources_mentioned` = 0 en 5/8 queries structured_or_hybrid** (baseline v1)
+El asistente usaba los datos pero no los nombraba explícitamente.
+
+| Opción | Estado | Dónde |
+|---|---|---|
+| ✅ Instrucción al system prompt: "cita la fuente de cada cifra" | Implementado (2026-03-24) | `_build_assistant_system_prompt`, línea ~483 |
+| ✅ Métrica `heuristic_citation_tags` (regex `\(fuente:[^)]+\)`) | Implementado (2026-03-24) | `assistant_eval_structured_responses.py` |
+| ✅ Tests unitarios para `_count_citation_tags`, `_normalize_kw`, `_keyword_hits`, `_delta_str` | Implementado (2026-03-24) | `Tests/test_eval_pure_functions.py` (30 tests) |
+| ✅ Smoke test de `asistente_id.render()` con mocks (`streamlit`, `groq`) | Implementado (2026-03-24) | `Tests/test_sections_smoke.py` |
+| Añadir metadatos de fuente al contexto inyectado | Pendiente | `_build_assistant_system_prompt`, bloque de publicaciones |
+| Evaluar con LLM-as-judge | Pendiente | `assistant_eval_structured_responses.py` |
+
+**Métrica nueva:** `heuristic_citation_tags` cuenta ocurrencias de `(fuente: X)` directamente en la respuesta.
+- v1 baseline: todos = 0 (instrucción no existía).
+- v2: corrida parcial completada (Q01-Q02 exitosas; Q03-Q10 interrumpidas por rate limit).
+- Consolidación final pendiente para próxima ventana de cuota.
+- Comparar con: `Scripts/compare_eval_runs.py --v1 ... --v2 ...`
+
+**Estado operativo al cierre (2026-03-24):**
+- Input pendiente preparado: `Docs/reports/assistant_eval_template_pending_q03_q10.csv`.
+- Script de consolidación creado: `Scripts/merge_structured_eval_runs.py`.
+- Comando de merge listo para consolidar v2 final cuando termine el rerun pendiente.
+- Runbook documentado en: `Docs/reports/runbook_cierre_v2_2026-03-24.md`.
+
+**Mejoras UX en asistente (2026-03-24):**
+- Spinner mientras espera primer token de Groq
+- Expander "📚 Fuentes consultadas" debajo de cada respuesta (papers RAG con score y DOI)
+- Guard `reply or ""` para evitar crash si stream devuelve None
+
+### 17.3 Datos adicionales que mejorarían la cobertura del asistente
+
+| Dato | Fuente | Qué mejoraría | Prioridad |
+|---|---|---|---|
+| Abstracts completos para el ~30% sin abstract | Unpaywall, Semantic Scholar, EuroPMC | `avg_score` en RAG; contexto temático más rico | Alta |
+| Citas por autor (h-index individual) | OpenAlex `/authors` endpoint | Q03 capital humano: diagnóstico de productividad individual | Media |
+| Proyectos FONDEQUIP y FONDEF históricos | ANID portal (`/api/concursos`) | Q02: ampliar análisis de financiamiento complementario | Media |
+| Convenios internacionales activos con estado | CCHEN Secretaría Ejecutiva (fuente interna) | Q05: colaboración internacional más completa | Media |
+| Postulaciones fallidas a convocatorias ANID | Fuente interna CCHEN | Q02/Q08: brecha entre perfil y tasas de éxito reales | Baja |
+| Patentes con estado legal actualizado | PatentsView API (`PATENTSVIEW_API_KEY`) | Portafolio PI: distinción activo/expirado/abandonado | Baja |
+
+### 17.4 Mejoras técnicas pendientes al retrieval
+
+| Mejora | Descripción | Prioridad |
+|---|---|---|
+| Reranking generalizable | El perfil de medicina nuclear en `semantic_search.py` es un parche ad-hoc. Si aparecen más dominios con el mismo problema, evaluar Cross-Encoder ligero (`cross-encoder/ms-marco-MiniLM-L-6-v2`) o BM25 híbrido. | Media |
+| Embeddings incrementales | Actualmente se recalculan todos los embeddings al actualizar publicaciones. Implementar actualización diferencial (solo papers nuevos desde última fecha). | Media |
+| `top_k` adaptativo por tipo de query | Queries amplias se benefician de `top_k` mayor; queries de un isotopo específico se benefician de `top_k` menor + reranking. Explorar detección automática de especificidad. | Baja |
+| Cobertura adicional del smoke del asistente | El smoke base ya existe; faltan casos límite (`st.stop`, fallas en prompt builder/PDF, errores Groq no deterministas). | Baja |
+| Benchmark cold start de loaders | `perf_section_proxy.py` solo mide warm cache (<4ms). Falta medir primera carga desde CSV/Supabase para detectar cuellos de botella en startup del dashboard. | Baja |
+
+---
+
 ## 16. Contactos y referencias
 
 - **Gestor Tecnológico:** Rodrigo Núñez G. (autor de la propuesta de implementación)

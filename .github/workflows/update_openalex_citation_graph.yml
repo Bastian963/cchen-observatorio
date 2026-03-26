@@ -1,0 +1,59 @@
+# Workflow para actualizar el grafo de citas OpenAlex
+# Ejecuta fetch_openalex_citations.py cada 2 meses (día 1 de cada mes impar)
+
+name: update_openalex_citation_graph
+
+on:
+  schedule:
+    - cron: '0 6 1 1,3,5,7,9,11 *'  # 1 de enero, marzo, mayo, julio, septiembre, noviembre a las 06:00 UTC
+  workflow_dispatch:
+
+jobs:
+  update-citation-graph:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v5
+
+      - name: Configurar Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: pip install --quiet pandas
+
+      - name: Ejecutar fetch_openalex_citations.py
+        run: |
+          python Scripts/fetch_openalex_citations.py
+
+      - name: Commit y push si hay cambios
+        run: |
+          git config user.name  "CCHEN Observatory Bot"
+          git config user.email "observatory@cchen.cl"
+          git add Data/Publications/cchen_citation_graph.csv Data/Publications/cchen_citing_papers.csv
+          if git diff --staged --quiet; then
+            echo "Sin cambios para commit."
+          else
+            git commit -m "chore(data): actualización grafo de citas OpenAlex $(date +%Y-%m-%d)"
+            git push
+          fi
+    
+  notify-on-failure:
+    needs: update-citation-graph
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+      - name: Send failure notification email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USER }}
+          password: ${{ secrets.EMAIL_PASS }}
+          subject: "[ALERTA] Fallo en actualización grafo de citas OpenAlex"
+          to: ${{ secrets.EMAIL_TO }}
+          from: "CCHEN Observatory Bot <${{ secrets.EMAIL_USER }}>"
+          body: |
+            El workflow de actualización automática del grafo de citas OpenAlex ha fallado.
+            Revisa el log en GitHub Actions para más detalles.

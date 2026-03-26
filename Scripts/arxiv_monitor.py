@@ -121,7 +121,11 @@ def fetch_feed(url: str):
 def parse_feed(xml_content: str, area: str) -> list[dict]:
     """Parsea el XML del feed RSS y extrae los campos relevantes."""
     ns = {"dc": "http://purl.org/dc/elements/1.1/"}
-    root = ET.fromstring(xml_content)
+    try:
+        root = ET.fromstring(xml_content)
+    except ET.ParseError as exc:
+        print(f"  ⚠ XML inválido en feed {area}: {exc}")
+        return []
     items = []
 
     for item in root.findall(".//item"):

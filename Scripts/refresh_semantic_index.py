@@ -156,7 +156,13 @@ def main() -> int:
     )
 
     print("[INFO] Subiendo embeddings actualizados a Supabase pgvector...")
-    _run_step([sys.executable, "Database/migrate_embeddings.py"])
+    try:
+        _run_step([sys.executable, "Database/migrate_embeddings.py"])
+    except Exception as exc:
+        print(f"[ERROR] migrate_embeddings.py falló: {exc}")
+        print("[WARN] Los embeddings locales (.npy) fueron actualizados pero Supabase quedó desincronizado.")
+        print("[HINT] Vuelve a ejecutar con --force para reintentar la migración.")
+        raise
 
     # Re-chequeo post-refresh para observar mejora y alertar si sigue bajo umbral.
     client = _get_client()

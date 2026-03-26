@@ -1,3 +1,118 @@
+
+## 14. Descarga robusta de recursos Zenodo por afiliación institucional
+
+**Motivación:**
+No todos los recursos de la Comisión Chilena de Energía Nuclear (CCHEN) están agrupados en una comunidad Zenodo, pero sí suelen estar correctamente afiliados en los metadatos de autoría.
+
+**Estrategia:**
+- Se automatiza la búsqueda y descarga de todos los recursos donde la afiliación de algún autor contenga “Comisión Chilena de Energía Nuclear” o “CCHEN”.
+- Esto permite capturar datasets, papers, patentes, software, imágenes, etc., aunque estén dispersos en Zenodo.
+
+**Implementación:**
+1. Se utiliza la API de Zenodo para buscar registros con afiliaciones relevantes.
+2. Se descargan los archivos y metadatos de cada resultado, organizando por título y ID.
+3. Se eliminan duplicados por ID para evitar descargas repetidas.
+4. El script es extensible: se pueden agregar más variantes de afiliación si es necesario.
+
+**Archivo de script:**
+- `Scripts/download_zenodo_by_affiliation.py`
+
+**Palabras clave usadas:**
+- "comision chilena de energia nuclear"
+- "cchen"
+
+**Ventajas:**
+- No depende de comunidades ni slugs.
+- Captura recursos institucionales aunque estén dispersos.
+- Permite auditar y mantener actualizado el repositorio local de outputs CCHEN.
+
+**Recomendación:**
+
+## 15. Evaluación de DSpace como alternativa/complemento a Zenodo
+
+**Motivación:**
+DSpace es una plataforma open source ampliamente utilizada para repositorios institucionales, especialmente en universidades y centros de investigación.
+
+**Plan de estudio:**
+- Analizar si DSpace podría servir como alternativa o complemento a Zenodo para la gestión, preservación y difusión de outputs institucionales de CCHEN.
+- Comparar funcionalidades clave: autoarchivo, metadatos, interoperabilidad (OAI-PMH), integración con ORCID, DOI, control de acceso, personalización, costos y soporte.
+- Revisar casos de uso en instituciones similares (repositorios de universidades chilenas, centros de investigación nuclear, etc.).
+- Evaluar facilidad de instalación, mantenimiento y escalabilidad.
+- Considerar integración con flujos actuales (automatización, dashboard, scripts de ingesta, etc.).
+
+**Acción:**
+- Incluir un informe comparativo y una recomendación en el próximo ciclo de revisión del plan de datos del Observatorio.
+
+**Resultado esperado:**
+- Decisión informada sobre si DSpace aporta valor agregado respecto a Zenodo y si conviene su adopción, integración o interoperabilidad.
+
+## 12. Integración de ZENODO como repositorio de datos
+
+**¿Por qué ZENODO?**
+Permite publicar datasets, scripts y resultados con DOI, facilitando la preservación y citabilidad de los datos del Observatorio.
+
+**¿Se puede usar cuenta personal?**
+Sí. Puedes crear una cuenta personal (ej: Gmail) y comenzar a subir datasets. Posteriormente, puedes migrar la autoría o asociar la cuenta a la organización cuando dispongas de correo institucional.
+
+**Recomendaciones:**
+- Documentar el correo y usuario utilizado para trazabilidad.
+- Usar la cuenta personal solo mientras no exista institucional.
+- Solicitar el API token desde el perfil de usuario para automatizar cargas.
+
+**Generación de token de acceso (API):**
+1. Ingresa a tu perfil en ZENODO.
+2. Ve a "Applications" > "New personal access token".
+3. Asigna un nombre al token.
+4. Marca los permisos necesarios:
+  - `deposit:actions` (publicar)
+  - `deposit:write` (subir archivos)
+  - `user:email` (opcional, solo lectura de email)
+5. Haz clic en "Create".
+
+![Pantalla de generación de token en ZENODO](../images_reports/zenodo_token_creation.png)
+
+**Automatización (opcional):**
+Puedes usar el token para subir datasets vía API (Python, curl, etc). Documentar scripts y tokens usados en un archivo seguro, nunca en el repositorio público.
+
+**Próximos pasos sugeridos:**
+- Definir política de publicación de datasets.
+- Documentar los DOIs generados y enlazarlos en el dashboard.
+- Migrar a cuenta institucional cuando esté disponible.
+
+## 13. Cómo guardar y usar el token de ZENODO de forma segura
+
+**1. Nunca subas el token a ningún repositorio ni lo compartas por correo.**
+
+**2. Guarda el token como variable de entorno en tu sistema (recomendado):**
+
+**En macOS o Linux:**
+
+Abre tu terminal y ejecuta:
+
+```bash
+export ZENODO_TOKEN="aquí_va_tu_token"
+```
+
+(Sustituye `aquí_va_tu_token` por el valor real de tu token, sin espacios ni comillas adicionales.)
+
+Esto solo lo guarda para la sesión actual de terminal. Si cierras la terminal, deberás volver a exportarlo.
+
+**Para hacerlo permanente:**
+Agrega la línea anterior al final de tu archivo `~/.zshrc` (si usas zsh) o `~/.bashrc` (si usas bash):
+
+```bash
+echo 'export ZENODO_TOKEN="aquí_va_tu_token"' >> ~/.zshrc
+```
+
+Luego, recarga la configuración:
+
+```bash
+source ~/.zshrc
+```
+
+**3. El script Python leerá automáticamente la variable de entorno `ZENODO_TOKEN` y la usará para autenticarse.**
+
+**Nunca guardes el token en archivos del repositorio, ni en scripts, ni lo compartas.**
 # Runbook operativo - Flujo de ingreso Observatorio CCHEN
 
 Fecha: 2026-03-25
@@ -168,3 +283,19 @@ python Scripts/send_intake_flow_email.py --send-brevo --confirm-send --html-file
 - Crear script de ingesta de respuestas Google Forms -> dataset interno.
 - Integrar respuestas a pipeline dashboard/Supabase.
 - Añadir test CI que valide presencia de `INTAKE_FLOW_FORM_URL` en workflow de recordatorio.
+
+## 11. Validación final de formulario y flujo operativo (2026-03-25)
+
+- Se revisó el formulario Google generado y publicado por el script `Scripts/create_intake_google_form.py`.
+- El formulario está abierto para respuestas (`isAcceptingResponses=true`), validado tanto en la API como en la interfaz web.
+- Todas las preguntas requeridas (10) están presentes y visibles para el usuario final.
+- El enlace público está correctamente cargado en el secreto `INTAKE_FLOW_FORM_URL` y es el que se envía en el correo semanal.
+- Se realizó una prueba manual de acceso y envío de respuesta, confirmando funcionamiento end-to-end.
+- El flujo semanal de recordatorio y acceso al formulario está operativo y cumple los requisitos definidos.
+
+**Evidencia:**
+- Captura de pantalla y revisión visual del formulario (ver historial de conversación y validación manual).
+- Último correo recibido contiene el enlace funcional y el bloque de preguntas esperado.
+
+**Observación:**
+Se recomienda mantener esta validación como checklist en futuras iteraciones o cambios del flujo.

@@ -189,6 +189,9 @@ def render(ctx: dict) -> None:
     _country_counts.columns = ["iso2", "N"]
     _country_counts["iso3"] = _country_counts["iso2"].map(_ISO2_ISO3)
     _country_counts = _country_counts.dropna(subset=["iso3"])
+    _top10c = pd.DataFrame()
+    _deg_df = pd.DataFrame()
+    _au_top_df = pd.DataFrame()
 
     if not _country_counts.empty:
         map_col, bar_col = st.columns([3, 1])
@@ -298,7 +301,7 @@ def render(ctx: dict) -> None:
         st.caption("🔴 CCHEN   🔵 Instituciones colaboradoras")
 
         _deg_df = pd.DataFrame(sorted(G_sub.degree(), key=lambda x: -x[1])[:15],
-                               columns=["Institución", "Conexiones"])
+                       columns=["Institución", "Conexiones"])
         st.dataframe(_deg_df, width="stretch", hide_index=True, height=280)
 
     except ImportError:
@@ -491,3 +494,122 @@ def render(ctx: dict) -> None:
         "Exportar instituciones colaboradoras CSV",
         make_csv(_top_inst), "colaboraciones_instituciones_cchen.csv", "text/csv",
     )
+
+    sec("Exportables CSV del módulo")
+    st.caption(
+        "Descargas para apertura de datos y reutilización analítica en equipos internos."
+    )
+
+    _e1, _e2 = st.columns(2)
+    with _e1:
+        st.download_button(
+            "Exportar colaboraciones internacionales (países) CSV",
+            make_csv(_country_counts),
+            "colaboraciones_internacionales_paises.csv",
+            "text/csv",
+            disabled=_country_counts.empty,
+        )
+        st.download_button(
+            "Exportar top países colaboración CSV",
+            make_csv(_top10c),
+            "colaboraciones_top_paises.csv",
+            "text/csv",
+            disabled=_top10c.empty,
+        )
+    with _e2:
+        st.download_button(
+            "Exportar top red institucional CSV",
+            make_csv(_deg_df),
+            "red_institucional_top_conexiones.csv",
+            "text/csv",
+            disabled=_deg_df.empty,
+        )
+        st.download_button(
+            "Exportar top red autores CSV",
+            make_csv(_au_top_df),
+            "red_autores_top_conexiones.csv",
+            "text/csv",
+            disabled=_au_top_df.empty,
+        )
+
+    with st.expander("Diccionario de campos (CSV exportables)", expanded=False):
+        _dict_rows = [
+            {
+                "dataset_csv": "colaboraciones_internacionales_paises.csv",
+                "campo": "country_code",
+                "descripcion": "Codigo ISO-2 del pais de colaboracion.",
+                "tipo_dato_esperado": "string (ISO-2)",
+                "ejemplo": "CL",
+            },
+            {
+                "dataset_csv": "colaboraciones_internacionales_paises.csv",
+                "campo": "colaboraciones",
+                "descripcion": "Numero de colaboraciones observadas para el pais.",
+                "tipo_dato_esperado": "integer",
+                "ejemplo": "42",
+            },
+            {
+                "dataset_csv": "colaboraciones_top_paises.csv",
+                "campo": "País",
+                "descripcion": "Nombre del pais colaborador normalizado para visualizacion.",
+                "tipo_dato_esperado": "string",
+                "ejemplo": "Chile",
+            },
+            {
+                "dataset_csv": "colaboraciones_top_paises.csv",
+                "campo": "Papers",
+                "descripcion": "Cantidad de papers co-publicados con el pais.",
+                "tipo_dato_esperado": "integer",
+                "ejemplo": "18",
+            },
+            {
+                "dataset_csv": "red_institucional_top_conexiones.csv",
+                "campo": "institucion",
+                "descripcion": "Institucion conectada en la red institucional.",
+                "tipo_dato_esperado": "string",
+                "ejemplo": "Universidad de Chile",
+            },
+            {
+                "dataset_csv": "red_institucional_top_conexiones.csv",
+                "campo": "grado",
+                "descripcion": "Numero de conexiones observadas para la institucion.",
+                "tipo_dato_esperado": "integer",
+                "ejemplo": "25",
+            },
+            {
+                "dataset_csv": "red_autores_top_conexiones.csv",
+                "campo": "autor",
+                "descripcion": "Autor con presencia en la red de coautoria.",
+                "tipo_dato_esperado": "string",
+                "ejemplo": "Perez, Juan",
+            },
+            {
+                "dataset_csv": "red_autores_top_conexiones.csv",
+                "campo": "grado",
+                "descripcion": "Numero de conexiones de coautoria por autor.",
+                "tipo_dato_esperado": "integer",
+                "ejemplo": "12",
+            },
+            {
+                "dataset_csv": "colaboraciones_instituciones_cchen.csv",
+                "campo": "Institución",
+                "descripcion": "Institucion externa colaboradora en co-publicaciones.",
+                "tipo_dato_esperado": "string",
+                "ejemplo": "Pontificia Universidad Catolica de Chile",
+            },
+            {
+                "dataset_csv": "colaboraciones_instituciones_cchen.csv",
+                "campo": "Papers",
+                "descripcion": "Cantidad de papers co-publicados con la institucion.",
+                "tipo_dato_esperado": "integer",
+                "ejemplo": "10",
+            },
+        ]
+        _dict_df = pd.DataFrame(_dict_rows)
+        st.dataframe(_dict_df, width="stretch", hide_index=True, height=260)
+        st.download_button(
+            "Descargar diccionario de campos CSV (Redes)",
+            make_csv(_dict_df),
+            "diccionario_campos_redes_colaboracion.csv",
+            "text/csv",
+        )

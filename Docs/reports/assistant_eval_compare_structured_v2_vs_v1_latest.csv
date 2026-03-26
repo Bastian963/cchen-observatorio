@@ -1,0 +1,9 @@
+query_id,query_short,structured_available_source_ratio_v1,structured_available_source_ratio_v2,structured_available_source_ratio_delta,structured_expected_source_count_v1,structured_expected_source_count_v2,structured_expected_source_count_delta,structured_available_source_count_v1,structured_available_source_count_v2,structured_available_source_count_delta,response_ms_v1,response_ms_v2,response_ms_delta,heuristic_sources_mentioned_v1,heuristic_sources_mentioned_v2,heuristic_sources_mentioned_delta,heuristic_citation_tags_v1,heuristic_citation_tags_v2,heuristic_citation_tags_delta
+Q01,Diagnostica la produccion cientifica reciente de CCHEN y sus,1.0,1.0,±0,2,2,±0,2,2,±0,2596,3427,+831,0,0,±0,0,11,+11
+Q02,Que oportunidades de financiamiento ANID y complementario so,1.0,1.0,±0,3,3,±0,3,3,±0,9052,152,-8900,1,0,-1.00,0,0,±0
+Q03,Resume riesgos y fortalezas del capital humano I+D en CCHEN.,1.0,1.0,±0,2,2,±0,2,2,±0,34526,370,-34156,0,0,±0,0,0,±0
+Q05,Analiza colaboracion internacional de CCHEN: instituciones y,1.0,1.0,±0,2,2,±0,2,2,±0,35391,170,-35221,0,0,±0,0,0,±0
+Q07,Que temas de BERTopic dominan y como se relacionan con prior,1.0,1.0,±0,2,2,±0,2,2,±0,35983,164,-35819,0,0,±0,0,0,±0
+Q08,Cuales son las convocatorias abiertas con mejor calce para p,1.0,1.0,±0,3,3,±0,3,3,±0,35921,142,-35779,1,0,-1.00,0,0,±0
+Q09,Que evidencia de transferencia tecnologica existe y que vaci,1.0,1.0,±0,3,3,±0,3,3,±0,36247,130,-36117,1,0,-1.00,0,0,±0
+Q10,Dame un resumen ejecutivo para directivos con hallazgos acci,1.0,1.0,±0,4,4,±0,4,4,±0,35617,155,-35462,0,0,±0,0,0,±0

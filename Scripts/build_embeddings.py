@@ -179,13 +179,23 @@ def main() -> None:
         normalize_embeddings=True,  # cosine similarity → dot product
     )
 
-    # Guardar
-    np.save(OUT_EMB, embeddings.astype("float32"))
+    # Guardar — escritura atómica: primero a temporales, luego rename
+    import tempfile
+    out_dir = OUT_EMB.parent
+    with tempfile.NamedTemporaryFile(dir=out_dir, suffix=".npy", delete=False) as _tmp_emb:
+        tmp_emb_path = Path(_tmp_emb.name)
+    np.save(tmp_emb_path, embeddings.astype("float32"))
 
     id_col = "openalex_id" if "openalex_id" in pub.columns else "id"
     pub["abstract"] = pub[abstract_col] if abstract_col in pub.columns else ""
     meta_cols = [c for c in [id_col, "doi", text_col, "year", "abstract"] if c in pub.columns]
-    pub[meta_cols].to_csv(OUT_META, index=False)
+    with tempfile.NamedTemporaryFile(dir=out_dir, suffix=".csv", delete=False, mode="w") as _tmp_meta:
+        tmp_meta_path = Path(_tmp_meta.name)
+    pub[meta_cols].to_csv(tmp_meta_path, index=False)
+
+    # Atomic rename: both files swap together
+    tmp_emb_path.replace(OUT_EMB)
+    tmp_meta_path.replace(OUT_META)
 
     print(f"\n✓ Embeddings guardados:")
     print(f"  {OUT_EMB}  ({embeddings.shape})")

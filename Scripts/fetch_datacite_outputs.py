@@ -48,13 +48,16 @@ def _get_json(url: str) -> dict:
         with urlopen(req, timeout=60) as resp:
             return json.load(resp)
     except Exception:
-        result = subprocess.run(
-            ["curl", "-L", "--fail", url],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        return json.loads(result.stdout)
+        try:
+            result = subprocess.run(
+                ["curl", "-L", "--fail", url],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            return json.loads(result.stdout)
+        except Exception as exc:
+            raise RuntimeError(f"No se pudo descargar DataCite: {url} -> {exc}") from exc
 
 
 def _extract_creator_names(creators: list[dict]) -> str:
@@ -127,7 +130,11 @@ def fetch_datacite_outputs() -> pd.DataFrame:
     rows = []
 
     while next_url:
-        payload = _get_json(next_url)
+        try:
+            payload = _get_json(next_url)
+        except RuntimeError as exc:
+            print(f"[WARN] Descarga DataCite interrumpida, se guardará resultado parcial: {exc}")
+            break
         for item in payload.get("data", []) or []:
             attrs = item.get("attributes", {}) or {}
             creators = attrs.get("creators", []) or []

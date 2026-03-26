@@ -103,6 +103,10 @@ load_datacite_outputs = _resolve_loader("load_datacite_outputs", _csv_loader("Re
 load_openaire_outputs = _resolve_loader("load_openaire_outputs", _csv_loader("ResearchOutputs", "cchen_openaire_outputs.csv"))
 load_grants_openalex = _resolve_loader("load_grants_openalex", _empty_loader)
 load_orcid_researchers = _resolve_loader("load_orcid_researchers", _csv_loader("Researchers", "cchen_researchers_orcid.csv"))
+load_padron_academicos_provisional = _resolve_loader(
+    "load_padron_academicos_provisional",
+    _csv_loader("Researchers", "cchen_planta_estado_orcid_actual.csv"),
+)
 load_ror_registry = _resolve_loader("load_ror_registry", _csv_loader("Institutional", "cchen_institution_registry.csv"))
 load_ror_pending_review = _resolve_loader("load_ror_pending_review", _csv_loader("Institutional", "ror_pending_review.csv"))
 load_funding_complementario = _resolve_loader("load_funding_complementario", _csv_loader("Funding", "cchen_funding_complementario.csv"))
@@ -633,6 +637,7 @@ _DATASET_LOADERS = {
     "openaire": lambda can_view_sensitive: load_openaire_outputs(),
     "grants_oa": lambda can_view_sensitive: load_grants_openalex(),
     "orcid": lambda can_view_sensitive: load_orcid_researchers(),
+    "padron_acad": lambda can_view_sensitive: load_padron_academicos_provisional(),
     "ror_registry": lambda can_view_sensitive: load_ror_registry(),
     "ror_pending_review": lambda can_view_sensitive: load_ror_pending_review(),
     "funding_plus": lambda can_view_sensitive: _maybe_sensitive(
@@ -671,7 +676,7 @@ _DATASET_LOADERS = {
 _SECTION_DATASETS = {
     "Panel de Indicadores": (
         "pub", "pub_enr", "anid", "ch", "ch_ej", "ch_adv",
-        "ror_pending_review", "patents",
+        "ror_pending_review", "patents", "orcid", "padron_acad",
     ),
     "Producción Científica": (
         "pub", "pub_enr", "auth", "dian", "concepts", "orcid", "unpaywall", "europmc",
@@ -699,7 +704,7 @@ _SECTION_DATASETS = {
         "entity_convocatorias", "entity_links",
     ),
     "Formación de Capacidades": (
-        "ch", "ch_ej", "ch_adv", "ch_cumpl", "ch_trans",
+        "ch", "ch_ej", "ch_adv", "ch_cumpl", "ch_trans", "padron_acad",
     ),
     "Asistente I+D": (
         "pub", "pub_enr", "auth", "anid", "ch", "ch_ej", "ch_adv", "orcid",

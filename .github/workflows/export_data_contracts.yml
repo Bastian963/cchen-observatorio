@@ -1,0 +1,172 @@
+name: Export Data Contracts
+
+on:
+  push:
+    paths:
+      - ".github/workflows/export_data_contracts.yml"
+      - "Scripts/check_export_data_contracts.py"
+      - "Scripts/data_contracts_exportables.json"
+      - "Scripts/build_planta_orcid_exports.py"
+      - "Dashboard/sections/redes_colaboracion.py"
+      - "Dashboard/sections/convocatorias_matching.py"
+      - "Dashboard/sections/panel_indicadores.py"
+      - "Dashboard/sections/formacion_capacidades.py"
+      - "Data/Researchers/cchen_padron_academicos_provisional_2026-02-18.csv"
+      - "Data/Researchers/cchen_researchers_orcid.csv"
+      - "Data/Researchers/cchen_planta_estado_orcid_actual.csv"
+      - "Data/Researchers/cchen_planta_orcid_brechas_actual.csv"
+      - "Tests/test_build_planta_orcid_exports.py"
+      - "Data/Vigilancia/convocatorias_curadas.csv"
+      - "Data/Vigilancia/convocatorias_matching_rules.csv"
+      - "Docs/reports/dgin_cola_operativa_convocatorias_*.csv"
+      - "runtime.txt"
+  pull_request:
+    paths:
+      - ".github/workflows/export_data_contracts.yml"
+      - "Scripts/check_export_data_contracts.py"
+      - "Scripts/data_contracts_exportables.json"
+      - "Scripts/build_planta_orcid_exports.py"
+      - "Dashboard/sections/redes_colaboracion.py"
+      - "Dashboard/sections/convocatorias_matching.py"
+      - "Dashboard/sections/panel_indicadores.py"
+      - "Dashboard/sections/formacion_capacidades.py"
+      - "Data/Researchers/cchen_padron_academicos_provisional_2026-02-18.csv"
+      - "Data/Researchers/cchen_researchers_orcid.csv"
+      - "Data/Researchers/cchen_planta_estado_orcid_actual.csv"
+      - "Data/Researchers/cchen_planta_orcid_brechas_actual.csv"
+      - "Tests/test_build_planta_orcid_exports.py"
+      - "Data/Vigilancia/convocatorias_curadas.csv"
+      - "Data/Vigilancia/convocatorias_matching_rules.csv"
+      - "Docs/reports/dgin_cola_operativa_convocatorias_*.csv"
+      - "runtime.txt"
+  workflow_dispatch:
+
+jobs:
+  export-contracts:
+    runs-on: ubuntu-latest
+    env:
+      STAMP: ${{ github.run_id }}-${{ github.run_attempt }}
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "runtime.txt"
+
+      - name: Instalar dependencia mínima
+        run: pip install --quiet pandas
+
+      - name: Compilar validador de contratos
+        run: python -m py_compile Scripts/check_export_data_contracts.py
+
+      - name: Regenerar exportables de planta ORCID
+        run: python Scripts/build_planta_orcid_exports.py --stamp "$STAMP"
+
+      - name: Verificar trazabilidad actual vs dated (planta ORCID)
+        run: |
+          set -euo pipefail
+          cmp -s Data/Researchers/cchen_planta_estado_orcid_actual.csv Data/Researchers/cchen_planta_estado_orcid_${STAMP}.csv
+          cmp -s Data/Researchers/cchen_planta_orcid_brechas_actual.csv Data/Researchers/cchen_planta_orcid_brechas_${STAMP}.csv
+          echo "OK: actual y dated son equivalentes para STAMP=${STAMP}"
+
+      - name: Publicar STAMP validado en Job Summary
+        run: |
+          {
+            echo "### Trazabilidad de versionado (planta ORCID)"
+            echo ""
+            echo "- STAMP validado: ${STAMP}"
+            echo "- Verificacion: actual y dated equivalentes en estado ORCID y brechas"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Ejecutar test automático del script de planta ORCID
+        run: python -m pytest Tests/test_build_planta_orcid_exports.py -q --tb=short
+
+      - name: Ejecutar validación de contratos de exportables
+        run: python Scripts/check_export_data_contracts.py
+
+  export-contracts-report:
+    runs-on: ubuntu-latest
+    needs: [export-contracts]
+    if: always()
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "runtime.txt"
+
+      - name: Instalar dependencia mínima
+        run: pip install --quiet pandas
+
+      - name: Generar reporte JSON de contratos
+        run: |
+          python Scripts/check_export_data_contracts.py \
+            --report-out artifacts/export_data_contracts_report.json || true
+
+      - name: Publicar resumen en Job Summary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report_path = Path("artifacts/export_data_contracts_report.json")
+          summary_path = Path(__import__("os").environ["GITHUB_STEP_SUMMARY"])
+
+          if not report_path.exists():
+              summary_path.write_text(
+                  "## Export Data Contracts\n\n"
+                  "No se encontró el reporte JSON de contratos.\n",
+                  encoding="utf-8",
+              )
+              raise SystemExit(0)
+
+          payload = json.loads(report_path.read_text(encoding="utf-8"))
+          status = str(payload.get("status", "unknown")).upper()
+          contracts = payload.get("contracts", [])
+          errors = payload.get("errors", [])
+
+          lines = []
+          lines.append("## Export Data Contracts")
+          lines.append("")
+          lines.append(f"- Estado: **{status}**")
+          lines.append(f"- Contratos evaluados: **{payload.get('contracts_evaluated', len(contracts))}**")
+          lines.append(f"- Errores: **{len(errors)}**")
+          lines.append("")
+          lines.append("### Contratos validados")
+          lines.append("")
+          lines.append("| Contrato | Archivo | Filas | Columnas | Estado |")
+          lines.append("| --- | --- | ---: | ---: | --- |")
+
+          for row in contracts:
+              lines.append(
+                  "| {name} | {path} | {rows} | {cols} | {state} |".format(
+                      name=row.get("name", "-"),
+                      path=row.get("path", row.get("path_glob", "-")),
+                      rows=row.get("rows", "-"),
+                      cols=row.get("columns", "-"),
+                      state=row.get("status", "-")
+                  )
+              )
+
+          if errors:
+              lines.append("")
+              lines.append("### Errores")
+              lines.append("")
+              for err in errors:
+                  lines.append(f"- {err}")
+
+          summary_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+
+      - name: Publicar artifact de reporte
+        uses: actions/upload-artifact@v4
+        with:
+          name: export-data-contracts-report
+          path: artifacts/export_data_contracts_report.json
+          if-no-files-found: error

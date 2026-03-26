@@ -77,10 +77,16 @@ def _load_artifacts() -> tuple[np.ndarray, pd.DataFrame] | tuple[None, None]:
     if _embeddings is None:
         if not EMB_FILE.exists() or not META_FILE.exists():
             return None, None
-        _embeddings = np.load(EMB_FILE)
-        _meta = pd.read_csv(META_FILE).fillna("")
-        if "abstract" not in _meta.columns:
-            _meta["abstract"] = ""
+        try:
+            emb = np.load(EMB_FILE)
+            meta = pd.read_csv(META_FILE).fillna("")
+            if "abstract" not in meta.columns:
+                meta["abstract"] = ""
+            # Only assign globals once both files loaded successfully
+            _embeddings, _meta = emb, meta
+        except Exception as exc:
+            print(f"[semantic_search] Failed to load artifacts: {exc}")
+            return None, None
     return _embeddings, _meta
 
 
@@ -96,7 +102,8 @@ def _encode_query(query: str) -> "np.ndarray | None":
     try:
         model = _get_model()
         return model.encode([query], normalize_embeddings=True)[0]
-    except Exception:
+    except Exception as exc:
+        print(f"[semantic_search] Failed to encode query: {exc}")
         return None
 
 

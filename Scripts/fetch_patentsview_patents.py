@@ -20,6 +20,7 @@ import json
 import os
 import time
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -112,8 +113,20 @@ def patentsview_get(api_key: str, query: dict, fields: list[str], size: int) -> 
             "User-Agent": "CCHEN-Observatorio/0.2",
         },
     )
-    with urlopen(req, timeout=60) as resp:
-        return json.load(resp)
+    try:
+        with urlopen(req, timeout=60) as resp:
+            return json.load(resp)
+    except HTTPError as exc:
+        detail = exc.reason
+        try:
+            body = exc.read().decode("utf-8", errors="replace").strip()
+            if body:
+                detail = f"{detail} | {body[:300]}"
+        except Exception:
+            pass
+        raise RuntimeError(f"PatentsView API error {exc.code}: {detail}") from exc
+    except URLError as exc:
+        raise RuntimeError(f"PatentsView connection error: {exc.reason}") from exc
 
 
 def normalize_response(payload: dict) -> tuple[list[dict], int]:
@@ -137,7 +150,22 @@ def fetch_patentsview(org_names: list[str], api_key: str, size: int, sleep_secon
     stats = []
     for idx, org in enumerate(org_names, start=1):
         query = {"assignees.assignee_organization": org}
-        payload = patentsview_get(api_key=api_key, query=query, fields=PATENT_FIELDS, size=size)
+        try:
+            payload = patentsview_get(api_key=api_key, query=query, fields=PATENT_FIELDS, size=size)
+        except RuntimeError as exc:
+            print(f"[ERROR] {org} -> {exc}")
+            stats.append(
+                {
+                    "query_org": org,
+                    "total_results": 0,
+                    "returned_records": 0,
+                    "truncated": False,
+                    "error": str(exc),
+                }
+            )
+            if idx < len(org_names):
+                time.sleep(sleep_seconds)
+            continue
         patents, total = normalize_response(payload)
         print(f"[OK] {org} -> {total} resultados")
         for patent in patents:
@@ -149,6 +177,7 @@ def fetch_patentsview(org_names: list[str], api_key: str, size: int, sleep_secon
                 "total_results": total,
                 "returned_records": len(patents),
                 "truncated": bool(total > len(patents)),
+                "error": "",
             }
         )
         if idx < len(org_names):

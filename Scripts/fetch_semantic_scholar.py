@@ -83,10 +83,11 @@ def main():
 
         print(f"Batch {batch_i:3d}/{total_batches}  ({len(ids_clean)} IDs)...", end="  ")
         ss_data = query_batch(ids_clean)
+        ss_by_id = {clean_id: ss for clean_id, ss in zip(ids_clean, ss_data)}
 
-        # ss_data puede ser más corto si algunos IDs son None
+        # Alinear cada resultado con su ID original para no mezclar abstracts.
         for j, original in enumerate(batch):
-            ss = ss_data[j] if j < len(ss_data) else None
+            ss = ss_by_id.get(ids[j])
             if ss is None:
                 ss = {}
             tldr_text = None

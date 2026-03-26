@@ -248,7 +248,9 @@ def _print_summary() -> None:
     print(f"Open Access: {(df['is_open_access']=='Y').sum()}")
     if "year" in df.columns:
         df["year"] = pd.to_numeric(df["year"], errors="coerce")
-        print(f"Rango de años: {int(df['year'].min())} – {int(df['year'].max())}")
+        valid_years = df["year"].dropna()
+        if not valid_years.empty:
+            print(f"Rango de años: {int(valid_years.min())} – {int(valid_years.max())}")
     print(f"Guardado en: {OUT_CSV}")
     if len(df) > 0:
         print("\nMuestra (5 más recientes):")

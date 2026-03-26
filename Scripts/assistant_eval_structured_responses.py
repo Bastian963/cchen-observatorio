@@ -268,6 +268,17 @@ def _count_source_mentions(expected_sources_raw: str, response_text: str) -> int
     return sum(1 for s in sources if s in response_lower)
 
 
+def _count_citation_tags(response_text: str) -> int:
+    """Count how many '(fuente: ...)' citation tags appear in the response.
+
+    Directly measures LLM compliance with the system-prompt instruction:
+    'Al citar cada cifra o dato, indica su fuente entre paréntesis...'
+    Returns the number of distinct citation tag occurrences.
+    """
+    import re
+    return len(re.findall(r'\(fuente:[^)]+\)', response_text, re.IGNORECASE))
+
+
 # ── Main batch runner ────────────────────────────────────────────────────────
 
 def run_structured_responses(
@@ -356,6 +367,7 @@ def run_structured_responses(
         response_ms = int((dt.datetime.now() - t0).total_seconds() * 1000)
 
         heuristic_sources_mentioned = _count_source_mentions(expected_sources_raw, reply)
+        heuristic_citation_tags = _count_citation_tags(reply)
 
         rows.append({
             "run_label": run_label,
@@ -380,6 +392,7 @@ def run_structured_responses(
             "context_trace": context_trace_json,
             "response_ms": response_ms,
             "heuristic_sources_mentioned": heuristic_sources_mentioned,
+            "heuristic_citation_tags": heuristic_citation_tags,
             # Human review columns (empty)
             "score_structured_source_grounding": "",
             "score_structured_synthesis": "",
@@ -387,7 +400,7 @@ def run_structured_responses(
             "structured_review_notes": "",
         })
 
-        print(f"[OK] {query_id} — {response_ms}ms — sources_mentioned: {heuristic_sources_mentioned}/{len([s for s in expected_sources_raw.split(';') if s.strip()])}")
+        print(f"[OK] {query_id} — {response_ms}ms — sources_mentioned: {heuristic_sources_mentioned}/{len([s for s in expected_sources_raw.split(';') if s.strip()])} — citation_tags: {heuristic_citation_tags}")
 
     out = pd.DataFrame(rows)
     output_csv.parent.mkdir(parents=True, exist_ok=True)

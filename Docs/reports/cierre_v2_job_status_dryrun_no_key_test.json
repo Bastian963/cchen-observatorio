@@ -1,0 +1,11 @@
+{
+  "run_id": "dryrun_no_key_test",
+  "started_at_utc": "2026-03-24T11:36:04.150977+00:00",
+  "finished_at_utc": "2026-03-24T11:36:04.183789+00:00",
+  "duration_seconds": 0.033,
+  "exit_code": 1,
+  "status": "missing_api_key",
+  "signal": "GROQ_API_KEY not set",
+  "log_path": "Docs/reports/cierre_v2_job_dryrun_no_key_test.log",
+  "command": "bash Scripts/cerrar_v2_structured.sh"
+}

@@ -480,6 +480,7 @@ def _build_assistant_system_prompt(ctx: dict, patents_key: str = "") -> tuple:
 
 ## Instrucciones
 - Responde en español, con tono técnico-profesional para informes internos CCHEN.
+- Al citar cada cifra o dato, indica su fuente entre paréntesis inmediatamente después del valor. Usa etiquetas cortas: (fuente: OpenAlex), (fuente: ANID), (fuente: ORCID), (fuente: WoS/Scopus vía SJR), (fuente: registros internos CCHEN), (fuente: convocatorias curadas), (fuente: matching institucional), (fuente: DataCite), (fuente: OpenAIRE). Si el dato proviene de varios orígenes, menciona el principal.
 - Cuando generes informes usa secciones, bullets y cifras concretas de los datos de arriba.
 - Los investigadores listados tienen afiliación CCHEN verificada por OpenAlex — úsalos cuando pregunten por investigadores de la institución.
 - Cuando hables de instituciones o colaboraciones, prioriza nombres canónicos y ROR si está disponible.
@@ -620,8 +621,14 @@ def render(ctx: dict) -> None:
             st.markdown(user_input)
 
         _rag_context = ""
+        _rag_df = pd.DataFrame()
         if _SEM_AVAILABLE and user_input:
             try:
+                # top_k=5: baseline validado con benchmark publication_rag (n=5: Q04, Q06, Q11, Q12, Q13).
+                # Experimentos con top_k=3,5,7 mostraron que 5 maximiza avg_score.
+                # Resultados finales: top1_score media=0.70, 4/5 queries >= 0.65, ninguna < 0.45.
+                # Ver Docs/reports/assistant_eval_run_2026-03-24_012539.csv para evidencia.
+                # Cambiar solo si se añaden nuevas queries y el experimento se replica.
                 _rag_df = _ss.search(user_input, top_k=5)
                 if not _rag_df.empty:
                     _rag_lines = []
@@ -642,14 +649,15 @@ def render(ctx: dict) -> None:
             try:
                 from groq import Groq as _Groq
                 client = _Groq(api_key=api_key)
-                _stream = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    max_tokens=2048,
-                    stream=True,
-                    messages=[{"role": "system", "content": _system_prompt + _rag_context}] +
-                             [{"role": m["role"], "content": m["content"]}
-                              for m in st.session_state.messages],
-                )
+                with st.spinner("Consultando al asistente..."):
+                    _stream = client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        max_tokens=2048,
+                        stream=True,
+                        messages=[{"role": "system", "content": _system_prompt + _rag_context}] +
+                                 [{"role": m["role"], "content": m["content"]}
+                                  for m in st.session_state.messages],
+                    )
                 reply = st.write_stream(
                     (chunk.choices[0].delta.content or "")
                     for chunk in _stream
@@ -685,7 +693,8 @@ def render(ctx: dict) -> None:
                         f"Puedes explorar los datos directamente en las secciones del panel lateral."
                     )
                 st.markdown(reply)
-            st.session_state.messages.append({"role": "assistant", "content": reply})
+            st.session_state.messages.append({"role": "assistant", "content": reply or ""})
+            reply = reply or ""
 
             # ── Decisión dinámica de gráfico vía LLM ─────────────────────────
             _chart_decision = {}
@@ -758,6 +767,17 @@ def render(ctx: dict) -> None:
                 )
             else:
                 st.caption("⚠️ No se pudo generar el PDF (reportlab no disponible).")
+
+            # ── Fuentes consultadas (búsqueda semántica RAG) ──────────────────
+            if not _rag_df.empty:
+                with st.expander("📚 Fuentes consultadas", expanded=False):
+                    for _, _r in _rag_df.iterrows():
+                        _title = str(_r.get("title", "Sin título"))
+                        _year = _r.get("year", "")
+                        _score = float(_r.get("score", 0))
+                        _doi = str(_r.get("doi", "") or "")
+                        _doi_link = f" · [DOI]({_doi})" if _doi and _doi != "nan" else ""
+                        st.markdown(f"**[{_score:.2f}]** {_title} *({_year})*{_doi_link}")
 
         if prompt_rapido:
             st.rerun()

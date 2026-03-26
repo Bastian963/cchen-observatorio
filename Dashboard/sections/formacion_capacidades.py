@@ -1,4 +1,5 @@
 """Section: Formación de Capacidades — CCHEN Observatorio"""
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
@@ -18,6 +19,7 @@ def render(ctx: dict) -> None:
     ch_adv   = ctx["ch_adv"]
     ch_cumpl = ctx["ch_cumpl"]
     ch_trans = ctx["ch_trans"]
+    padron_acad = ctx.get("padron_acad", pd.DataFrame())
 
     cap_access = _access_context()
     st.title("Formación de Capacidades I+D")
@@ -69,6 +71,50 @@ def render(ctx: dict) -> None:
         kpi("% Ad honorem",           f"{kpis_c.get('ad_honorem_pct', 57.14)}%", "del total registros"),
         kpi("Monto total honorarios", "$64.7 MM", "CLP remunerados"),
     )
+
+    if not padron_acad.empty and "estado_revision_manual" in padron_acad.columns:
+        with st.expander("QA planta provisional / ORCID", expanded=False):
+            _qa_options = {
+                "Pendientes de revisión": padron_acad[padron_acad["estado_revision_manual"] != "confirmado"],
+                "Sin ORCID": padron_acad[padron_acad["estado_revision_manual"] == "pendiente_busqueda_orcid"],
+                "Revisar employer": padron_acad[padron_acad["estado_revision_manual"] == "revisar_employer_en_orcid"],
+                "Revisar nombre/grupo": padron_acad[padron_acad["estado_revision_manual"] == "revisar_nombre_grupo"],
+                "Confirmados": padron_acad[padron_acad["estado_revision_manual"] == "confirmado"],
+                "Todos": padron_acad,
+            }
+            _qa_filter = st.selectbox(
+                "Filtro QA",
+                list(_qa_options.keys()),
+                index=0,
+                key="formacion_padron_qa_filter",
+            )
+            _qa_df = _qa_options[_qa_filter].copy()
+            _qa_show_cols = [
+                "nombre_completo", "grupo_investigacion", "estado_orcid",
+                "estado_revision_manual", "orcid_match_status", "orcid_id",
+                "employer_cchen_verificado", "observaciones",
+            ]
+            _qa_show = _qa_df[_qa_show_cols].copy() if not _qa_df.empty else pd.DataFrame(columns=_qa_show_cols)
+            _brechas = padron_acad[padron_acad["estado_revision_manual"] != "confirmado"].copy()
+            st.caption(f"{len(_qa_df)} registro(s) en vista · {len(_brechas)} brecha(s) total(es)")
+            st.dataframe(_qa_show, width="stretch", hide_index=True)
+            _dl1, _dl2 = st.columns(2)
+            with _dl1:
+                st.download_button(
+                    "Descargar vista QA CSV",
+                    make_csv(_qa_show),
+                    "formacion_capacidades_planta_orcid_qa.csv",
+                    "text/csv",
+                    key="formacion_padron_qa_filtered_csv",
+                )
+            with _dl2:
+                st.download_button(
+                    "Descargar brechas CSV",
+                    make_csv(_brechas if not _brechas.empty else pd.DataFrame()),
+                    "formacion_capacidades_planta_orcid_brechas.csv",
+                    "text/csv",
+                    key="formacion_padron_qa_gaps_csv",
+                )
 
     col1, col2 = st.columns(2)
 

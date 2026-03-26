@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dashboard/Dockerfile
+    container_name: cchen-dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      - CCHEN_DATA_ROOT=/app/Data
+    volumes:
+      - ./Data:/app/Data
+      - ./Database:/app/Database
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  ckan:
+    build:
+      context: ./ckan-src
+      dockerfile: docker/Dockerfile
+    container_name: cchen-ckan
+    ports:
+      - "5001:5000"
+    environment:
+      - CKAN_SITE_URL=http://localhost:5001
+      - CKAN_SQLALCHEMY_URL=postgresql://ckan:ckan@db/ckan
+      - CKAN_DATASTORE_WRITE_URL=postgresql://datastore:datastore@db/datastore
+      - CKAN_DATASTORE_READ_URL=postgresql://datastore:datastore@db/datastore
+      - CKAN__PLUGINS=stats text_view image_view
+      - CKAN_SOLR_URL=http://solr:8983/solr/ckan
+      - CKAN_REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - db
+      - solr
+      - redis
+    volumes:
+      - ckan_storage:/var/lib/ckan
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/api/3/action/status_show"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+  solr:
+    image: ckan-solr-arm64:2.10
+    container_name: cchen-ckan-solr
+    ports:
+      - "8983:8983"
+    environment:
+      - SOLR_CORE=ckan
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8983/solr/ckan/admin/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  redis:
+    image: redis:6
+    container_name: cchen-ckan-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  db:
+    image: postgres:13
+    container_name: cchen-ckan-db
+    environment:
+      - POSTGRES_DB=ckan
+      - POSTGRES_USER=ckan
+      - POSTGRES_PASSWORD=ckan
+      - POSTGRES_INITDB_ARGS=--encoding=UTF8
+    volumes:
+      - ckan_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ckan"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  ckan_storage:
+  ckan_db_data:

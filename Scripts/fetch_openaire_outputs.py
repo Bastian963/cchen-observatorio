@@ -73,13 +73,16 @@ def _get_json(url: str) -> dict:
         with urlopen(req, timeout=60) as resp:
             return json.load(resp)
     except Exception:
-        result = subprocess.run(
-            ["curl", "-L", "--fail", url],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        return json.loads(result.stdout)
+        try:
+            result = subprocess.run(
+                ["curl", "-L", "--fail", url],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            return json.loads(result.stdout)
+        except Exception as exc:
+            raise RuntimeError(f"No se pudo descargar OpenAIRE: {url} -> {exc}") from exc
 
 
 def _extract_org_signals(organizations: list[dict]) -> tuple[str, str, bool, bool]:
@@ -150,7 +153,11 @@ def fetch_author_outputs(orcid: str, full_name: str, page_size: int, sleep_secon
     while True:
         params = {"authorOrcid": orcid, "pageSize": str(page_size), "page": str(page)}
         url = f"{OPENAIRE_API}?{urlencode(params)}"
-        payload = _get_json(url)
+        try:
+            payload = _get_json(url)
+        except RuntimeError as exc:
+            print(f"[WARN] {full_name} ({orcid}) interrumpido, se conservarán {len(rows)} registros parciales: {exc}")
+            break
         header = payload.get("header", {}) or {}
         num_found = max(num_found, int(header.get("numFound") or 0))
         results = payload.get("results", []) or []

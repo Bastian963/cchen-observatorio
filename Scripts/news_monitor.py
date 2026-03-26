@@ -187,7 +187,11 @@ def clean_feed_snippet(snippet, title=""):
 
 
 def parse_feed(xml_content, label):
-    root = ET.fromstring(xml_content)
+    try:
+        root = ET.fromstring(xml_content)
+    except ET.ParseError as exc:
+        print(f"  ⚠ XML inválido en feed '{label}': {exc}")
+        return []
     items = []
     now_str = datetime.datetime.now().strftime("%Y-%m-%d")
 
@@ -276,58 +280,57 @@ def main():
         log_path.parent.mkdir(parents=True, exist_ok=True)
         tee = _Tee(log_path)
         sys.stdout = tee
+    try:
+        print("Monitor de Noticias CCHEN — Observatorio Tecnológico")
+        print(f"Fecha: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
+        print(f"Salida: {OUT_CSV}\n")
 
-    print("Monitor de Noticias CCHEN — Observatorio Tecnológico")
-    print(f"Fecha: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    print(f"Salida: {OUT_CSV}\n")
+        seen_ids = load_state()
+        all_new  = []
+        summary  = {}
 
-    seen_ids = load_state()
-    all_new  = []
-    summary  = {}
+        for cfg in QUERIES:
+            print(f"→ {cfg['label']} ...", end=" ")
+            url  = build_url(cfg["q"], cfg["hl"], cfg["gl"])
+            xml  = fetch_feed(url)
 
-    for cfg in QUERIES:
-        print(f"→ {cfg['label']} ...", end=" ")
-        url  = build_url(cfg["q"], cfg["hl"], cfg["gl"])
-        xml  = fetch_feed(url)
+            if not xml:
+                print("sin respuesta")
+                summary[cfg["label"]] = {"total": 0, "new": 0}
+                continue
 
-        if not xml:
-            print("sin respuesta")
-            summary[cfg["label"]] = {"total": 0, "new": 0}
-            continue
+            items    = parse_feed(xml, cfg["label"])
+            new_items = [it for it in items if it["news_id"] not in seen_ids]
+            for it in new_items:
+                seen_ids.add(it["news_id"])
 
-        items    = parse_feed(xml, cfg["label"])
-        new_items = [it for it in items if it["news_id"] not in seen_ids]
-        for it in new_items:
-            seen_ids.add(it["news_id"])
+            all_new.extend(new_items)
+            summary[cfg["label"]] = {"total": len(items), "new": len(new_items)}
+            print(f"{len(new_items)} nuevas (de {len(items)} en feed)")
 
-        all_new.extend(new_items)
-        summary[cfg["label"]] = {"total": len(items), "new": len(new_items)}
-        print(f"{len(new_items)} nuevas (de {len(items)} en feed)")
+        if all_new:
+            written = append_to_csv(all_new)
+            save_state(seen_ids)
+            print(f"\n✓ {written} noticias guardadas en {OUT_CSV}")
+        else:
+            print("\n✓ Sin noticias nuevas.")
 
-    if all_new:
-        written = append_to_csv(all_new)
-        save_state(seen_ids)
-        print(f"\n✓ {written} noticias guardadas en {OUT_CSV}")
-    else:
-        print("\n✓ Sin noticias nuevas.")
+        print("\n─── Resumen ────────────────────────────────")
+        for label, s in summary.items():
+            print(f"  {label:40s}  {s['new']:3d} nuevas  (de {s['total']:3d})")
 
-    print("\n─── Resumen ────────────────────────────────")
-    for label, s in summary.items():
-        print(f"  {label:40s}  {s['new']:3d} nuevas  (de {s['total']:3d})")
+        science = [n for n in all_new if n["topic_flag"] == "CIENCIA"]
+        if science:
+            print(f"\n🔬 NOTICIAS DE CIENCIA/INVESTIGACIÓN ({len(science)}):")
+            for n in science[:5]:
+                print(f"  [{n['source_name']}] {n['title'][:80]}")
+                print(f"    {n['published']}")
 
-    # Mostrar últimas noticias de ciencia
-    science = [n for n in all_new if n["topic_flag"] == "CIENCIA"]
-    if science:
-        print(f"\n🔬 NOTICIAS DE CIENCIA/INVESTIGACIÓN ({len(science)}):")
-        for n in science[:5]:
-            print(f"  [{n['source_name']}] {n['title'][:80]}")
-            print(f"    {n['published']}")
-
-    if tee is not None:
-        sys.stdout = tee._stdout
-        tee.close()
-
-    return len(all_new)
+        return len(all_new)
+    finally:
+        if tee is not None:
+            sys.stdout = tee._stdout
+            tee.close()
 
 
 if __name__ == "__main__":

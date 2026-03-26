@@ -1,0 +1,6 @@
+query_id,query_short,retrieval_ms_v1,retrieval_ms_v2,retrieval_ms_delta,n_results_v1,n_results_v2,n_results_delta,n_with_abstract_v1,n_with_abstract_v2,n_with_abstract_delta,top1_score_v1,top1_score_v2,top1_score_delta,avg_score_v1,avg_score_v2,avg_score_delta,keyword_hits_v1,keyword_hits_v2,keyword_hits_delta
+Q04,Que evidencia hay sobre dosimetria y seguridad radiologica e,6953,7149,+196,5,5,±0,3,3,±0,0.6873,0.6873,±0,0.6789,0.6789,±0,2,2,±0
+Q06,Identifica tendencias en medicina nuclear e imagenologia en ,50,58,+8.00,5,5,±0,3,3,±0,0.7372,0.7372,±0,0.5895,0.5895,±0,4,4,±0
+Q11,Que ha publicado CCHEN en dosimetria de radiaciones ionizant,42,35,-7.00,5,5,±0,4,4,±0,0.7655,0.7655,±0,0.6843,0.6843,±0,2,2,±0
+Q12,Identifica tendencias en fisica de reactores en el corpus CC,44,43,-1.00,5,5,±0,1,1,±0,0.6272,0.6272,±0,0.5959,0.5959,±0,3,3,±0
+Q13,Cuales son las colaboraciones mas frecuentes de CCHEN con un,47,44,-3.00,5,5,±0,3,3,±0,0.6914,0.6914,±0,0.6083,0.6083,±0,1,1,±0

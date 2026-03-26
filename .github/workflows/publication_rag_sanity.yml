@@ -1,0 +1,117 @@
+name: Publication RAG Sanity
+
+on:
+  push:
+    paths:
+      - ".github/workflows/publication_rag_sanity.yml"
+      - "Scripts/run_publication_rag_sanity.sh"
+      - "Scripts/assistant_eval_batch.py"
+      - "Scripts/semantic_search.py"
+      - "Docs/reports/assistant_eval_template_pending_q03_q10.csv"
+      - "Data/**"
+      - "requirements.txt"
+      - "runtime.txt"
+  pull_request:
+    paths:
+      - ".github/workflows/publication_rag_sanity.yml"
+      - "Scripts/run_publication_rag_sanity.sh"
+      - "Scripts/assistant_eval_batch.py"
+      - "Scripts/semantic_search.py"
+      - "Docs/reports/assistant_eval_template_pending_q03_q10.csv"
+      - "Data/**"
+      - "requirements.txt"
+      - "runtime.txt"
+  workflow_dispatch:
+    inputs:
+      min_rows:
+        description: "Mínimo de filas esperadas"
+        required: false
+        default: "2"
+      min_keyword_hits_total:
+        description: "Mínimo keyword_hits_total"
+        required: false
+        default: "4"
+      max_retrieval_ms_mean:
+        description: "Máximo retrieval_ms_mean permitido"
+        required: false
+        default: "20000"
+
+jobs:
+  publication-rag-sanity:
+    runs-on: ubuntu-latest
+
+    env:
+      MIN_ROWS: ${{ github.event.inputs.min_rows || '2' }}
+      MIN_KEYWORD_HITS_TOTAL: ${{ github.event.inputs.min_keyword_hits_total || '4' }}
+      MAX_RETRIEVAL_MS_MEAN: ${{ github.event.inputs.max_retrieval_ms_mean || '20000' }}
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "runtime.txt"
+
+      - name: Instalar dependencias
+        run: pip install --quiet -r requirements.txt
+
+      - name: Compilar scripts clave
+        run: |
+          python -m py_compile \
+            Scripts/assistant_eval_batch.py \
+            Scripts/semantic_search.py
+
+      - name: Ejecutar sanity publication_rag en modo JSON
+        id: sanity
+        env:
+          OBSERVATORIO_DATA_SOURCE: local
+        run: |
+          JSON_OUT="$(bash Scripts/run_publication_rag_sanity.sh \
+            --input Docs/reports/assistant_eval_template_pending_q03_q10.csv \
+            --run-label ci_publication_rag_sanity \
+            --json)"
+          echo "json_out=$JSON_OUT" >> "$GITHUB_OUTPUT"
+          echo "$JSON_OUT"
+
+      - name: Validar umbrales
+        env:
+          SANITY_JSON: ${{ steps.sanity.outputs.json_out }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+
+          payload = json.loads(os.environ["SANITY_JSON"])
+
+          min_rows = int(os.environ.get("MIN_ROWS", "2"))
+          min_hits = int(os.environ.get("MIN_KEYWORD_HITS_TOTAL", "4"))
+          max_ms = float(os.environ.get("MAX_RETRIEVAL_MS_MEAN", "20000"))
+
+          errors = []
+          if payload.get("status") != "ok":
+              errors.append(f"status != ok: {payload.get('status')}")
+
+          rows = payload.get("rows")
+          if rows is None or int(rows) < min_rows:
+              errors.append(f"rows={rows} < min_rows={min_rows}")
+
+          hits = payload.get("keyword_hits_total")
+          if hits is None or int(hits) < min_hits:
+              errors.append(f"keyword_hits_total={hits} < min_keyword_hits_total={min_hits}")
+
+          mean_ms = payload.get("retrieval_ms_mean")
+          if mean_ms is None or float(mean_ms) > max_ms:
+              errors.append(f"retrieval_ms_mean={mean_ms} > max_retrieval_ms_mean={max_ms}")
+
+          if errors:
+              print("[FAIL] Publication RAG sanity threshold check")
+              for err in errors:
+                  print(f" - {err}")
+              sys.exit(1)
+
+          print("[OK] Publication RAG sanity threshold check")
+          print(json.dumps(payload, ensure_ascii=False))
+          PY

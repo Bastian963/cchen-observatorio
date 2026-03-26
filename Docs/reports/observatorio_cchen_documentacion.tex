@@ -168,9 +168,18 @@
 \newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
 \newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
 
+% --- Tolerancia de texto (evita overfull con ttfamily largo) --
+\tolerance=1500
+\emergencystretch=3em
+\hfuzz=2pt
+
 % --- Macros -------------------------------------------------
-\newcommand{\api}[1]{\texttt{\color{cchengreen}#1}}
-\newcommand{\file}[1]{\texttt{\color{cchenblue}#1}}
+\newcommand{\api}[1]{{\color{cchengreen}\nolinkurl{#1}}}
+% \file{}: colored monospace with breakable underscores
+\newcommand{\filebreak}{\char95\allowbreak}
+\newcommand{\file}[1]{{\color{cchenblue}\ttfamily\let\_\filebreak #1}}
+% \ttb{}: plain monospace with breakable underscores (for long names in tables)
+\newcommand{\ttb}[1]{{\ttfamily\let\_\filebreak #1}}
 \newcommand{\pkg}[1]{\textit{\color{cchengold}#1}}
 \newcommand{\badge}[2]{%
   \colorbox{#1}{\color{white}\small\textbf{\ #2\ }}%
@@ -179,6 +188,9 @@
 \newcommand{\bpending}{\badge{kpigold}{Pendiente}}
 \newcommand{\bactive}{\badge{cchengreen}{Activo}}
 \newcommand{\bpartial}{\badge{cchengold}{Parcial}}
+
+% --- Stats auto-generadas (ejecutar generar_stats_latex.py) -
+\IfFileExists{auto_stats.tex}{\input{auto_stats.tex}}{}
 
 % --- Inicio del documento -----------------------------------
 \begin{document}
@@ -216,10 +228,10 @@
 
   \begin{tabular}{ll}
     \faCalendar\quad \textbf{Versión:}    & Beta 0.2 \\[4pt]
-    \faCalendar\quad \textbf{Fecha:}   & Marzo 2026 \\[4pt]
+    \faCalendar\quad \textbf{Fecha:}   & \StatFecha \\[4pt]
     \faUser\quad \textbf{Autor:}          & Bastián Ayala Inostroza \\[4pt]
     \faCode\quad \textbf{TRL actual:}     & 5 (validación en entorno relevante) \\[4pt]
-    \faDatabase\quad \textbf{Tablas Supabase:} & 34 tablas operativas · RLS habilitado \\[4pt]
+    \faDatabase\quad \textbf{Tablas Supabase:} & 35 tablas operativas · RLS habilitado \\[4pt]
     \faRobot\quad \textbf{LLM:}           & Groq API (llama-3.3-70b) + pgvector RAG \\
   \end{tabular}
 
@@ -243,19 +255,22 @@
 El \textbf{Observatorio Tecnológico CCHEN 360°} es un sistema de inteligencia de datos diseñado para la Comisión Chilena de Energía Nuclear (CCHEN), en el marco del proyecto CORFO de fortalecimiento de aplicaciones nucleares. Su objetivo es consolidar y analizar la producción científica, técnica e institucional de CCHEN, proveyendo capacidades de vigilancia tecnológica, análisis bibliométrico, gestión de capital humano y gobernanza de datos.
 
 \begin{infobox}[Estado actual del sistema --- Beta v0.2 (TRL 5)]
-\begin{tabular}{ll}
-  \faCheckCircle\quad \textbf{877} publicaciones científicas indexadas (OpenAlex) \\
-  \faCheckCircle\quad \textbf{7{,}971} autorías con afiliación verificada \\
-  \faCheckCircle\quad \textbf{8{,}499} papers externos citantes (grafo de citas OpenAlex) \\
-  \faCheckCircle\quad \textbf{74} papers EuroPMC con PMID/PMCID \\
-  \faCheckCircle\quad \textbf{48} perfiles ORCID de investigadores CCHEN \\
-  \faCheckCircle\quad \textbf{24} proyectos ANID adjudicados (2000--2025) \\
-  \faCheckCircle\quad \textbf{84} convenios nacionales + \textbf{91} acuerdos internacionales \\
-  \faCheckCircle\quad \textbf{764} DOIs verificados con Unpaywall (50\% OA) \\
-  \faCheckCircle\quad \textbf{33} tablas Supabase operativas con RLS habilitado \\
-  \faCheckCircle\quad \textbf{877} papers con embeddings semánticos pgvector (384 dims) \\
-  \faCheckCircle\quad \textbf{26} convocatorias curadas + matching institucional \\
-  \faCheckCircle\quad \textbf{23} tópicos BERTopic sobre el corpus completo \\
+\begin{tabular}{L{13cm}}
+  \faCheckCircle\quad \textbf{\StatPublications} publicaciones científicas indexadas (OpenAlex) \\
+  \faCheckCircle\quad \textbf{\StatAuthorias} autorías con afiliación verificada \\
+  \faCheckCircle\quad \textbf{\StatCiting} papers externos citantes (grafo de citas OpenAlex) \\
+  \faCheckCircle\quad \textbf{\StatEuropmc} papers EuroPMC con PMID/PMCID \\
+  \faCheckCircle\quad \textbf{\StatOrcid} perfiles ORCID de investigadores CCHEN \\
+  \faCheckCircle\quad \textbf{\StatAnid} proyectos ANID adjudicados (2000--2025) \\
+  \faCheckCircle\quad \textbf{\StatConvenios} convenios nacionales + \textbf{\StatAcuerdos} acuerdos internacionales \\
+  \faCheckCircle\quad \textbf{\StatUnpaywall} DOIs verificados con Unpaywall (\StatOApct\% OA) \\
+  \faCheckCircle\quad \textbf{35} tablas Supabase operativas con RLS habilitado \\
+  \faCheckCircle\quad \textbf{\StatEmbeddings} papers con embeddings semánticos pgvector (384 dims) \\
+  \faCheckCircle\quad \textbf{\StatConvocatorias} convocatorias curadas + matching institucional \\
+  \faCheckCircle\quad \textbf{\StatBertopic} tópicos BERTopic sobre el corpus completo \\
+  \faCheckCircle\quad Logo institucional CCHEN 360° en login y sidebar \\
+  \faCheckCircle\quad Búsqueda semántica pgvector con reranking por perfil temático \\
+  \faCheckCircle\quad Marco de evaluación del Asistente I+D (retrieval + structured + heurísticas) \\
   \faCheckCircle\quad Login beta privado con roles + datasets sensibles por permiso \\
   \faCheckCircle\quad E2E CI con \texttt{streamlit.testing.v1.AppTest} + smoke tests \\
   \faCheckCircle\quad Automatización semanal vía GitHub Actions (lunes 05:00 CLT) \\
@@ -264,14 +279,14 @@ El \textbf{Observatorio Tecnológico CCHEN 360°} es un sistema de inteligencia 
 
 \bigskip
 
-El sistema integra \textbf{15+ APIs públicas}, \textbf{15 scripts de automatización + migración}, una \textbf{base de datos PostgreSQL} en Supabase con \textbf{34 tablas} (RLS habilitado, pgvector activado), y un \textbf{dashboard interactivo} con 11 secciones, login beta privado, carga lazy por sección y asistente RAG (Groq/LLM + búsqueda semántica).
+El sistema integra \textbf{15+ APIs públicas}, \textbf{30+ scripts de automatización + migración}, una \textbf{base de datos PostgreSQL} en Supabase con \textbf{35 tablas} (RLS habilitado, pgvector activado), y un \textbf{dashboard interactivo} con 11 secciones, login beta privado, carga lazy por sección y asistente RAG (Groq/LLM + búsqueda semántica con reranking por perfil temático).
 
 \section*{KPIs del sistema}
 
 \noindent
-\kpi{kpiblue}{877}{Publicaciones}\hfill
-\kpi{kpigreen}{50\%}{Papers OA}\hfill
-\kpi{kpired}{33}{Tablas Supabase}\hfill
+\kpi{kpiblue}{\StatPublications}{Publicaciones}\hfill
+\kpi{kpigreen}{\StatOApct\%}{Papers OA}\hfill
+\kpi{kpired}{35}{Tablas Supabase}\hfill
 \kpi{kpigold}{TRL 5}{Madurez actual}
 
 \bigskip\bigskip
@@ -279,8 +294,8 @@ El sistema integra \textbf{15+ APIs públicas}, \textbf{15 scripts de automatiza
 \noindent
 \kpi{kpiblue}{15+}{Scripts activos}\hfill
 \kpi{kpigreen}{11}{Secciones dashboard}\hfill
-\kpi{kpired}{8{,}499}{Papers citantes}\hfill
-\kpi{kpigold}{877}{Embeddings RAG}
+\kpi{kpired}{\StatCiting}{Papers citantes}\hfill
+\kpi{kpigold}{\StatEmbeddings}{Embeddings RAG}
 
 %% ════════════════════════════════════════════════════════════
 \chapter{Contexto Institucional y Motivación}
@@ -300,7 +315,7 @@ La Comisión Chilena de Energía Nuclear (CCHEN) es la institución estatal resp
 
 \section{Alcance y usuarios objetivo}
 
-\begin{tabular}{ll}
+\begin{tabular}{L{5.5cm}L{8cm}}
   \toprule
   \textbf{Usuario} & \textbf{Uso principal} \\
   \midrule
@@ -317,31 +332,81 @@ La Comisión Chilena de Energía Nuclear (CCHEN) es la institución estatal resp
 
 El proyecto sigue el marco \textit{Technology Readiness Level} (TRL) de la Agencia Espacial Europea (ESA), adaptado al contexto de software de inteligencia institucional:
 
-\begin{center}
-\begin{tikzpicture}
-  \foreach \i/\label/\color in {
-    1/Concepto/gray!40,
-    2/Formulado/gray!50,
-    3/Prueba\\ analítica/gray!60,
-    4/Validación\\ laboratorio/gray!30,
-    5/Validación\\ entorno relevante/cchenblue!70,
-    6/Demo\\ entorno relevante/gray!30,
-    7/Demo\\ operacional/gray!30,
-    8/Sistema\\ completo/gray!30,
-    9/Producción/gray!30
-  } {
-    \pgfmathsetmacro{\x}{(\i-1)*1.2}
-    \ifnum\i=5
-      \node[draw, fill=cchenblue, text=white, minimum width=1.1cm, minimum height=0.7cm,
-            align=center, font=\tiny\bfseries] at (\x,0) {TRL \i\\\label};
-    \else
-      \node[draw, fill=gray!20, text=gray, minimum width=1.1cm, minimum height=0.7cm,
-            align=center, font=\tiny] at (\x,0) {TRL \i\\\label};
-    \fi
-  }
-  \draw[->, thick, cchenblue] (4.8, -0.6) -- (4.8,-0.9) node[below, font=\small\bfseries\color{cchenblue}]{Estado actual};
+\vspace{0.5em}
+\begin{tikzpicture}[x=1cm, y=1cm]
+  %% ---- Paleta de colores ----
+  \colorlet{trlpast}{gray!13}
+  \colorlet{trlpastborder}{gray!35}
+  \colorlet{trlpasttxt}{gray!65}
+  \colorlet{trlfuture}{gray!6}
+  \colorlet{trlfutureborder}{gray!22}
+  \colorlet{trlfuturetxt}{gray!42}
+
+  %% ---- Dimensiones ----
+  \def\W{13.5}   % ancho de cada barra
+  \def\HN{0.68}  % semialtura barras inactivas
+  \def\HA{0.95}  % semialtura barra activa (TRL 5)
+  \def\labx{0.45}% x del texto TRL-número
+  \def\descx{2.9}% x del texto descripción
+
+  %% ---- TRL 1 ----
+  \fill[trlpast,rounded corners=2pt] (0,0-\HN) rectangle (\W,0+\HN);
+  \draw[trlpastborder,thin,rounded corners=2pt] (0,0-\HN) rectangle (\W,0+\HN);
+  \node[anchor=west,font=\normalsize\bfseries,text=trlpasttxt] at (\labx,0) {TRL 1};
+  \node[anchor=west,font=\normalsize,text=trlpasttxt] at (\descx,0) {Concepto};
+
+  %% ---- TRL 2 ----
+  \fill[trlpast,rounded corners=2pt] (0,-1.55-\HN) rectangle (\W,-1.55+\HN);
+  \draw[trlpastborder,thin,rounded corners=2pt] (0,-1.55-\HN) rectangle (\W,-1.55+\HN);
+  \node[anchor=west,font=\normalsize\bfseries,text=trlpasttxt] at (\labx,-1.55) {TRL 2};
+  \node[anchor=west,font=\normalsize,text=trlpasttxt] at (\descx,-1.55) {Formulado};
+
+  %% ---- TRL 3 ----
+  \fill[trlpast,rounded corners=2pt] (0,-3.10-\HN) rectangle (\W,-3.10+\HN);
+  \draw[trlpastborder,thin,rounded corners=2pt] (0,-3.10-\HN) rectangle (\W,-3.10+\HN);
+  \node[anchor=west,font=\normalsize\bfseries,text=trlpasttxt] at (\labx,-3.10) {TRL 3};
+  \node[anchor=west,font=\normalsize,text=trlpasttxt] at (\descx,-3.10) {Prueba anal\'itica};
+
+  %% ---- TRL 4 ----
+  \fill[trlpast,rounded corners=2pt] (0,-4.65-\HN) rectangle (\W,-4.65+\HN);
+  \draw[trlpastborder,thin,rounded corners=2pt] (0,-4.65-\HN) rectangle (\W,-4.65+\HN);
+  \node[anchor=west,font=\normalsize\bfseries,text=trlpasttxt] at (\labx,-4.65) {TRL 4};
+  \node[anchor=west,font=\normalsize,text=trlpasttxt] at (\descx,-4.65) {Validaci\'on en laboratorio};
+
+  %% ---- TRL 5 (ACTIVO) ----
+  \fill[cchenblue,rounded corners=3pt] (0,-6.40-\HA) rectangle (\W,-6.40+\HA);
+  \draw[cchenblue!75!black,rounded corners=3pt] (0,-6.40-\HA) rectangle (\W,-6.40+\HA);
+  \node[anchor=west,font=\Large\bfseries,text=white] at (\labx,-6.40) {TRL 5};
+  \node[anchor=west,font=\large,text=white!92] at (\descx,-6.40) {Validaci\'on en entorno relevante};
+  \node[anchor=east,font=\normalsize\bfseries,text=cchenlightblue!90!white]
+    at (\W-0.4,-6.40) {\faCheckCircle\ \ Estado actual};
+
+  %% ---- TRL 6 ----
+  \fill[trlfuture,rounded corners=2pt] (0,-8.25-\HN) rectangle (\W,-8.25+\HN);
+  \draw[trlfutureborder,thin,rounded corners=2pt] (0,-8.25-\HN) rectangle (\W,-8.25+\HN);
+  \node[anchor=west,font=\normalsize\bfseries,text=trlfuturetxt] at (\labx,-8.25) {TRL 6};
+  \node[anchor=west,font=\normalsize,text=trlfuturetxt] at (\descx,-8.25) {Demo en entorno relevante};
+
+  %% ---- TRL 7 ----
+  \fill[trlfuture,rounded corners=2pt] (0,-9.80-\HN) rectangle (\W,-9.80+\HN);
+  \draw[trlfutureborder,thin,rounded corners=2pt] (0,-9.80-\HN) rectangle (\W,-9.80+\HN);
+  \node[anchor=west,font=\normalsize\bfseries,text=trlfuturetxt] at (\labx,-9.80) {TRL 7};
+  \node[anchor=west,font=\normalsize,text=trlfuturetxt] at (\descx,-9.80) {Demo operacional};
+
+  %% ---- TRL 8 ----
+  \fill[trlfuture,rounded corners=2pt] (0,-11.35-\HN) rectangle (\W,-11.35+\HN);
+  \draw[trlfutureborder,thin,rounded corners=2pt] (0,-11.35-\HN) rectangle (\W,-11.35+\HN);
+  \node[anchor=west,font=\normalsize\bfseries,text=trlfuturetxt] at (\labx,-11.35) {TRL 8};
+  \node[anchor=west,font=\normalsize,text=trlfuturetxt] at (\descx,-11.35) {Sistema completo};
+
+  %% ---- TRL 9 ----
+  \fill[trlfuture,rounded corners=2pt] (0,-12.90-\HN) rectangle (\W,-12.90+\HN);
+  \draw[trlfutureborder,thin,rounded corners=2pt] (0,-12.90-\HN) rectangle (\W,-12.90+\HN);
+  \node[anchor=west,font=\normalsize\bfseries,text=trlfuturetxt] at (\labx,-12.90) {TRL 9};
+  \node[anchor=west,font=\normalsize,text=trlfuturetxt] at (\descx,-12.90) {Producci\'on};
+
 \end{tikzpicture}
-\end{center}
+\vspace{0.5em}
 
 %% ════════════════════════════════════════════════════════════
 \chapter{Arquitectura del Sistema}
@@ -459,26 +524,6 @@ Unpaywall API (OA status)
   \bottomrule
 \end{longtable}
 
-\section{Stack objetivo (TRL 6–7)}
-
-Con un presupuesto estimado de MM\$42+, el stack de producción contempla:
-
-\begin{longtable}{L{3.5cm} L{4.5cm} L{5.5cm}}
-  \toprule
-  \textbf{Capa} & \textbf{Tecnología objetivo} & \textbf{Justificación} \\
-  \midrule
-  \endhead
-  Frontend SPA & Angular / TypeScript & Rendimiento, escalabilidad empresarial \\
-  Backend API & Django REST Framework & Ecosistema Python maduro \\
-  BD producción & PostgreSQL en Huawei Cloud & Soberanía de datos, SLA institucional \\
-  Data Lake & Object Storage S3-compat. & Escalabilidad sin límite \\
-  BI & Power BI o Metabase OSS & Dashboards para no-técnicos \\
-  Orquestación ETL & Apache Airflow & DAGs reproducibles, monitoreo \\
-  Auth & SAML 2.0 + OAuth2 & SSO institucional \\
-  Monitoreo & Prometheus + Grafana & Observabilidad del sistema \\
-  \bottomrule
-\end{longtable}
-
 %% ════════════════════════════════════════════════════════════
 \chapter{Módulos del Observatorio}
 %% ════════════════════════════════════════════════════════════
@@ -515,7 +560,7 @@ Monitoreo sistemático del entorno científico, tecnológico y de financiamiento
 \textbf{Búsquedas IAEA INIS activas:}
 
 \begin{center}
-\begin{tabular}{ll}
+\begin{tabular}{L{7cm}L{6cm}}
   \toprule
   \textbf{Query} & \textbf{Área} \\
   \midrule
@@ -545,7 +590,9 @@ Motor analítico central: dashboard interactivo, reportes bibliométricos, asist
   \item Red institucional (bipartita autor $\leftrightarrow$ institución)
   \item Perfiles individuales de investigador (H-index, papers, evolución)
   \item Análisis de capital humano (trayectorias, cohortes, cumplimiento documental)
-  \item Asistente IA con RAG (búsqueda semántica pgvector + Groq LLM streaming)
+  \item Asistente IA con RAG (búsqueda semántica pgvector + reranking temático + Groq LLM streaming)
+  \item Logo institucional CCHEN 360° en login (220px) y sidebar (160px)
+  \item Marco de evaluación del asistente (retrieval + estructurada + métricas heurísticas)
   \item Grafo de citas interactivo (plotly + networkx) (877 CCHEN $\leftrightarrow$ 8.499 citantes)
   \item Login beta privado con roles y datasets sensibles por permiso
   \item Franja operativa con estado en tiempo real de fuentes (Supabase / fallback / no disponible)
@@ -566,7 +613,7 @@ Generación automática de boletines científicos semanales en HTML.
 \section{Módulo D --- Repositorio de Datos}
 \textbf{Estado:} \bactive \quad \textbf{TRL:} 5
 
-Data lake local (CSV) + data warehouse curado en Supabase (34 tablas, RLS habilitado, pgvector activado). Migración completa con 8 scripts idempotentes especializados (\file{Database/migrate\_*.py}). Paginación automática de 1.000 filas/request para tablas grandes.
+Data lake local (CSV) + data warehouse curado en Supabase (35 tablas, RLS habilitado, pgvector activado). Migración completa con 9 scripts idempotentes especializados (\file{Database/migrate\_*.py}). Paginación automática de 1.000 filas/request para tablas grandes. Tabla \texttt{paper\_embeddings} con 877 vectores de 384 dimensiones para búsqueda semántica.
 
 \section{Módulo E --- Transferencia y Codiseño}
 \textbf{Estado:} \bpending \quad \textbf{TRL:} 1--2
@@ -576,7 +623,7 @@ Portafolio tecnológico semilla (\file{portafolio\_tecnologico\_semilla.csv}). P
 \section{Módulo F --- Colaboración Ecosistémica}
 \textbf{Estado:} \bpartial \quad \textbf{TRL:} 2--3
 
-84 convenios nacionales + 41 acuerdos internacionales integrados. Registro ROR de instituciones colaboradoras normalizado ($\sim$150 entidades).
+84 convenios nacionales + 41 acuerdos internacionales integrados. Registro ROR de instituciones colaboradoras normalizado ($\geq$697 entidades).
 
 \section{Módulo G --- Gobernanza de Datos}
 \textbf{Estado:} \bpartial \quad \textbf{TRL:} 3
@@ -589,9 +636,9 @@ Sistema de calidad de datos (\file{Database/data\_quality.py}): 20+ checks de in
 
 \section{APIs públicas (sin autenticación)}
 
-\begin{longtable}{L{3.5cm} L{4cm} L{4.5cm} L{2cm}}
+\begin{longtable}{L{3.2cm} L{4.8cm} L{4.5cm} L{1.8cm}}
   \toprule
-  \textbf{API} & \textbf{Endpoint base} & \textbf{Uso en el sistema} & \textbf{Rate limit} \\
+  \textbf{API} & \textbf{Endpoint base} & \textbf{Uso en el sistema} & \textbf{Límite} \\
   \midrule
   \endhead
   \textbf{OpenAlex} & \api{api.openalex.org} & Publicaciones, conceptos, instituciones, financiamiento & 10M/mes \\
@@ -652,20 +699,20 @@ Todos los scripts siguen el protocolo de \textit{polite access}:
 
 Los notebooks ejecutan el pipeline de ingestión principal de forma trimestral o semestral:
 
-\begin{longtable}{C{0.8cm} L{5cm} C{2cm} L{4cm} L{2.5cm}}
+\begin{longtable}{C{0.5cm} L{3.8cm} L{2.2cm} L{5.3cm} L{2.0cm}}
   \toprule
-  \textbf{\#} & \textbf{Notebook} & \textbf{Frecuencia} & \textbf{Output principal} & \textbf{Fuente} \\
+  \textbf{\#} & \textbf{Notebook} & \textbf{Frec.} & \textbf{Output principal} & \textbf{Fuente} \\
   \midrule
   \endhead
   01 & Download publications & Trimestral & \file{cchen\_openalex\_works.csv} & OpenAlex \\
   02 & CrossRef enrichment & Trimestral & \file{cchen\_crossref\_enriched.csv} & CrossRef \\
   03 & OpenAlex concepts & Trimestral & \file{cchen\_openalex\_concepts.csv} & OpenAlex \\
   04 & ORCID researchers & Semestral & \file{cchen\_researchers\_orcid.csv} & ORCID \\
-  05 & Download patents & On-demand & \file{cchen\_patents.csv} & Lens.org/USPTO \\
+  05 & Download patents & Puntual & \file{cchen\_patents.csv} & Lens.org \\
   06 & ANID repository & Trimestral & \file{RepositorioAnid\_con\_monto.csv} & ANID \\
-  07 & MinCiencia funding & Semestral & \file{cchen\_funding\_complementario.csv} & Manual + APIs \\
+  07 & MinCiencia funding & Semestral & \file{cchen\_funding\_complementario.csv} & Manual/APIs \\
   08 & Web scraping ANID & Semanal & \file{convocatorias\_curadas.csv} & ANID.cl \\
-  09 & SJR crossmatch & Anual (Enero) & \file{..\_with\_quartile\_sjr.csv} & Scimago \\
+  09 & SJR crossmatch & Anual (Enero) & \file{cchen\_with\_quartile\_sjr.csv} & Scimago \\
   \bottomrule
 \end{longtable}
 
@@ -674,14 +721,14 @@ Los notebooks ejecutan el pipeline de ingestión principal de forma trimestral o
 \textbf{Disparador:} Cron \texttt{0 8 * * 1} (lunes 08:00 UTC = 05:00 CLT)\\
 \textbf{Disparador adicional:} \texttt{workflow\_dispatch} (ejecución manual desde GitHub)
 
-\begin{longtable}{L{5cm} L{3.5cm} L{4.5cm}}
+\begin{longtable}{L{4.5cm} L{5cm} L{4cm}}
   \toprule
   \textbf{Script} & \textbf{Output} & \textbf{Nota} \\
   \midrule
   \endhead
   \file{arxiv\_monitor.py} & \file{arxiv\_monitor.csv} & 5 feeds RSS; deduplicación por ID \\
   \file{news\_monitor.py} & \file{news\_monitor.csv} & 4 queries Google News; MD5 state \\
-  \file{convocatorias\_monitor.py} & \file{convocatorias\_curadas.csv} & HTML scraping ANID; \texttt{continue-on-error} \\
+  \file{convocatorias\_monitor.py} & \file{convocatorias\_curadas.csv} & Scraping ANID; \ttb{continue-on-error} \\
   \file{iaea\_inis\_monitor.py} & \file{iaea\_inis\_monitor.csv} & 9 búsquedas nucleares; strip HTML \\
   \file{generar\_boletin.py} & \file{boletin\_YYYY-SWW.html} & Newsletter semanal HTML \\
   \file{data\_quality.py} & \file{calidad\_datos.csv} & 20+ checks de integridad \\
@@ -730,35 +777,61 @@ for it in new_items:
 
 \section{Inventario completo de scripts}
 
-\begin{longtable}{L{5.5cm} C{1.2cm} L{7cm}}
+\begin{longtable}{L{6cm} C{1.1cm} L{6.5cm}}
   \toprule
   \textbf{Script} & \textbf{Líneas} & \textbf{Propósito} \\
   \midrule
   \endhead
+  \multicolumn{3}{l}{\textit{Vigilancia y monitoreo automático}} \\
   \file{arxiv\_monitor.py} & $\sim$300 & Vigilancia semanal de preprints arXiv (5 feeds RSS) \\
   \file{news\_monitor.py} & $\sim$253 & Monitoreo de menciones CCHEN en Google News \\
   \file{convocatorias\_monitor.py} & $\sim$310 & Scraping y curaduría de convocatorias ANID \\
   \file{iaea\_inis\_monitor.py} & $\sim$273 & Vigilancia en base de datos nuclear IAEA INIS \\
-  \file{generar\_boletin.py} & $\sim$200 & Generación de boletín semanal HTML \\
-  \file{build\_ror\_registry.py} & $\sim$300 & Normalización de instituciones vía ROR \\
-  \file{fetch\_datacite\_outputs.py} & $\sim$150 & Descarga de datasets/outputs desde DataCite \\
-  \file{fetch\_openaire\_outputs.py} & $\sim$150 & Outputs alternativos desde OpenAIRE Graph \\
-  \file{fetch\_patentsview\_patents.py} & $\sim$200 & Búsqueda de patentes USPTO (PatentsView) \\
-  \file{fetch\_semantic\_scholar.py} & $\sim$180 & Enriquecimiento de citas (Semantic Scholar) \\
-  \file{enrich\_unpaywall.py} & $\sim$185 & Enriquecimiento OA: status, PDF URLs \\
-  \file{run\_bertopic.py} & $\sim$120 & Modelado de tópicos (BERTopic + SBERT) \\
+  \file{generar\_boletin.py} & $\sim$548 & Generación de boletín semanal HTML + email Brevo \\
+  \file{build\_boletines\_index.py} & $\sim$71 & Índice de boletines para búsqueda y archivo \\
   \midrule
-  \file{build\_embeddings.py} & $\sim$120 & Pre-cómputo embeddings semánticos (877 $\times$ 384 dims) \\
-  \file{semantic\_search.py} & $\sim$90 & Búsqueda semántica (local .npy o Supabase pgvector) \\
+  \multicolumn{3}{l}{\textit{Construcción de datos maestros}} \\
+  \file{build\_ror\_registry.py} & $\sim$574 & Normalización de instituciones vía ROR (697+) \\
+  \file{build\_operational\_core.py} & $\sim$1020 & Registros canónicos de entidades y vínculos \\
+  \file{run\_bertopic.py} & $\sim$106 & Modelado de tópicos (BERTopic + SBERT) \\
   \midrule
-  \file{Database/data\_quality.py} & $\sim$350 & 20+ validaciones de integridad de datos \\
-  \file{Database/migrate\_to\_supabase.py} & $\sim$280 & Migración principal multi-tabla (idempotente) \\
-  \file{Database/migrate\_citing\_papers.py} & $\sim$80 & citing\_papers: 8.499 papers citantes \\
-  \file{Database/migrate\_europmc.py} & $\sim$70 & europmc\_works: 74 papers biomédicos \\
-  \file{Database/migrate\_vigilancia.py} & $\sim$100 & citation\_graph + arxiv + iaea + noticias \\
-  \file{Database/migrate\_bertopic.py} & $\sim$80 & bertopic\_topics + bertopic\_topic\_info \\
-  \file{Database/migrate\_convocatorias.py} & $\sim$70 & convocatorias + matching\_rules \\
-  \file{Database/migrate\_embeddings.py} & $\sim$90 & paper\_embeddings (pgvector 384 dims) \\
+  \multicolumn{3}{l}{\textit{Fetch y enriquecimiento de fuentes externas}} \\
+  \file{fetch\_datacite\_outputs.py} & $\sim$250 & Descarga de datasets/outputs desde DataCite \\
+  \file{fetch\_openaire\_outputs.py} & $\sim$291 & Outputs alternativos desde OpenAIRE Graph \\
+  \file{fetch\_patentsview\_patents.py} & $\sim$273 & Búsqueda de patentes USPTO (PatentsView) \\
+  \file{fetch\_inapi\_patents.py} & $\sim$339 & Patentes chilenas INAPI \\
+  \file{fetch\_openalex\_citations.py} & $\sim$250 & Grafo de citas OpenAlex (8.499 citantes) \\
+  \file{fetch\_europmc.py} & $\sim$133 & Literatura biomédica EuroPMC (74 papers) \\
+  \file{fetch\_opencrossref.py} & $\sim$150 & Enriquecimiento CrossRef: financiamiento \\
+  \file{fetch\_semantic\_scholar.py} & $\sim$144 & Enriquecimiento de citas (Semantic Scholar) \\
+  \file{fetch\_funding\_plus.py} & $\sim$197 & Financiamiento CORFO, IAEA TC, FIC-R \\
+  \file{enrich\_unpaywall.py} & $\sim$264 & Enriquecimiento OA: status, PDF URLs \\
+  \midrule
+  \multicolumn{3}{l}{\textit{Búsqueda semántica y evaluación de IA}} \\
+  \file{build\_embeddings.py} & $\sim$198 & Pre-cómputo embeddings semánticos (877 $\times$ 384 dims) \\
+  \file{semantic\_search.py} & $\sim$251 & Búsqueda semántica + reranking por perfil temático \\
+  \file{refresh\_semantic\_index.py} & $\sim$175 & Reconstruye índice pgvector IVFFlat \\
+  \file{assistant\_eval\_batch.py} & $\sim$527 & Evaluación por lotes: retrieval + fuentes estructuradas \\
+  \file{assistant\_eval\_structured\_responses.py} & $\sim$399 & Evaluación con respuestas LLM reales (Groq) \\
+  \file{compare\_eval\_runs.py} & $\sim$231 & Comparación delta entre runs de evaluación \\
+  \midrule
+  \multicolumn{3}{l}{\textit{Calidad, monitoreo y tests}} \\
+  \file{check\_dashboard\_e2e.py} & $\sim$183 & E2E con \ttb{streamlit.testing.v1.AppTest} \\
+  \file{check\_dashboard\_smoke.py} & $\sim$148 & Smoke test: login + navegación secciones \\
+  \file{check\_database\_contract.py} & $\sim$159 & Validación de esquema y tipos de columnas \\
+  \file{check\_supabase\_runtime.py} & $\sim$107 & Conectividad runtime (auth, paginación) \\
+  \file{perf\_benchmark\_loaders.py} & $\sim$73 & Benchmark de rendimiento de data\_loader \\
+  \midrule
+  \multicolumn{3}{l}{\textit{Migraciones a Supabase (Database/)}} \\
+  \file{migrate\_to\_supabase.py} & $\sim$280 & Migración principal multi-tabla (idempotente) \\
+  \file{migrate\_embeddings.py} & $\sim$99 & paper\_embeddings (pgvector 877$\times$384 dims) \\
+  \file{migrate\_dian.py} & $\sim$120 & dian\_publications: 133 registros DIAN \\
+  \file{migrate\_citing\_papers.py} & $\sim$80 & citing\_papers: 8.499 papers citantes \\
+  \file{migrate\_europmc.py} & $\sim$70 & europmc\_works: 74 papers biomédicos \\
+  \file{migrate\_vigilancia.py} & $\sim$100 & citation\_graph + arxiv + iaea + noticias \\
+  \file{migrate\_bertopic.py} & $\sim$80 & bertopic\_topics + bertopic\_topic\_info \\
+  \file{migrate\_convocatorias.py} & $\sim$70 & convocatorias + matching\_rules \\
+  \file{data\_quality.py} & $\sim$350 & 20+ validaciones de integridad de datos \\
   \bottomrule
 \end{longtable}
 
@@ -850,21 +923,28 @@ El dashboard principal (\file{Dashboard/app.py}) implementa \textbf{11 secciones
 
 \begin{itemize}
   \item \textbf{Login beta privado:} muralla de acceso con \texttt{internal\_auth} (secrets.toml); roles \texttt{admin} / \texttt{viewer} / \texttt{qa}; la flag \texttt{can\_view\_sensitive} controla acceso a capital humano, personas y enlaces.
-  \item \textbf{Carga lazy por sección:} \texttt{\_DATASET\_LOADERS} + \texttt{\_SECTION\_DATASETS} + \texttt{\_build\_section\_ctx()}. Reduce el tiempo de arranque evitando leer tablas innecesarias.
+  \item \textbf{Carga lazy por sección:} \texttt{\_DATASET\_LOADERS} + \texttt{\_SECTION\_DATASETS} + \texttt{\_build\_section\_ctx()}. Reduce el tiempo de arranque.
   \item \textbf{Franja operativa:} \texttt{render\_operational\_strip()} muestra el estado real de cada dataset cargado en la sesión (\texttt{Supabase pública}, \texttt{Fallback local}, \texttt{No disponible}).
   \item \textbf{Inspector de datasets:} diálogo con detalle de lectura efectiva, tabla Supabase, ruta CSV y snapshot local más reciente.
 \end{itemize}
 
-\section{Asistente IA (Groq + LLM)}
+\section{Asistente IA (Groq + RAG)}
 
-El asistente integrado utiliza el modelo \texttt{llama-3.3-70b-versatile} de Groq con:
+El asistente integrado combina recuperación semántica (RAG) con el modelo \texttt{llama-3.3-70b-versatile} de Groq:
 
 \begin{itemize}
-  \item \textbf{Contexto institucional:} sistema prompt con datos reales de CCHEN (877 publicaciones, KPIs, investigadores activos)
+  \item \textbf{Contexto institucional dinámico:} el sistema prompt (~22.770 caracteres) se construye con la función \texttt{\_build\_assistant\_system\_prompt(ctx)} con datos reales de CCHEN: 877 publicaciones, KPIs, 48 investigadores ORCID, 26 convocatorias, top journals, financiamiento ANID, etc.
+  \item \textbf{RAG con pgvector:} para cada consulta del usuario se recuperan los 5 papers más relevantes via búsqueda semántica (\texttt{semantic\_search.search()}) y se inyectan en el prompt
+  \item \textbf{Reranking por perfil:} si la consulta es de medicina nuclear, se amplía el pool de candidatos y se aplica un \textit{profile bonus score} para priorizar papers relevantes
   \item \textbf{Streaming:} respuestas progresivas con \texttt{st.write\_stream()}
   \item \textbf{Memoria de sesión:} historial de conversación en \texttt{st.session\_state.messages}
-  \item \textbf{Max tokens:} 2{,}048 por respuesta
+  \item \textbf{Max tokens:} 2{,}048 por respuesta en modo interactivo
+  \item \textbf{Logo institucional:} logo CCHEN 360° en página de login (220px) y sidebar (160px) con fallback a texto si falta el archivo
 \end{itemize}
+
+\textbf{Función \texttt{\_build\_assistant\_system\_prompt}:}
+
+La función (extraída de \texttt{sections/asistente\_id.py}) es reutilizable fuera de Streamlit (útil para evaluación batch). Retorna una tupla \texttt{(system\_prompt, context\_trace)} donde \texttt{context\_trace} es un diccionario con 17 claves de conteos (pub, pub\_enr, anid, ch, orcid, conv\_calls, conv\_open, matching\_formal, portfolio, patents, etc.). Permite sustituir \texttt{st.secrets} por un parámetro \texttt{patents\_key} para uso desde scripts.
 
 \begin{lstlisting}[style=pythonstyle, caption={Implementación del streaming con Groq}]
 with st.chat_message("assistant"):
@@ -930,52 +1010,291 @@ El módulo de carga de datos (\file{Dashboard/data\_loader.py}, $\sim$800 línea
 
 \subsection*{Funciones de carga (inventario completo)}
 
-\begin{longtable}{L{6.5cm} L{7cm}}
+\begin{longtable}{L{8cm} L{5.5cm}}
   \toprule
   \textbf{Función} & \textbf{Datos que carga} \\
   \midrule
   \endhead
-  \texttt{load\_publications()} & 877 publicaciones base (OpenAlex) \\
-  \texttt{load\_publications\_enriched()} & 616 con cuartiles SJR \\
-  \texttt{load\_authorships()} & 7{,}971 autorías \\
-  \texttt{load\_crossref\_enriched()} & 764 con datos de financiamiento \\
-  \texttt{load\_concepts()} & 21{,}348 conceptos OpenAlex \\
-  \texttt{load\_publications\_with\_concepts()} & Join publicaciones + conceptos \\
-  \texttt{load\_grants\_openalex()} & Grants desde OpenAlex \\
-  \texttt{load\_datacite\_outputs()} & Outputs DataCite (datasets) \\
-  \texttt{load\_openaire\_outputs()} & Outputs OpenAIRE \\
-  \texttt{load\_anid()} & 30 proyectos ANID \\
-  \texttt{load\_funding\_complementario()} & Financiamiento no-ANID \\
-  \texttt{load\_iaea\_tc()} & Proyectos IAEA TC \\
-  \texttt{load\_capital\_humano()} & 112 registros de formación \\
-  \texttt{load\_ch\_resumen\_ejecutivo()} & KPI JSON capital humano \\
-  \texttt{load\_ch\_analisis\_avanzado()} & 15+ análisis avanzados CH \\
-  \texttt{load\_ch\_cumplimiento\_centros()} & Cumplimiento documental por centro \\
-  \texttt{load\_ch\_transiciones()} & Transiciones de modalidad \\
-  \texttt{load\_ch\_participacion\_tipo\_anio()} & Participación tipo $\times$ año \\
-  \texttt{load\_orcid\_researchers()} & 48 perfiles ORCID \\
-  \texttt{load\_ror\_registry()} & $\sim$150 instituciones normalizadas \\
-  \texttt{load\_ror\_pending\_review()} & Cola de revisión ROR \\
-  \texttt{load\_convenios\_nacionales()} & 84 convenios nacionales \\
-  \texttt{load\_acuerdos\_internacionales()} & 41 acuerdos internacionales \\
-  \texttt{load\_dian\_publications()} & Publicaciones DIAN internas \\
-  \texttt{load\_patents()} & Registro de patentes \\
-  \texttt{load\_unpaywall\_oa()} & OA status + PDF URLs (764 DOIs) \\
-  \texttt{load\_iaea\_inis()} & Documentos IAEA INIS ($\sim$109) \\
-  \texttt{load\_arxiv\_monitor()} & Papers arXiv ($\sim$225) \\
-  \texttt{load\_news\_monitor()} & Noticias Google News ($\sim$65) \\
-  \texttt{load\_citation\_graph()} & Grafo de citas (877 papers CCHEN) \\
-  \texttt{load\_citing\_papers()} & Papers citantes externos (8.499) \\
-  \texttt{load\_europmc()} & Literatura biomédica EuroPMC (74) \\
-  \texttt{load\_bertopic\_topics()} & Asignación tópico por paper (358) \\
-  \texttt{load\_bertopic\_topic\_info()} & Resumen de 23 tópicos BERTopic \\
-  \texttt{load\_convocatorias()} & 26 convocatorias curadas \\
-  \texttt{load\_convocatorias\_matching\_rules()} & 6 reglas de matching institucional \\
-  \texttt{load\_altmetric()} & Métricas de impacto Altmetric \\
-  \texttt{get\_source\_timestamps()} & Timestamps de última actualización \\
-  \texttt{get\_table\_load\_status()} & Estado de lectura efectiva por tabla (runtime) \\
+  \ttb{load\_publications()} & 877 publicaciones base (OpenAlex) \\
+  \ttb{load\_publications\_enriched()} & 616 con cuartiles SJR \\
+  \ttb{load\_authorships()} & 7{,}971 autorías \\
+  \ttb{load\_crossref\_enriched()} & 764 con datos de financiamiento \\
+  \ttb{load\_concepts()} & 21{,}348 conceptos OpenAlex \\
+  \ttb{load\_publications\_with\_concepts()} & Join publicaciones + conceptos \\
+  \ttb{load\_grants\_openalex()} & Grants desde OpenAlex \\
+  \ttb{load\_datacite\_outputs()} & Outputs DataCite (datasets) \\
+  \ttb{load\_openaire\_outputs()} & Outputs OpenAIRE \\
+  \ttb{load\_anid()} & 30 proyectos ANID \\
+  \ttb{load\_funding\_complementario()} & Financiamiento no-ANID \\
+  \ttb{load\_iaea\_tc()} & Proyectos IAEA TC \\
+  \ttb{load\_capital\_humano()} & 112 registros de formación \\
+  \ttb{load\_ch\_resumen\_ejecutivo()} & KPI JSON capital humano \\
+  \ttb{load\_ch\_analisis\_avanzado()} & 15+ análisis avanzados CH \\
+  \ttb{load\_ch\_cumplimiento\_centros()} & Cumplimiento documental por centro \\
+  \ttb{load\_ch\_transiciones()} & Transiciones de modalidad \\
+  \ttb{load\_ch\_participacion\_tipo\_anio()} & Participación tipo $\times$ año \\
+  \ttb{load\_orcid\_researchers()} & 48 perfiles ORCID \\
+  \ttb{load\_ror\_registry()} & 697+ instituciones normalizadas (ROR) \\
+  \ttb{load\_ror\_pending\_review()} & Cola de revisión ROR \\
+  \ttb{load\_convenios\_nacionales()} & 84 convenios nacionales \\
+  \ttb{load\_acuerdos\_internacionales()} & 41 acuerdos internacionales \\
+  \ttb{load\_dian\_publications()} & Publicaciones DIAN internas \\
+  \ttb{load\_patents()} & Registro de patentes \\
+  \ttb{load\_unpaywall\_oa()} & OA status + PDF URLs (764 DOIs) \\
+  \ttb{load\_iaea\_inis()} & Documentos IAEA INIS ($\sim$109) \\
+  \ttb{load\_arxiv\_monitor()} & Papers arXiv ($\sim$225) \\
+  \ttb{load\_news\_monitor()} & Noticias Google News ($\sim$65) \\
+  \ttb{load\_citation\_graph()} & Grafo de citas (877 papers CCHEN) \\
+  \ttb{load\_citing\_papers()} & Papers citantes externos (8.499) \\
+  \ttb{load\_europmc()} & Literatura biomédica EuroPMC (74) \\
+  \ttb{load\_bertopic\_topics()} & Asignación tópico por paper (358) \\
+  \ttb{load\_bertopic\_topic\_info()} & Resumen de 23 tópicos BERTopic \\
+  \ttb{load\_convocatorias()} & 26 convocatorias curadas \\
+  \ttb{load\_convocatorias\_matching\_rules()} & 6 reglas de matching institucional \\
+  \ttb{load\_altmetric()} & Métricas de impacto Altmetric \\
+  \ttb{get\_source\_timestamps()} & Timestamps de última actualización \\
+  \ttb{get\_table\_load\_status()} & Estado de lectura efectiva por tabla \\
   \bottomrule
 \end{longtable}
+
+%% ════════════════════════════════════════════════════════════
+\chapter{Búsqueda Semántica y RAG}
+%% ════════════════════════════════════════════════════════════
+
+\section{¿Qué son los embeddings semánticos?}
+
+Un \textbf{embedding semántico} (o vector semántico) es una representación numérica de un texto como un punto en un espacio vectorial de alta dimensionalidad. Textos con significados similares quedan cercanos en ese espacio; textos sobre temas distintos quedan alejados.
+
+En el sistema, cada publicación es representada por un vector de \textbf{384 dimensiones} generado por el modelo \texttt{paraphrase-multilingual-MiniLM-L12-v2} (sentence-transformers). Este modelo fue elegido porque:
+\begin{itemize}
+  \item Soporta \textbf{múltiples idiomas} (español, inglés, francés, alemán, etc.)
+  \item Genera vectores \textbf{normalizados} (norma L2 = 1), permitiendo calcular similitud coseno mediante producto punto simple
+  \item Es \textbf{compacto} (7.3M parámetros, $\sim$480 MB) pero preciso para dominio científico
+  \item Tiene un contexto de 512 tokens, suficiente para título + abstract
+\end{itemize}
+
+\begin{infobox}[Similitud coseno]
+Dados dos vectores $\mathbf{u}$ y $\mathbf{v}$ normalizados:
+\[ \text{similitud}(\mathbf{u}, \mathbf{v}) = \mathbf{u} \cdot \mathbf{v} = \sum_{i=1}^{384} u_i \cdot v_i \in [-1, 1] \]
+Un valor de 1.0 indica textos idénticos; 0.0 indica textos sin relación semántica; valores negativos son raros en textos de un mismo dominio. En la práctica, scores $>$ 0.6 indican alta relevancia temática.
+\end{infobox}
+
+\section{Pipeline de búsqueda semántica}
+
+El pipeline opera en cuatro fases:
+
+\subsection*{Fase 1: Pre-cómputo de embeddings (offline)}
+
+\begin{lstlisting}[style=bashstyle, caption={Generación de embeddings (Scripts/build\_embeddings.py)}]
+python Scripts/build_embeddings.py
+# Carga: cchen_openalex_works.csv (877 papers) +
+#        cchen_abstracts_merged.csv (mejor abstract por paper)
+# Texto de entrada: titulo + " " + abstract
+# Modelo: paraphrase-multilingual-MiniLM-L12-v2
+# Batch size: 64 textos; normalize_embeddings=True
+# Salida:
+#   Data/Publications/cchen_embeddings.npy     (877 x 384, float32)
+#   Data/Publications/cchen_embeddings_meta.csv (openalex_id, doi, titulo, anio, abstract)
+\end{lstlisting}
+
+\subsection*{Fase 2: Migración a Supabase pgvector (on-demand)}
+
+La tabla \texttt{paper\_embeddings} almacena los 877 vectores en Supabase con la extensión \texttt{pgvector}:
+
+\begin{lstlisting}[style=sqlstyle, caption={Definición de la tabla paper\_embeddings}]
+CREATE TABLE paper_embeddings (
+  openalex_id  TEXT PRIMARY KEY,
+  doi          TEXT,
+  title        TEXT,
+  year         INTEGER,
+  abstract     TEXT,
+  embedding    vector(384)  -- extension pgvector
+);
+
+-- Indice IVFFlat para busqueda aproximada por coseno
+CREATE INDEX ON paper_embeddings
+  USING ivfflat (embedding vector_cosine_ops)
+  WITH (lists = 50);
+
+-- RPC para busqueda semantica desde el cliente
+CREATE OR REPLACE FUNCTION match_papers(
+  query_embedding vector(384),
+  match_count     int DEFAULT 5
+) RETURNS TABLE(openalex_id text, title text, year int,
+                abstract text, similarity float)
+LANGUAGE sql AS $$
+  SELECT openalex_id, title, year, abstract,
+         1 - (embedding <=> query_embedding) AS similarity
+  FROM paper_embeddings
+  ORDER BY embedding <=> query_embedding
+  LIMIT match_count;
+$$;
+\end{lstlisting}
+
+\textbf{Operador \texttt{<=>}:} distancia coseno en pgvector. La similitud se obtiene como \texttt{1 - (<=>)}.
+
+\textbf{Índice IVFFlat:} divide el espacio vectorial en 50 listas (clusters). La búsqueda aproximada es $\sim$50$\times$ más rápida que fuerza bruta, con pérdida mínima de recall para corpus $<$ 10.000 vectores.
+
+\subsection*{Fase 3: Búsqueda en tiempo real (\texttt{semantic\_search.py})}
+
+La función principal \texttt{search(query, top\_k=5)} tiene dos rutas de ejecución:
+
+\begin{center}
+\begin{tabular}{L{6.5cm}L{6.5cm}}
+  \toprule
+  \textbf{Ruta A: Local (.npy)} & \textbf{Ruta B: Supabase pgvector} \\
+  \midrule
+  Carga \texttt{cchen\_embeddings.npy} en RAM & Requiere conexión a Supabase \\
+  Codifica la query con sentence-transformers & Codifica la query (mismo modelo) \\
+  Producto punto: \texttt{emb @ q\_vec} (vectorizado) & Llama RPC \texttt{match\_papers()} \\
+  Ordena por similitud, toma top-k & Recibe resultados preordenados \\
+  \textbf{Latencia}: $<$50ms & \textbf{Latencia}: $\sim$200--500ms (red) \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{Fase 4: Reranking por perfil temático (medicina nuclear)}
+
+Para consultas relacionadas con medicina nuclear, se aplica un reranking adicional:
+
+\begin{enumerate}
+  \item \textbf{Detección}: si la query contiene ``medicina nuclear'' o ``nuclear medicine'', se activa el perfil
+  \item \textbf{Expansión}: el pool de candidatos se amplía a \texttt{max(top\_k, 5*top\_k, 15)}
+  \item \textbf{Bonus score} por contenido del título/abstract:
+\end{enumerate}
+
+\begin{center}
+\begin{tabular}{L{7cm}C{3cm}}
+  \toprule
+  \textbf{Término} & \textbf{Bonus} \\
+  \midrule
+  PET/CT, DOTATATE, SPECT, 177Lu, radiofármaco, radiopharmaceutical & $+0.06$ \\
+  Imaging, molecular, nuclear medicine, medicina nuclear & $+0.02$ \\
+  Señal adicional en título & $+0.04$ \\
+  Términos negativos (radiodiagnosis, cardiology) & $-0.01$ a $-0.03$ \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Score final:} \texttt{score\_final = similitud\_coseno + profile\_bonus}
+
+\section{BERTopic: modelado de tópicos}
+
+\textbf{BERTopic} es una técnica de modelado de tópicos no supervisado que combina embeddings BERT con clustering HDBSCAN y una representación de tópicos via c-TF-IDF. Opera en tres pasos:
+
+\begin{enumerate}
+  \item \textbf{Embeddings}: convierte abstracts a vectores usando sentence-transformers
+  \item \textbf{Reducción dimensional}: UMAP proyecta de 384 a 5 dimensiones
+  \item \textbf{Clustering}: HDBSCAN agrupa papers en tópicos coherentes; papers con baja probabilidad van al tópico $-1$ (ruido)
+  \item \textbf{Representación}: c-TF-IDF extrae las palabras más representativas por tópico
+\end{enumerate}
+
+El corpus CCHEN produce \textbf{23 tópicos} (sobre 358 papers con abstract suficiente). Los tópicos dominantes son dosimetría de radiaciones, medicina nuclear, física de reactores, producción de radiofármacos, e imagenología.
+
+%% ════════════════════════════════════════════════════════════
+\chapter{Marco de Evaluación del Asistente I+D}
+%% ════════════════════════════════════════════════════════════
+
+\section{Motivación}
+
+El Asistente I+D combina recuperación semántica (RAG) con generación LLM. Para garantizar su calidad, se implementó un \textbf{marco de evaluación en dos capas}:
+
+\begin{enumerate}
+  \item \textbf{Capa de Retrieval} (\texttt{publication\_rag}): evalúa la calidad de la búsqueda semántica --- ¿el sistema recupera los papers correctos para cada consulta?
+  \item \textbf{Capa Estructurada} (\texttt{structured\_or\_hybrid}): evalúa la respuesta LLM completa --- ¿el asistente usa las fuentes correctas, sintetiza bien y produce información accionable?
+\end{enumerate}
+
+\section[Plantilla de evaluación del asistente]{Plantilla de evaluación (\file{assistant\_eval\_template.csv})}
+
+Contiene 13 consultas benchmark (Q01--Q13) organizadas en dos modos:
+
+\begin{center}
+\begin{tabular}{L{1.5cm}L{6cm}L{4cm}L{2cm}}
+  \toprule
+  \textbf{ID} & \textbf{Consulta} & \textbf{Fuentes esperadas} & \textbf{Modo} \\
+  \midrule
+  Q01 & Diagnóstico producción científica reciente & publications; bertopic\_topics & structured \\
+  Q02 & Oportunidades financiamiento ANID estratégicas & convocatorias; matching; perfiles & structured \\
+  Q03 & Riesgos y fortalezas capital humano I+D & researchers; capital\_humano & structured \\
+  Q04 & Evidencia dosimetría y seguridad radiológica & paper\_embeddings; publications & rag \\
+  Q05 & Colaboración internacional: instituciones y países & publications; researchers & structured \\
+  Q06 & Tendencias medicina nuclear e imagenología & paper\_embeddings; publications & rag \\
+  Q07 & Temas BERTopic y prioridades institucionales & bertopic\_topics; publications & structured \\
+  Q08 & Convocatorias abiertas con mejor calce & convocatorias; matching; perfiles & structured \\
+  Q09 & Evidencia transferencia tecnológica y vacíos & patents; transferencia; publications & structured \\
+  Q10 & Resumen ejecutivo con hallazgos accionables & publications; convocatorias; etc. & structured \\
+  Q11 & Publicaciones CCHEN en dosimetría & paper\_embeddings; publications & rag \\
+  Q12 & Tendencias física de reactores & paper\_embeddings; publications & rag \\
+  Q13 & Colaboraciones con universidades chilenas & paper\_embeddings; publications & rag \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Capa 1: Evaluación de Retrieval}
+
+Para las consultas \texttt{publication\_rag}, el script evalúa la búsqueda semántica:
+
+\begin{itemize}
+  \item \textbf{Top-5 papers recuperados}: título y snippet de abstract
+  \item \textbf{keyword\_hits}: cuántos de los \texttt{must\_include\_keywords} aparecen en los abstracts recuperados
+  \item \textbf{top1\_score / avg\_score}: score de similitud coseno del primer resultado y promedio del top-5
+  \item \textbf{n\_with\_abstract}: cobertura de abstracts (meta de $\geq$90\%)
+\end{itemize}
+
+\begin{lstlisting}[style=bashstyle, caption={Ejecutar evaluación de retrieval}]
+python Scripts/assistant_eval_batch.py \
+  --input Docs/reports/assistant_eval_template.csv \
+  --output Docs/reports/eval_run_retrieval_v1.csv \
+  --evaluation-mode publication_rag
+\end{lstlisting}
+
+\section{Capa 2: Evaluación Estructurada con Respuestas LLM}
+
+Para las consultas \texttt{structured\_or\_hybrid}, el script:
+
+\begin{enumerate}
+  \item \textbf{Verifica disponibilidad de fuentes}: ¿están disponibles en Supabase las tablas esperadas (publications, bertopic\_topics, convocatorias, etc.)?
+  \item \textbf{Llama a Groq API} (sin streaming) con el sistema prompt completo y la consulta
+  \item \textbf{Mide latencia} (\texttt{response\_ms})
+  \item \textbf{Calcula métricas heurísticas}:
+    \begin{itemize}
+      \item \texttt{heuristic\_sources\_mentioned}: cuántos nombres de fuente esperados aparecen en la respuesta (ej: ``publicaciones'', ``convocatorias'')
+      \item \texttt{heuristic\_citation\_tags}: cuántas etiquetas de cita \texttt{(fuente: ...)} aparecen en la respuesta
+    \end{itemize}
+  \item \textbf{Deja columnas vacías para revisión humana}: \ttb{score\_structured\_source\_grounding}, \ttb{score\_structured\_synthesis}, \ttb{score\_structured\_actionability}, \ttb{structured\_review\_notes}
+\end{enumerate}
+
+\begin{lstlisting}[style=bashstyle, caption={Ejecutar evaluación estructurada con respuestas LLM}]
+GROQ_API_KEY="gsk_..." python Scripts/assistant_eval_structured_responses.py \
+  --run-label structured_responses_v2 \
+  --output Docs/reports/assistant_eval_structured_responses_v2.csv \
+  --groq-model llama-3.3-70b-versatile \
+  --max-tokens 1500
+\end{lstlisting}
+
+\section{Columnas de revisión humana}
+
+Las siguientes columnas deben ser llenadas manualmente por un revisor experto en I+D nuclear:
+
+\begin{center}
+\begin{tabular}{L{7cm}L{6cm}}
+  \toprule
+  \textbf{Columna} & \textbf{Descripción} \\
+  \midrule
+  \ttb{score\_structured\_source\_grounding} & ¿Cita correctamente las fuentes? (0--5) \\
+  \ttb{score\_structured\_synthesis} & ¿Sintetiza bien múltiples fuentes? (0--5) \\
+  \ttb{score\_structured\_actionability} & ¿Produce recomendaciones accionables? (0--5) \\
+  \ttb{hallucination\_flag} & ¿Afirmaciones sin sustento en datos? (True/False) \\
+  \ttb{structured\_review\_notes} & Observaciones detalladas del revisor \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Limitaciones del cuota Groq (tier gratuito)}
+
+El tier gratuito de Groq impone un límite de \textbf{100.000 tokens por día por organización} (TPD). Dado que el sistema prompt pesa $\sim$6.600 tokens, se pueden completar $\approx$15 evaluaciones por día antes de agotar la cuota. El límite se comparte entre todas las API keys de la misma organización.
+
+\textbf{Solución recomendada:} solicitar el upgrade a Dev Tier (\url{console.groq.com/settings/billing}) o usar la API de Anthropic (Claude) que tiene límites más generosos.
 
 %% ════════════════════════════════════════════════════════════
 \chapter{Base de Datos y Esquema}
@@ -987,72 +1306,72 @@ Supabase provee una base de datos PostgreSQL 15 totalmente gestionada con:
 \begin{itemize}
   \item API REST autogenerada (PostgREST)
   \item Autenticación integrada (JWT)
-  \item Row-Level Security (RLS) habilitado en las 34 tablas operativas
+  \item Row-Level Security (RLS) habilitado en las 35 tablas operativas
   \item Extensión \texttt{pgvector} para búsqueda semántica por similitud coseno
   \item Dashboard web de administración + backups automáticos diarios
 \end{itemize}
 
-\section{Tablas operativas (34 tablas)}
+\section{Tablas operativas (35 tablas)}
 
-\begin{longtable}{L{4.2cm} R{1.8cm} L{3cm} L{3.5cm}}
+\begin{longtable}{L{5.5cm} R{1.0cm} L{3.8cm} L{2.5cm}}
   \toprule
   \textbf{Tabla} & \textbf{Filas} & \textbf{PK} & \textbf{Fuente} \\
   \midrule
   \endhead
   \multicolumn{4}{l}{\textbf{Producción científica}} \\
-  \texttt{publications} & 877 & \texttt{openalex\_id} & OpenAlex API \\
-  \texttt{publications\_enriched} & 616 & \texttt{work\_id} & OpenAlex + SJR \\
-  \texttt{authorships} & 7{,}971 & \texttt{id} (serial) & OpenAlex API \\
-  \texttt{crossref\_data} & 764 & \texttt{doi} & CrossRef API \\
-  \texttt{concepts} & 21{,}348 & \texttt{id} (serial) & OpenAlex API \\
-  \texttt{europmc\_works} & 74 & \texttt{source\_id} & EuroPMC REST \\
+  \ttb{publications} & 877 & \ttb{openalex\_id} & OpenAlex API \\
+  \ttb{publications\_enriched} & 616 & \ttb{work\_id} & OpenAlex + SJR \\
+  \ttb{authorships} & 7{,}971 & \ttb{id} (serial) & OpenAlex API \\
+  \ttb{crossref\_data} & 764 & \ttb{doi} & CrossRef API \\
+  \ttb{concepts} & 21{,}348 & \ttb{id} (serial) & OpenAlex API \\
+  \ttb{europmc\_works} & 74 & \ttb{source\_id} & EuroPMC REST \\
   \midrule
   \multicolumn{4}{l}{\textbf{Registro DIAN}} \\
-  \texttt{dian\_publications} & 133 & \texttt{dian\_id} & DIAN CCHEN (Excel) \\
+  \ttb{dian\_publications} & 133 & \ttb{dian\_id} & DIAN CCHEN (Excel) \\
   \midrule
   \multicolumn{4}{l}{\textbf{Financiamiento e investigadores}} \\
-  \texttt{anid\_projects} & 24 & \texttt{proyecto} & ANID \\
-  \texttt{funding\_complementario} & Var. & \texttt{funding\_id} & Manual (\textit{sensible}) \\
-  \texttt{researchers\_orcid} & 48 & \texttt{orcid\_id} & ORCID API \\
-  \texttt{capital\_humano} & 97+ & \texttt{id} (serial) & DIAN interno (\textit{sensible}) \\
+  \ttb{anid\_projects} & 24 & \ttb{proyecto} & ANID \\
+  \ttb{funding\_complementario} & Var. & \ttb{funding\_id} & Manual (\textit{sensible}) \\
+  \ttb{researchers\_orcid} & 48 & \ttb{orcid\_id} & ORCID API \\
+  \ttb{capital\_humano} & 97+ & \ttb{id} (serial) & DIAN (\textit{sensible}) \\
   \midrule
   \multicolumn{4}{l}{\textbf{Institucional y territorial}} \\
-  \texttt{institution\_registry} & 697 & \texttt{normalized\_key} & ROR + manual \\
-  \texttt{institution\_registry\_pending\_review} & $\sim$30 & \texttt{canonical\_name} & Cola curaduría \\
-  \texttt{convenios\_nacionales} & 84 & \texttt{id} (serial) & datos.gob.cl \\
-  \texttt{acuerdos\_internacionales} & 91 & \texttt{id} (serial) & datos.gob.cl \\
+  \ttb{institution\_registry} & 697 & \ttb{normalized\_key} & ROR + manual \\
+  \ttb{institution\_registry\_pending\_review} & $\sim$30 & \ttb{canonical\_name} & Cola curaduría \\
+  \ttb{convenios\_nacionales} & 84 & \ttb{id} (serial) & datos.gob.cl \\
+  \ttb{acuerdos\_internacionales} & 41 & \ttb{id} (serial) & datos.gob.cl \\
   \midrule
   \multicolumn{4}{l}{\textbf{Outputs de investigación}} \\
-  \texttt{datacite\_outputs} & Var. & \texttt{doi} & DataCite API \\
-  \texttt{openaire\_outputs} & Var. & \texttt{openaire\_id} & OpenAIRE Graph \\
-  \texttt{patents} & Pend. & \texttt{patent\_uid} & Lens.org / USPTO \\
+  \ttb{datacite\_outputs} & Var. & \ttb{doi} & DataCite API \\
+  \ttb{openaire\_outputs} & Var. & \ttb{openaire\_id} & OpenAIRE Graph \\
+  \ttb{patents} & Pend. & \ttb{patent\_uid} & Lens.org/USPTO \\
   \midrule
   \multicolumn{4}{l}{\textbf{Núcleo institucional}} \\
-  \texttt{entity\_registry\_personas} & 604 & \texttt{persona\_id} & DIAN (\textit{sensible}) \\
-  \texttt{entity\_registry\_proyectos} & 24 & \texttt{project\_id} & Manual \\
-  \texttt{entity\_registry\_convocatorias} & 26 & \texttt{convocatoria\_id} & Manual \\
-  \texttt{entity\_links} & 657 & compuesta & Gobernanza (\textit{sensible}) \\
+  \ttb{entity\_registry\_personas} & 604 & \ttb{persona\_id} & DIAN (\textit{sensible}) \\
+  \ttb{entity\_registry\_proyectos} & 24 & \ttb{project\_id} & Manual \\
+  \ttb{entity\_registry\_}\newline\ttb{convocatorias} & 26 & \ttb{convocatoria\_id} & Manual \\
+  \ttb{entity\_links} & 657 & compuesta & Gobernanza (\textit{sensible}) \\
   \midrule
   \multicolumn{4}{l}{\textbf{Convocatorias y matching}} \\
-  \texttt{perfiles\_institucionales} & Var. & \texttt{perfil\_id} & Manual \\
-  \texttt{convocatorias} & 26 & \texttt{conv\_id} & Manual curado \\
-  \texttt{convocatorias\_matching\_rules} & 6 & \texttt{rule\_id} & Manual curado \\
-  \texttt{convocatorias\_matching\_institucional} & Var. & \texttt{conv\_id} & Cálculo interno \\
+  \ttb{perfiles\_institucionales} & Var. & \ttb{perfil\_id} & Manual \\
+  \ttb{convocatorias} & 26 & \ttb{conv\_id} & Manual curado \\
+  \ttb{convocatorias\_matching\_rules} & 6 & \ttb{rule\_id} & Manual curado \\
+  \ttb{convocatorias\_matching\_institucional} & Var. & \ttb{conv\_id} & Cálculo interno \\
   \midrule
   \multicolumn{4}{l}{\textbf{Vigilancia y analítica científica}} \\
-  \texttt{arxiv\_monitor} & $\sim$225 & \texttt{arxiv\_id} & arXiv RSS \\
-  \texttt{iaea\_inis\_monitor} & $\sim$109 & \texttt{inis\_id} & IAEA INIS API \\
-  \texttt{news\_monitor} & $\sim$65 & \texttt{news\_id} & Google News RSS \\
-  \texttt{citation\_graph} & 877 & \texttt{openalex\_id} & OpenAlex citas \\
-  \texttt{citing\_papers} & 8{,}499 & \texttt{citing\_id} & OpenAlex citas \\
-  \texttt{bertopic\_topics} & 358 & \texttt{openalex\_id} & BERTopic NLP \\
-  \texttt{bertopic\_topic\_info} & 23 & \texttt{topic} & BERTopic NLP \\
+  \ttb{arxiv\_monitor} & $\sim$225 & \ttb{arxiv\_id} & arXiv RSS \\
+  \ttb{iaea\_inis\_monitor} & $\sim$109 & \ttb{inis\_id} & IAEA INIS API \\
+  \ttb{news\_monitor} & $\sim$65 & \ttb{news\_id} & Google News RSS \\
+  \ttb{citation\_graph} & 877 & \ttb{openalex\_id} & OpenAlex citas \\
+  \ttb{citing\_papers} & 8{,}499 & \ttb{citing\_id} & OpenAlex citas \\
+  \ttb{bertopic\_topics} & 358 & \ttb{openalex\_id} & BERTopic NLP \\
+  \ttb{bertopic\_topic\_info} & 23 & \ttb{topic} & BERTopic NLP \\
   \midrule
   \multicolumn{4}{l}{\textbf{Búsqueda semántica (pgvector)}} \\
-  \texttt{paper\_embeddings} & 877 & \texttt{openalex\_id} & sentence-transformers \\
+  \ttb{paper\_embeddings} & 877 & \ttb{openalex\_id} & sentence-transformers \\
   \midrule
   \multicolumn{4}{l}{\textbf{Gobernanza}} \\
-  \texttt{data\_sources} & $\sim$17 & \texttt{source\_name} & Gobernanza \\
+  \ttb{data\_sources} & $\sim$17 & \ttb{source\_name} & Gobernanza \\
   \bottomrule
 \end{longtable}
 
@@ -1134,18 +1453,18 @@ Para cada dataset se verifica:
 \subsection*{3. Control de frescura (staleness)}
 
 \begin{center}
-\begin{tabular}{L{6cm} C{3cm}}
+\begin{tabular}{L{7cm} C{2.5cm}}
   \toprule
-  \textbf{Dataset} & \textbf{Máx. días sin actualizar} \\
+  \textbf{Dataset} & \textbf{Máx. días} \\
   \midrule
-  \texttt{arxiv\_monitor.csv} & 8 días \\
-  \texttt{news\_monitor.csv} & 8 días \\
-  \texttt{convocatorias\_curadas.csv} & 8 días \\
-  \texttt{cchen\_openalex\_works.csv} & 90 días \\
-  \texttt{cchen\_authorships\_enriched.csv} & 90 días \\
-  \texttt{cchen\_crossref\_enriched.csv} & 90 días \\
-  \texttt{cchen\_researchers\_orcid.csv} & 180 días \\
-  Convenios / Acuerdos & 180 días \\
+  \file{arxiv\_monitor.csv} & 8 \\
+  \file{news\_monitor.csv} & 8 \\
+  \file{convocatorias\_curadas.csv} & 8 \\
+  \file{cchen\_openalex\_works.csv} & 90 \\
+  \file{cchen\_authorships\_enriched.csv} & 90 \\
+  \file{cchen\_crossref\_enriched.csv} & 90 \\
+  \file{cchen\_researchers\_orcid.csv} & 180 \\
+  Convenios / Acuerdos & 180 \\
   \bottomrule
 \end{tabular}
 \end{center}
@@ -1155,7 +1474,7 @@ Para cada dataset se verifica:
 El script \file{Scripts/build\_ror\_registry.py} normaliza los nombres de instituciones colaboradoras:
 \begin{itemize}
   \item \textbf{Fuente autoritativa:} ROR (\url{ror.org}) --- identificadores persistentes
-  \item \textbf{$\sim$150 instituciones} normalizadas actualmente
+  \item \textbf{697+ instituciones} normalizadas actualmente (40+ países)
   \item \textbf{Cola de revisión:} \file{ror\_pending\_review.csv} para instituciones ambiguas
   \item \textbf{Aliases manuales:} \file{ror\_manual\_aliases.csv} para variantes conocidas
   \item \textbf{Alerta en dashboard:} instituciones con prioridad \texttt{Alta} aparecen en Panel de Indicadores
@@ -1257,17 +1576,20 @@ python Scripts/enrich_unpaywall.py
   \textbf{Componente} & \textbf{TRL actual} & \textbf{TRL objetivo} & \textbf{Bloqueador} \\
   \midrule
   \endhead
-  Dashboard Streamlit & 4 & 6 & Supabase credentials \\
-  Vigilancia arXiv/News & 4 & 5 & --- (activo) \\
-  Vigilancia IAEA INIS & 4 & 5 & --- (activo) \\
-  Asistente IA Groq & 4 & 5 & --- (activo) \\
-  Migración Supabase & 3 & 6 & Credenciales pendientes \\
-  PatentsView/Lens & 2 & 5 & API key (gratuita) \\
-  BERTopic topics & 3 & 5 & Integrar en dashboard \\
-  Boletín automático & 4 & 5 & Mailchimp/Brevo \\
-  GitHub Pages & 1 & 4 & Configuración \\
+  Dashboard Streamlit (11 secciones) & 5 & 6 & --- (activo en Cloud) \\
+  Vigilancia arXiv/News/INIS & 5 & 6 & --- (semanal GitHub Actions) \\
+  Asistente IA Groq + RAG & 5 & 6 & Cuota Groq 100K TPD \\
+  Búsqueda semántica pgvector & 5 & 6 & --- (activo) \\
+  Reranking medicina nuclear & 5 & 6 & --- (activo) \\
+  Marco de evaluación del asistente & 4 & 6 & Revisión humana pendiente \\
+  Migración Supabase (35 tablas) & 5 & 6 & --- (completa) \\
+  RLS + login beta privado & 5 & 6 & --- (activo) \\
+  BERTopic topics (23 tópicos) & 5 & 6 & --- (activo en dashboard) \\
+  Boletín automático HTML & 5 & 6 & Envío email vía Brevo \\
+  PatentsView/Lens/INAPI & 4 & 5 & Datos escasos (4 patentes) \\
+  GitHub Pages & 3 & 5 & Workflow parcial \\
+  Evaluación humana del asistente & 2 & 5 & Revisores I+D necesarios \\
   Angular enterprise UI & 1 & 4 & Presupuesto MM\$42+ \\
-  RLS Supabase & 2 & 5 & Configuración \\
   SAML/OAuth2 auth & 1 & 4 & Presupuesto \\
   Zenodo archival & 1 & 4 & Configuración \\
   \bottomrule
@@ -1276,10 +1598,11 @@ python Scripts/enrich_unpaywall.py
 \section{Tareas inmediatas de alta prioridad}
 
 \begin{enumerate}[leftmargin=2cm]
-  \item \textbf{Migración Supabase:} configurar credenciales y ejecutar \file{migrate\_to\_supabase.py}
-  \item \textbf{PatentsView API key:} registrarse en \url{patentsview.org/apis/keyrequest} (gratuito) y ejecutar \file{fetch\_patentsview\_patents.py}
-  \item \textbf{BERTopic:} integrar visualización de tópicos (\file{run\_bertopic.py}) en el dashboard
-  \item \textbf{GitHub Pages:} publicar dashboard o reportes estáticos semanales
+  \item \textbf{Revisión humana del asistente:} completar columnas \texttt{score\_*} en el archivo \\ \file{assistant\_eval\_structured\_responses\_v2.csv} para las 8 consultas estructuradas
+  \item \textbf{Upgrade Groq Dev Tier:} solicitar en \texttt{console.groq.com/settings/billing} para eliminar límite 100K TPD y habilitar evaluación continua
+  \item \textbf{Actualización trimestral de embeddings:} re-ejecutar \file{build\_embeddings.py} y \file{migrate\_embeddings.py} al incorporar nuevas publicaciones
+  \item \textbf{Evaluación de física de reactores y universidades chilenas:} revisar keyword hits de Q12 y Q13 (colaboración con UCHILE/USACH/PUC) que requieren abstracts de mayor cobertura
+  \item \textbf{GitHub Pages:} publicar boletines y reportes estáticos semanales via \file{deploy\_pages.yml}
 \end{enumerate}
 
 \section{Roadmap de madurez}
@@ -1289,9 +1612,10 @@ python Scripts/enrich_unpaywall.py
   \toprule
   \textbf{Período} & \textbf{Hito} & \textbf{Descripción} \\
   \midrule
-  Q2 2026 & TRL 5 (entorno relevante) & Supabase en producción, PatentsView activo, BERTopic integrado \\
-  H2 2026 & TRL 6 (demo operacional) & GitHub Pages, mailchimp automático, Zenodo \\
-  2027 & TRL 7--8 (sistema completo) & Angular + Django, Huawei Cloud, SAML/OAuth2 \\
+  Q1 2026 & TRL 5 completado & RAG + pgvector, evaluación asistente, 35 tablas Supabase, logo y UI beta \\
+  Q2--Q3 2026 & TRL 6 (demo operacional) & Revisión humana del asistente, GitHub Pages, envío automático de boletines, upgrade Groq Dev Tier \\
+  H2 2026 & TRL 6--7 & Integración Zenodo, API pública de resultados, dashboard accesible a toda CCHEN \\
+  2027 & TRL 7--8 (sistema completo) & Angular + Django, Huawei Cloud, SAML/OAuth2, LLM on-premises \\
   \bottomrule
 \end{tabular}
 \end{center}
@@ -1340,6 +1664,23 @@ python Scripts/enrich_unpaywall.py
   \textbf{Plotly} & Librería de visualización interactiva para Python/JavaScript. \\
   \textbf{NetworkX} & Librería Python para análisis y visualización de grafos y redes. \\
   \textbf{pandas} & Librería Python para manipulación y análisis de datos tabulares. \\
+  \midrule
+  \textbf{pgvector} & Extensión PostgreSQL que agrega soporte para vectores de alta dimensionalidad. Permite almacenar embeddings y realizar búsqueda por similitud (coseno, L2, producto punto) directamente en SQL. \\
+  \textbf{IVFFlat} & Índice de búsqueda aproximada para pgvector. Divide el espacio vectorial en $k$ listas (clusters); la búsqueda solo recorre las listas más cercanas al query vector. Mucho más rápido que fuerza bruta con pérdida mínima de recall para corpus pequeños. \\
+  \textbf{RAG} & Retrieval-Augmented Generation. Técnica que combina recuperación de documentos relevantes con generación LLM. El sistema recupera los papers más relevantes via búsqueda semántica y los inyecta en el prompt antes de generar la respuesta. \\
+  \textbf{Embedding semántico} & Representación numérica de un texto como vector de alta dimensionalidad (aquí: 384 dims). Textos con significados similares tienen vectores cercanos. Generado por el modelo \texttt{paraphrase-multilingual-MiniLM-L12-v2}. \\
+  \textbf{sentence-transformers} & Librería Python para generar embeddings semánticos de oraciones. Basada en Transformers (BERT, RoBERTa, etc.). Soporte multilingual. \\
+  \textbf{MiniLM} & Familia de modelos de lenguaje compactos (Microsoft Research). \texttt{paraphrase-multilingual-MiniLM-L12-v2} tiene 384 dimensiones y soporta 50+ idiomas. \\
+  \textbf{Similitud coseno} & Métrica de similitud entre vectores normalizados, calculada como el producto punto. Valor 1.0 = idénticos, 0.0 = sin relación semántica. Usada en búsqueda semántica. \\
+  \textbf{Profile reranking} & Técnica de reordenamiento de resultados que aplica un bonus score basado en un perfil temático. En CCHEN, se usa para priorizar papers de medicina nuclear cuando la consulta es sobre ese tema. \\
+  \textbf{TPD (Tokens Per Day)} & Límite de tokens diarios en APIs de LLM. Groq tier gratuito: 100.000 TPD por organización para \texttt{llama-3.3-70b-versatile}. \\
+  \textbf{TPM (Tokens Per Minute)} & Límite de tokens por minuto. Groq \texttt{llama-3.1-8b-instant} tiene TPM=6.000, insuficiente para el prompt del sistema ($\sim$6.600 tokens). \\
+  \textbf{Heurística} & En el contexto de evaluación del asistente: métrica calculable automáticamente (sin juicio humano) como proxy de calidad. No es una medida de verdad, sino un indicador aproximado. \\
+  \textbf{heuristic\_sources\_mentioned} & Métrica heurística: cuenta cuántos nombres de fuentes esperadas aparecen como substring en la respuesta del asistente (ej: ``publicaciones'', ``convocatorias''). \\
+  \textbf{heuristic\_citation\_tags} & Métrica heurística: cuenta etiquetas de citación estilo \texttt{(fuente: ...)} en la respuesta del asistente. Indicador de cuán explícitas son las referencias a fuentes. \\
+  \textbf{structured\_or\_hybrid} & Modo de evaluación para consultas que requieren síntesis de múltiples tablas estructuradas (Supabase) más contexto semántico. Evaluado con respuesta LLM + métricas heurísticas. \\
+  \textbf{publication\_rag} & Modo de evaluación para consultas que requieren recuperación semántica de papers. Evaluado por keyword hits, scores de similitud y cobertura de abstracts. \\
+  \textbf{context\_trace} & Diccionario JSON que registra cuántos registros de cada fuente fueron incluidos en el sistema prompt del asistente (pub=826, anid=24, orcid=48, etc.). Útil para auditar el contexto disponible. \\
   \bottomrule
 \end{longtable}
 
@@ -1363,23 +1704,46 @@ CCHEN/
 |   +-- .streamlit/
 |       +-- secrets.toml           [API keys, Supabase credentials]
 +-- Database/
-|   +-- schema.sql                 [DDL PostgreSQL -- 17+ tablas]
+|   +-- schema.sql                 [DDL PostgreSQL -- 35 tablas, RLS, pgvector]
 |   +-- data_quality.py            [validaciones + staleness checks]
 |   +-- migrate_to_supabase.py     [ETL CSV -> Supabase idempotente]
+|   +-- migrate_embeddings.py      [pgvector 877x384 en batches de 50]
+|   +-- migrate_dian.py            [DIAN internas 133 registros]
+|   +-- migrate_bertopic.py
+|   +-- migrate_convocatorias.py
+|   +-- migrate_europmc.py
+|   +-- migrate_citing_papers.py
+|   +-- migrate_vigilancia.py
 |   +-- .env                       [SUPABASE_URL, SUPABASE_KEY]
-+-- Scripts/                       [12 scripts Python]
++-- Dashboard/assets/              [imagenes y recursos UI]
+|   +-- logo_cchen360.png          [Logo institucional CCHEN 360 (107KB)]
++-- Scripts/                       [35+ scripts Python]
 |   +-- arxiv_monitor.py
 |   +-- news_monitor.py
 |   +-- convocatorias_monitor.py
 |   +-- generar_boletin.py
 |   +-- build_ror_registry.py
+|   +-- build_operational_core.py
 |   +-- fetch_datacite_outputs.py
 |   +-- fetch_openaire_outputs.py
 |   +-- fetch_patentsview_patents.py
+|   +-- fetch_inapi_patents.py
+|   +-- fetch_openalex_citations.py
+|   +-- fetch_europmc.py
 |   +-- fetch_semantic_scholar.py
+|   +-- fetch_funding_plus.py
 |   +-- enrich_unpaywall.py
 |   +-- iaea_inis_monitor.py
 |   +-- run_bertopic.py
+|   +-- build_embeddings.py        [pre-computo embeddings 877x384]
+|   +-- semantic_search.py         [busqueda semantica + reranking]
+|   +-- refresh_semantic_index.py  [reconstruir indice pgvector]
+|   +-- assistant_eval_batch.py    [evaluacion retrieval y estructurada]
+|   +-- assistant_eval_structured_responses.py  [eval con respuestas LLM]
+|   +-- compare_eval_runs.py
+|   +-- check_dashboard_e2e.py
+|   +-- check_dashboard_smoke.py
+|   +-- check_database_contract.py
 |   +-- requirements.txt
 +-- Notebooks/                     [ETL manual -- ejecutar en orden]
 |   +-- 01_Download_publications.ipynb
@@ -1409,7 +1773,11 @@ CCHEN/
 |   +-- Patents/                   [pendiente -- Lens/USPTO]
 +-- Docs/
 |   +-- design/                    [Propuesta, Memoria metodologica]
-|   +-- reports/                   [Bitacora, calidad de datos]
+|   +-- reports/                   [Bitacora, calidad de datos, evaluacion asistente]
+|   |   +-- assistant_eval_template.csv        [13 consultas Q01-Q13]
+|   |   +-- assistant_eval_structured_responses_v1.csv  [eval v1 con respuestas LLM]
+|   |   +-- assistant_eval_structured_responses_v2.csv  [eval v2 con heuristic_citation_tags]
+|   |   +-- assistant_eval_run_structured_layer_v1.csv  [metricas estructuradas capa 1]
 |   +-- methodology/
 +-- Bitacora/                      [LaTeX fuente de bitacora de trabajo]
 \end{lstlisting}
@@ -1522,6 +1890,109 @@ Acuerdos internacionales & 41 registros & OK \\
 \bottomrule
 \end{tabular}
 \end{center}
+
+\section*{v0.4 --- pgvector, RAG avanzado y marco de evaluación}
+
+Las siguientes mejoras fueron implementadas en la segunda quincena de marzo 2026, consolidando el sistema en TRL 5 con capacidades de IA evaluables.
+
+\subsection*{1. Migración DIAN a Supabase}
+
+La tabla \texttt{dian\_publications} (133 registros internos CCHEN) fue migrada a Supabase via \file{Database/migrate\_dian.py} con:
+\begin{itemize}
+  \item Schema actualizado en \file{Database/schema.sql} (nueva tabla con RLS público)
+  \item Fallback robusto en \file{data\_loader.py}: intenta Supabase, cae a CSV local si falla
+  \item Integración verificada en \texttt{sections/produccion\_cientifica.py}
+\end{itemize}
+
+\subsection*{2. Embeddings semánticos con columna abstract en Supabase}
+
+\begin{itemize}
+  \item Se verificó que \file{cchen\_embeddings\_meta.csv} ya contenía la columna \texttt{abstract} (877 filas)
+  \item Se regeneraron los embeddings para asegurar consistencia
+  \item Se subieron a Supabase via \file{Database/migrate\_embeddings.py}: 877 vectores en 18 batches de 50, \textbf{0 errores}
+  \item La tabla \texttt{paper\_embeddings} ahora incluye: \texttt{openalex\_id, doi, title, year, abstract, embedding vector(384)}
+  \item La función RPC \texttt{match\_papers()} fue actualizada para retornar el abstract junto con cada resultado
+\end{itemize}
+
+\subsection*{3. Logo institucional CCHEN 360°}
+
+\begin{itemize}
+  \item Archivo \file{Dashboard/assets/logo\_cchen360.png} (107 KB) creado
+  \item \textbf{Login page:} logo centrado (220px) sobre el título, con fallback a texto si el archivo no existe
+  \item \textbf{Sidebar:} logo (160px) reemplaza el texto de encabezado; fallback a texto
+  \item Implementado en \file{Dashboard/app.py} con \texttt{\_LOGO\_PATH = Path(\_\_file\_\_).parent / ``assets'' / ``logo\_cchen360.png''}
+\end{itemize}
+
+\subsection*{4. Reranking por perfil de medicina nuclear (\texttt{semantic\_search.py})}
+
+\begin{itemize}
+  \item Detección automática de consultas de medicina nuclear por keywords
+  \item Expansión del pool de candidatos a \texttt{max(top\_k, 5*top\_k, 15)}
+  \item Función \texttt{\_profile\_bonus(title, abstract)}: score adicional por términos fuertes (PET, 177Lu, DOTATATE, etc.), secundarios (SPECT, imaging) y penalización por términos negativos
+  \item Aplicado tanto en la ruta local (.npy) como en la ruta Supabase pgvector
+\end{itemize}
+
+\subsection*{5. Extracción de \texttt{\_build\_assistant\_system\_prompt}}
+
+\begin{itemize}
+  \item Función extraída de \texttt{render()} en \file{sections/asistente\_id.py} hacia nivel módulo
+  \item Firma: \texttt{\_build\_assistant\_system\_prompt(ctx: dict, patents\_key: str = "") -> tuple}
+  \item Reutilizable fuera de Streamlit (sin dependencias de \texttt{st.secrets} ni \texttt{@st.cache\_data})
+  \item Retorna \texttt{(system\_prompt\_str, context\_trace\_dict)} con 17 claves de recuentos
+  \item Permite evaluación batch desde scripts de línea de comandos
+\end{itemize}
+
+\subsection*{6. Marco de evaluación del Asistente I+D}
+
+\textbf{Plantilla de evaluación} (\file{Docs/reports/assistant\_eval\_template.csv}):
+\begin{itemize}
+  \item 13 consultas Q01--Q13 con campos: \texttt{evaluation\_mode}, \texttt{expected\_data\_sources}, \texttt{must\_include\_keywords}
+  \item Q01--Q10: consultas estratégicas (\texttt{structured\_or\_hybrid})
+  \item Q04, Q06, Q11--Q13: consultas de recuperación semántica (\texttt{publication\_rag})
+\end{itemize}
+
+\textbf{Script de evaluación por lotes} (\file{Scripts/assistant\_eval\_batch.py}):
+\begin{itemize}
+  \item CLI con \texttt{--evaluation-mode} (\texttt{all | publication\_rag | structured\_or\_hybrid})
+  \item Métricas de retrieval: top1\_score, avg\_score, keyword\_hits, n\_with\_abstract
+  \item Métricas estructuradas: disponibilidad de fuentes, ratio de cobertura
+  \item Genera CSV con columnas vacías para revisión humana
+\end{itemize}
+
+\textbf{Script de evaluación con respuestas LLM}\\ (\file{Scripts/assistant\_eval\_structured\_responses.py}):
+\begin{itemize}
+  \item Llama a Groq API (sin streaming) para generar respuestas reales
+  \item Mide latencia (\texttt{response\_ms}): promedio $\sim$35 segundos por consulta (sistema prompt $\sim$22.770 chars)
+  \item Columnas heurísticas: \texttt{heuristic\_sources\_mentioned}, \texttt{heuristic\_citation\_tags}
+  \item v1 completada (8 consultas, \texttt{llama-3.3-70b-versatile})
+  \item v2 en progreso (limita 100K TPD Groq tier gratuito por organización)
+\end{itemize}
+
+\textbf{Resultados parciales v1 vs v2 (Q01--Q07):}
+\begin{center}
+\begin{tabular}{L{1.5cm}R{1.8cm}R{1.8cm}R{2.8cm}R{2cm}R{2cm}}
+\toprule
+\textbf{query} & \textbf{src\_v1} & \textbf{src\_v2} & \ttb{citation\_tags\_v2} & \textbf{ms\_v1} & \textbf{ms\_v2} \\
+\midrule
+Q01 & 0 & 0 & 9 & 2.596 & 2.779 \\
+Q02 & 1 & 1 & 8 & 9.052 & 10.969 \\
+Q03 & 0 & 0 & 8 & 34.526 & 36.096 \\
+Q05 & 0 & 0 & 5 & 35.391 & 35.716 \\
+Q07 & 0 & 0 & 4 & 35.983 & 35.492 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textit{Nota: \texttt{heuristic\_sources\_mentioned = 0} indica que el asistente usa nombres implícitos de fuentes, no los identificadores técnicos exactos (``publications'', ``bertopic\_topics''). Esto es esperado y no refleja baja calidad de respuesta. La revisión humana es necesaria para evaluar correctamente el grounding.}
+
+\subsection*{7. Consultas Q11, Q12, Q13 en el benchmark}
+
+Se agregaron tres nuevas consultas de recuperación semántica al template:
+\begin{itemize}
+  \item \textbf{Q11}: Publicaciones CCHEN en dosimetría de radiaciones ionizantes (keywords: dosimetria, dosimetry, ionizing radiation, radiation dose)
+  \item \textbf{Q12}: Tendencias en física de reactores (keywords: reactor, neutron, nuclear fuel, core, moderator)
+  \item \textbf{Q13}: Colaboraciones con universidades chilenas (keywords: Universidad de Chile, USACH, Pontificia Universidad, colaboracion, coautoria)
+\end{itemize}
 
 %% ════════════════════════════════════════════════════════════
 %%  FIN

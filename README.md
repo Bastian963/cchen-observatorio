@@ -38,6 +38,49 @@ El dashboard está desplegado en Streamlit Cloud con acceso beta privado:
 ### Diagrama de alto nivel
 
 ```
+
+---
+
+
+
+## Runbook de actualización y monitoreo
+
+Consulta el flujo detallado de actualización, registro de logs y monitoreo en:
+- [Docs/operations/runbook_actualizacion_monitoreo.md](Docs/operations/runbook_actualizacion_monitoreo.md)
+
+---
+## Actualización automática de datos institucionales
+
+El observatorio cuenta con un workflow de GitHub Actions que ejecuta semanalmente (lunes 08:00 UTC) los scripts principales de descarga y actualización de outputs institucionales (Zenodo, Europe PMC, OpenAIRE, etc.).
+
+- El workflow está en `.github/workflows/actualizacion_datos.yml`.
+- Instala dependencias, ejecuta los scripts y hace commit/push automático de los datos nuevos si hay cambios.
+- Permite agregar más scripts o pasos según evolucione el observatorio.
+- La notificación por email ante fallos queda documentada como mejora futura.
+
+**¿Cómo funciona?**
+1. Corre los scripts de descarga y actualización de datos institucionales.
+2. Si hay cambios en los datos, los commitea y pushea automáticamente.
+3. Permite ejecución manual desde la interfaz de GitHub Actions.
+4. El log de cada corrida queda registrado en la pestaña Actions del repositorio.
+
+Consulta el workflow y sus pasos en:
+- [.github/workflows/actualizacion_datos.yml](.github/workflows/actualizacion_datos.yml)
+
+---
+## Validación de afiliación institucional vía ORCID
+
+El observatorio implementa un flujo automatizado para validar y actualizar la afiliación institucional de sus investigadores usando datos de ORCID y padrón interno. Este proceso combina extracción automática, cruce de datos y revisión manual para asegurar la máxima calidad y confiabilidad.
+
+- El script principal (`Scripts/build_planta_orcid_exports.py`) cruza padrón y ORCID, generando reportes de estado y brechas.
+- El proceso de auditoría (`Scripts/_tmp_audit_orcid.py`) identifica casos dudosos, duplicados y empleadores no reconocidos.
+- **Siempre se requiere una revisión humana** para validar casos ambiguos o con información incompleta.
+
+Consulta el detalle del flujo y recomendaciones en:
+
+- [Docs/plan_validacion_orcid.md](Docs/plan_validacion_orcid.md)
+
+---
 ┌──────────────────────────────────────────────────────────────┐
 │  FUENTES EXTERNAS                  FUENTES INTERNAS          │
 │  OpenAlex · CrossRef · ORCID       Registro DIAN (Excel)     │

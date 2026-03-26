@@ -1,0 +1,152 @@
+{
+  "contracts": [
+    {
+      "name": "convocatorias_curadas_source",
+      "path_glob": "Data/Vigilancia/convocatorias_curadas.csv",
+      "min_rows": 1,
+      "required_columns": [
+        "conv_id",
+        "titulo",
+        "estado",
+        "organismo",
+        "relevancia_cchen",
+        "url"
+      ],
+      "column_types": {
+        "conv_id": "string",
+        "titulo": "string",
+        "estado": "string",
+        "apertura_iso": "date_iso",
+        "cierre_iso": "date_iso",
+        "url": "url"
+      },
+      "allowed_values": {
+        "estado": ["Abierto", "Próximo", "Proximo"]
+      }
+    },
+    {
+      "name": "matching_rules_source",
+      "path_glob": "Data/Vigilancia/convocatorias_matching_rules.csv",
+      "min_rows": 1,
+      "required_columns": [
+        "rule_id",
+        "perfil_id",
+        "requiere_doctorado",
+        "requiere_institucion",
+        "notes"
+      ],
+      "column_types": {
+        "rule_id": "string",
+        "perfil_id": "string",
+        "requiere_doctorado": "boolean",
+        "requiere_institucion": "boolean",
+        "requiere_transferencia": "boolean"
+      }
+    },
+    {
+      "name": "dgin_cola_operativa_latest",
+      "path_glob": "Docs/reports/dgin_cola_operativa_convocatorias_*.csv",
+      "min_rows": 1,
+      "required_columns": [
+        "conv_id",
+        "convocatoria_titulo",
+        "owner_unit",
+        "score_total",
+        "estado_gestion",
+        "responsable_dgin",
+        "fecha_revision"
+      ],
+      "column_types": {
+        "conv_id": "string",
+        "convocatoria_titulo": "string",
+        "score_total": "float",
+        "url": "url",
+        "last_evaluated_at": "date_iso",
+        "fecha_revision": "date_iso"
+      },
+      "allowed_values": {
+        "estado": ["Abierto", "Próximo", "Proximo"],
+        "estado_gestion": [
+          "Pendiente",
+          "En evaluación",
+          "En evaluacion",
+          "Postulación en curso",
+          "Postulacion en curso",
+          "Cerrada"
+        ]
+      }
+    },
+    {
+      "name": "planta_estado_orcid_actual",
+      "path_glob": "Data/Researchers/cchen_planta_estado_orcid_actual.csv",
+      "min_rows": 1,
+      "required_columns": [
+        "nombre_completo",
+        "grupo_investigacion",
+        "vigente",
+        "estado_orcid",
+        "estado_revision_manual",
+        "orcid_match_status",
+        "orcid_id_valido",
+        "employer_cchen_verificado"
+      ],
+      "column_types": {
+        "nombre_completo": "string",
+        "grupo_investigacion": "string",
+        "vigente": "boolean",
+        "estado_orcid": "string",
+        "estado_revision_manual": "string",
+        "orcid_id_valido": "boolean",
+        "orcid_profile_url_valida": "boolean",
+        "employer_cchen_verificado": "boolean"
+      },
+      "allowed_values": {
+        "estado_orcid": [
+          "orcid_confirmado_cchen",
+          "orcid_match_aproximado_cchen",
+          "orcid_valido_sin_employer_cchen",
+          "sin_orcid_csv",
+          "orcid_requiere_revision"
+        ],
+        "estado_revision_manual": [
+          "confirmado",
+          "revisar_nombre_grupo",
+          "revisar_employer_en_orcid",
+          "pendiente_busqueda_orcid",
+          "revisar_id_orcid",
+          "revisar_url_orcid",
+          "pendiente_revision"
+        ]
+      }
+    },
+    {
+      "name": "planta_orcid_brechas_actual",
+      "path_glob": "Data/Researchers/cchen_planta_orcid_brechas_actual.csv",
+      "min_rows": 1,
+      "required_columns": [
+        "nombre_completo",
+        "grupo_investigacion",
+        "estado_revision_manual",
+        "categoria_brecha"
+      ],
+      "column_types": {
+        "nombre_completo": "string",
+        "grupo_investigacion": "string",
+        "estado_revision_manual": "string",
+        "categoria_brecha": "string"
+      },
+      "allowed_values": {
+        "estado_revision_manual": [
+          "pendiente_busqueda_orcid",
+          "revisar_employer_en_orcid",
+          "revisar_nombre_grupo"
+        ],
+        "categoria_brecha": [
+          "sin_orcid",
+          "revisar_employer",
+          "revisar_nombre_grupo"
+        ]
+      }
+    }
+  ]
+}

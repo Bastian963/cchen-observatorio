@@ -211,7 +211,13 @@ def paper_card(row):
     src    = _safe_str(row.get("source"), "")[:80]
     doi    = _safe_str(row.get("doi"), "")
     cites  = int(row.get("cited_by_count", 0)) if pd.notna(row.get("cited_by_count")) else 0
-    dt     = row.get("pub_dt")
+    dt     = row.get("publication_date")
+    if isinstance(dt, str):
+        import datetime as _dtt
+        try:
+            dt = _dtt.datetime.strptime(dt[:10], "%Y-%m-%d").date()
+        except (ValueError, TypeError):
+            dt = None
     _yr    = row.get("year", "")
     yr_s   = str(int(float(_yr))) if _yr and pd.notna(_yr) else ""
     date_s = dt.strftime("%-d %b %Y") if dt is not None and pd.notna(dt) else yr_s
@@ -489,7 +495,16 @@ def maybe_send_brevo(html: str, year: int, week: int, args: argparse.Namespace) 
       dry_run=dry_run,
     )
   except Exception as exc:
-    print(f"\n[ERROR] Falló envío Brevo: {exc}")
+    # Try to extract Brevo API error body for better diagnostics
+    import urllib.error
+    if isinstance(exc, urllib.error.HTTPError):
+        try:
+            body = exc.read().decode("utf-8", errors="replace")
+            print(f"\n[ERROR] Falló envío Brevo HTTP {exc.code}: {body[:400]}")
+        except Exception:
+            print(f"\n[ERROR] Falló envío Brevo: {exc}")
+    else:
+        print(f"\n[ERROR] Falló envío Brevo: {exc}")
 
 
 # ── Main ───────────────────────────────────────────────────────────────────────
