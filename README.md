@@ -13,42 +13,76 @@
 
 ## Overview
 
-El **Observatorio Tecnológico CCHEN** es una plataforma de inteligencia científica y tecnológica para la Comisión Chilena de Energía Nuclear (CCHEN). Integra datos de múltiples fuentes abiertas y sistemas internos para transformarlos en indicadores estratégicos, vigilancia tecnológica y soporte a la toma de decisiones en materias de I+D+i.
+El **Observatorio Tecnológico CCHEN** ya no se presenta sólo como un dashboard, sino como una **plataforma institucional de conocimiento 3 en 1**:
 
-El observatorio cubre cinco grandes dimensiones institucionales:
+- `Observatorio Analítico`: inteligencia, vigilancia y apoyo a decisiones.
+- `Repositorio Institucional DSpace`: publicaciones, informes y memoria técnica.
+- `Portal de Datos CKAN`: datasets, series y recursos descargables.
 
-- **Producción científica** — publicaciones indexadas en OpenAlex, CrossRef, EuroPMC y Scimago SJR
-- **Financiamiento I+D** — proyectos ANID (FONDECYT, Anillos, CORFO) y fuentes complementarias
-- **Capital humano** — formación de tesistas, becarios, memoristas y postdocs (2022–2025)
-- **Colaboración internacional** — co-autorías con 40+ países, 697 instituciones colaboradoras registradas con ancla ROR
-- **Transferencia tecnológica** — portafolio de activos, convenios nacionales y acuerdos internacionales
+Regla operativa del sistema:
 
----
-
-## Live Demo
-
-El dashboard está desplegado en Streamlit Cloud con acceso beta privado:
-
-**https://cchen-observatorio.streamlit.app**
+- `DSpace` conserva documentos y publicaciones.
+- `CKAN` conserva datos publicables.
+- el `dashboard` consume, relaciona y explica; no reemplaza a ninguno de los dos.
 
 ---
 
-## Architecture
+## Plataforma Institucional 3 en 1
 
-### Diagrama de alto nivel
+| Superficie | Rol | Estado actual | URL / entrada |
+| --- | --- | --- | --- |
+| `Observatorio Analítico` | Indicadores, vigilancia, asistente y narrativa ejecutiva | Operativo | `https://cchen-observatorio.streamlit.app` o `http://localhost:8501` |
+| `Repositorio Institucional DSpace` | Publicaciones, informes, policy briefs y documentos | Operación local reproducible | `http://localhost:4000` |
+| `Portal de Datos CKAN` | Datasets, series, recursos y metadatos descargables | Operación local reproducible | `http://localhost:5001` |
 
-```
+Documentación base:
+
+- [ARCHITECTURE.md](ARCHITECTURE.md)
+- [INTEGRACION_OBSERVATORIO.md](INTEGRACION_OBSERVATORIO.md)
+- [Docs/PLAN_TRABAJO_2026.md](Docs/PLAN_TRABAJO_2026.md)
+- [Docs/matriz_publicacion_3_en_1.md](Docs/matriz_publicacion_3_en_1.md)
+- [Docs/operations/runbook_plataforma_3_en_1.md](Docs/operations/runbook_plataforma_3_en_1.md)
 
 ---
 
+## Arquitectura de producto
 
+La arquitectura funcional se ordena así:
+
+- `Dashboard`: lectura ejecutiva, trazabilidad analítica y descubrimiento contextual.
+- `DSpace`: publicación y preservación documental.
+- `CKAN`: publicación y distribución de datos.
+- `Supabase`, `DuckDB`, `Scripts/` y `Data/`: capa de preparación, curación y análisis, no la capa pública final por sí sola.
+
+El stack local canónico queda en `docker-compose.observatorio.yml`.
+
+### Stack tecnológico
+
+| Capa | Tecnología | Rol |
+|------|-----------|-----|
+| Analítica | Streamlit 1.50 | Dashboard interactivo modular |
+| Lógica | Python 3.10+, pandas 2.3, plotly 6.6 | Procesamiento y visualización |
+| Base analítica | Supabase (PostgreSQL 15) | Almacenamiento persistente, 35 tablas con RLS |
+| Query local | DuckDB | Consultas analíticas rápidas sobre CSV |
+| Repositorio documental | DSpace 7.x | Publicaciones, informes y documentos |
+| Portal de datos | CKAN 2.10 | Datasets, recursos y Action API |
+| Índices búsqueda | Solr | Descubrimiento en DSpace y CKAN |
+| LLM principal | Groq API — llama-3.3-70b-versatile | Asistente I+D conversacional |
+| Embeddings | sentence-transformers | Búsqueda semántica RAG |
+| Reportes | reportlab + matplotlib | Generación de PDF con gráficos |
+
+---
 
 ## Runbook de actualización y monitoreo
 
 Consulta el flujo detallado de actualización, registro de logs y monitoreo en:
 - [Docs/operations/runbook_actualizacion_monitoreo.md](Docs/operations/runbook_actualizacion_monitoreo.md)
 
+Y para la operación del stack 3 en 1:
+- [Docs/operations/runbook_plataforma_3_en_1.md](Docs/operations/runbook_plataforma_3_en_1.md)
+
 ---
+
 ## Actualización automática de datos institucionales
 
 El observatorio cuenta con un workflow de GitHub Actions que ejecuta semanalmente (lunes 08:00 UTC) los scripts principales de descarga y actualización de outputs institucionales (Zenodo, Europe PMC, OpenAIRE, etc.).
@@ -68,6 +102,7 @@ Consulta el workflow y sus pasos en:
 - [.github/workflows/actualizacion_datos.yml](.github/workflows/actualizacion_datos.yml)
 
 ---
+
 ## Validación de afiliación institucional vía ORCID
 
 El observatorio implementa un flujo automatizado para validar y actualizar la afiliación institucional de sus investigadores usando datos de ORCID y padrón interno. Este proceso combina extracción automática, cruce de datos y revisión manual para asegurar la máxima calidad y confiabilidad.
@@ -81,89 +116,45 @@ Consulta el detalle del flujo y recomendaciones en:
 - [Docs/plan_validacion_orcid.md](Docs/plan_validacion_orcid.md)
 
 ---
-┌──────────────────────────────────────────────────────────────┐
-│  FUENTES EXTERNAS                  FUENTES INTERNAS          │
-│  OpenAlex · CrossRef · ORCID       Registro DIAN (Excel)     │
-│  EuroPMC · DataCite · OpenAIRE     Capital Humano (Excel)    │
-│  ANID Repositorio · Scimago SJR    ANID / CORFO datasets     │
-│  arXiv RSS · IAEA INIS             datos.gob.cl              │
-└──────────────────────────┬───────────────────────────────────┘
-                           │ Scripts/ + Notebooks/ (ETL)
-                           ▼
-┌──────────────────────────────────────────────────────────────┐
-│  DATA LAKE   Data/**/*.csv — archivos originales             │
-│              GitHub — versionados y trazables                │
-└──────────────────────────┬───────────────────────────────────┘
-                           │ Database/migrate_to_supabase.py
-                           ▼
-┌──────────────────────────────────────────────────────────────┐
-│  SUPABASE (PostgreSQL)   35 tablas operativas                │
-│                          API REST autogenerada               │
-│                          RLS habilitado + policies públicas  │
-│                          y autenticadas                      │
-└──────────────────────────┬───────────────────────────────────┘
-                           │ Dashboard/data_loader.py
-                           ▼
-┌──────────────────────────────────────────────────────────────┐
-│  DASHBOARD STREAMLIT     Dashboard/app.py                    │
-│  11 secciones modulares  Dashboard/sections/*.py             │
-│  Login beta · Groq · RAG · plotly/networkx  Scripts/semantic_search.py │
-└──────────────────────────────────────────────────────────────┘
-```
-
-### Stack tecnológico
-
-| Capa | Tecnología | Rol |
-|------|-----------|-----|
-| Frontend | Streamlit 1.50 | Dashboard interactivo modular |
-| Lógica | Python 3.10+, pandas 2.3, plotly 6.6 | Procesamiento y visualización |
-| Base de datos | Supabase (PostgreSQL 15) | Almacenamiento persistente, 35 tablas con RLS |
-| Lector local | DuckDB | Consultas analíticas rápidas sobre CSV |
-| LLM principal | Groq API — llama-3.3-70b-versatile | Asistente I+D conversacional |
-| LLM auxiliar | Groq API — llama-3.1-8b-instant | Decisiones de gráficos en PDF |
-| Embeddings | sentence-transformers (paraphrase-multilingual-MiniLM-L12-v2) | Búsqueda semántica RAG |
-| Grafo de citas | plotly + networkx | Red interactiva de citas OpenAlex (reemplazó pyvis por incompatibilidad con Cloud) |
-| Reportes | reportlab + matplotlib | Generación de PDF con gráficos |
-| Fuente ciencias vida | EuroPMC REST API | 74 papers CCHEN con PMID/PMCID |
-| Fuente patentes | INAPI Chile + PatentsView | Vigilancia de propiedad intelectual |
-
----
 
 ## Dashboard Sections
 
-El dashboard está organizado en 11 secciones, accesibles desde la barra lateral:
+El dashboard está organizado en 12 secciones, accesibles desde la barra lateral:
 
-### 1. Panel de Indicadores
+### 1. Plataforma Institucional
+Portada institucional del modelo 3 en 1. Explica la separación funcional entre dashboard, DSpace y CKAN, muestra enlaces profundos a cada superficie y entrega una lectura rápida del estado operativo del stack local.
+
+### 2. Panel de Indicadores
 Vista ejecutiva consolidada con KPIs principales: total de publicaciones, citas acumuladas, porcentaje en Q1/Q2, financiamiento ANID total, personas formadas. Incluye franja operativa con estado de sesión: datasets remotos, fallbacks locales activos, datasets no disponibles y snapshot local más reciente.
 
-### 2. Producción Científica
+### 3. Producción Científica
 Análisis bibliométrico completo: evolución temporal, distribución por cuartil SJR, revistas de publicación, acceso abierto, conceptos temáticos OpenAlex, publicaciones DIAN internas y comparación con registros EuroPMC. Soporta filtros por año, tipo, cuartil y área temática.
 
-### 3. Redes y Colaboración
+### 4. Redes y Colaboración
 Mapa choropleth de co-autorías internacionales, tabla de instituciones colaboradoras con ancla ROR, análisis de perfiles ORCID de investigadores CCHEN, y visualización de convenios nacionales (84) y acuerdos internacionales (91).
 
-### 4. Vigilancia Tecnológica
+### 5. Vigilancia Tecnológica
 Monitor de tendencias en áreas nucleares clave (dosimetría, medicina nuclear, reactores, radiofarmacia): arXiv RSS, noticias Google, documentos IAEA INIS, análisis de tópicos BERTopic y Semantic Scholar. Incluye perfiles institucionales para matching.
 
-### 5. Financiamiento I+D
+### 6. Financiamiento I+D
 Repositorio ANID completo: 24 proyectos adjudicados, $1.337 MM CLP en financiamiento, distribución por instrumento (Fondecyt Regular, Iniciación, Postdoctorado, Anillos). Complementado con fuentes CORFO, IAEA TC y funding detectado por OpenAlex/CrossRef.
 
-### 6. Convocatorias y Matching
+### 7. Convocatorias y Matching
 Calendario de convocatorias abiertas y próximas (ANID, IAEA, Horizonte Europa, ERC, MSCA). Sistema de matching institucional formal con score de adecuación, elegibilidad, readiness y acción recomendada por perfil CCHEN.
 
-### 7. Transferencia y Portafolio
+### 8. Transferencia y Portafolio
 Portafolio tecnológico semilla con clasificación TRL, unidad responsable y potencial de transferencia. Outputs DataCite y OpenAIRE asociados a CCHEN vía ROR institucional.
 
-### 8. Modelo y Gobernanza
+### 9. Modelo y Gobernanza
 Registro canónico de entidades: 604 personas, 24 proyectos, 26 convocatorias y 657 enlaces operativos. Modelo de gobernanza con fuentes, timestamps de actualización y calidad de datos.
 
-### 9. Formación de Capacidades
+### 10. Formación de Capacidades
 Panel de capital humano I+D: 97 personas formadas (2022–2025), distribución por modalidad (tesista, memorista, becario, profesional), centro, universidad tutora y evolución anual.
 
-### 10. Asistente I+D
+### 11. Asistente I+D
 Asistente conversacional basado en RAG + Groq LLM (llama-3.3-70b-versatile). Inyecta contexto de los 5 papers más relevantes (búsqueda semántica), indicadores clave y datos de convocatorias activas. Genera informes PDF descargables con gráficos contextuales automáticos.
 
-### 11. Grafo de Citas
+### 12. Grafo de Citas
 Visualización interactiva con plotly + networkx del grafo de citas OpenAlex: 714 papers CCHEN con 9.840 citas totales y 8.499 papers externos citantes. Análisis de instituciones y países que citan a CCHEN, impacto por área temática.
 
 ---
@@ -335,8 +326,11 @@ Comportamiento operativo del workflow `arxiv_monitor.yml`:
 
 ```bash
 # 1. Clonar repositorio
-git clone https://github.com/Bastian963/cchen-observatorio.git
+git clone --recurse-submodules https://github.com/Bastian963/cchen-observatorio.git
 cd cchen-observatorio
+
+# Si ya clonaste antes sin submódulos:
+git submodule update --init --recursive
 
 # 2. Instalar dependencias
 cd Dashboard
@@ -375,6 +369,12 @@ export CCHEN_DATA_ROOT="/ruta/absoluta/a/Data"
 # 5. Lanzar dashboard
 streamlit run app.py
 ```
+
+Notas de clonado:
+
+- `ckan-src` se mantiene como submódulo limpio apuntando a CKAN upstream.
+- La customización operativa local de CKAN vive en `ckan/`.
+- El frontend DSpace versionado para Docker vive en `dspace-frontend/` como snapshot estático mínimo; el repo Angular completo no se publica en esta pasada.
 
 ### Modos de fuente de datos
 

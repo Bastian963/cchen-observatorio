@@ -1,6 +1,6 @@
 # Arquitectura Técnica — Observatorio Tecnológico CCHEN 360°
 
-**Versión:** 2.0 · **Fecha:** Marzo 2026
+**Versión:** 2.2 · **Fecha:** Marzo 2026
 **Autor:** Bastián Ayala Inostroza
 **Documentos base:** Memoria Metodológica - Observatorio CCHEN 360 (Sept. 2025); Propuesta de Implementación CORFO
 
@@ -8,12 +8,29 @@
 
 ## 1. Visión general del sistema
 
-El Observatorio Tecnológico CCHEN es un sistema de inteligencia de datos con **arquitectura de tres capas** que transforma datos científicos dispersos en indicadores estratégicos accionables.
+El Observatorio Tecnológico CCHEN es un sistema de inteligencia de datos con **arquitectura de cuatro capas** que transforma datos científicos dispersos en indicadores estratégicos accionables. A partir de Marzo 2026 se reformula como una **plataforma institucional 3 en 1**:
+
+- `Observatorio Analítico` para inteligencia, vigilancia y apoyo a decisiones.
+- `Repositorio Institucional DSpace` para publicaciones, informes y memoria técnica.
+- `Portal de Datos CKAN` para datasets, series y recursos descargables.
+
+Regla operativa:
+
+- `DSpace` conserva documentos.
+- `CKAN` conserva datos publicables.
+- el `dashboard` consume, relaciona y explica.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
+│  CAPA 4 — REPOSITORIOS INSTITUCIONALES (nuevo, Docker)          │
+│  DSpace 7.x — Repositorio académico (REST API + Angular UI)     │
+│  CKAN 2.10  — Portal de datos abiertos (datasets, APIs)         │
+│  PostgreSQL 13 × 2 — BD DSpace y BD CKAN                        │
+│  Solr 7.x / 8.x — Índices de búsqueda DSpace y CKAN            │
+│  Redis 7   — Cola de jobs CKAN                                   │
+├─────────────────────────────────────────────────────────────────┤
 │  CAPA 3 — PRESENTACIÓN                                          │
-│  Streamlit Dashboard (11 secciones modulares)                   │
+│  Streamlit Dashboard (12 secciones modulares)                   │
 │  Asistente I+D (RAG + Groq LLM)                                 │
 │  Reportes PDF (reportlab + matplotlib)                          │
 │  Grafo de citas interactivo (plotly + networkx)                 │
@@ -35,7 +52,7 @@ El Observatorio Tecnológico CCHEN es un sistema de inteligencia de datos con **
 
 | Componente | Tecnología | Versión | Notas |
 |-----------|-----------|---------|-------|
-| Dashboard | Streamlit | 1.50.0 | 11 secciones modulares en sections/ |
+| Dashboard | Streamlit | 1.50.0 | 12 secciones modulares en sections/ |
 | Dataframes | pandas | 2.3.3 | Carga principal de datos |
 | Visualización | plotly | 6.6.0 | Gráficos interactivos |
 | Álgebra lineal | numpy | 2.0.2 | Embeddings semánticos |
@@ -48,15 +65,48 @@ El Observatorio Tecnológico CCHEN es un sistema de inteligencia de datos con **
 | Reportes | reportlab + matplotlib | — | PDF con gráficos contextuales |
 | Patrones sklearn | scikit-learn | 1.6.1 | Auxiliar en análisis |
 
-### Stack objetivo (TRL 6–7, con presupuesto MM$42+)
+### Stack de repositorios institucionales (nuevo — Docker local, Marzo 2026)
 
-- **Frontend:** Angular + TypeScript
-- **Backend:** Django REST Framework (Python)
-- **Base de datos:** PostgreSQL en Huawei Cloud
-- **Data Lake:** Object Storage S3-compatible
-- **BI:** Power BI o Metabase open source
-- **Orquestación:** Apache Airflow o GitHub Actions avanzado
-- **Autenticación:** OAuth2 institucional CCHEN
+| Servicio         | Imagen / build canónico                         | Puerto host | Rol                                 |
+| ---------------- | ----------------------------------------------- | ----------- | ----------------------------------- |
+| dashboard        | build local desde `Dashboard/Dockerfile`        | 8501        | Observatorio analítico              |
+| dspace-backend   | `dspace/dspace:dspace-7_x`                      | 8080        | REST API (`/server`)                |
+| dspace-frontend  | build local desde `dspace-frontend/Dockerfile` | 4000 | UI Angular estática snapshot (`site/`) |
+| dspace-cli       | `dspace/dspace:dspace-7_x`                      | —           | Administración y bootstrap          |
+| dspace-db        | `postgres:13` + init SQL local (`pgcrypto`)     | —           | BD DSpace                           |
+| dspace-solr      | `dspace/dspace-solr:dspace-7_x`                 | 8983        | Índice DSpace                       |
+| ckan             | build local desde `ckan/Dockerfile` + submódulo `ckan-src` | 5001 | Portal datos abiertos |
+| ckan-db          | `postgres:13` + init SQL local (`datastore`)    | —           | BD CKAN + datastore                 |
+| ckan-solr        | build local desde `ckan/solr-arm64.Dockerfile` | 8984 | Índice CKAN con schema versionado   |
+| ckan-redis       | `redis:7-alpine`                                | —           | Cola de jobs y caché CKAN           |
+
+Archivo de orquestación canónico: `docker-compose.observatorio.yml`
+
+Bootstrap operativo del stack local:
+
+- El dashboard Streamlit entra al compose canónico como superficie analítica y expone enlaces profundos hacia DSpace y CKAN.
+- DSpace desactiva la validación temprana de Hibernate mediante override de `hibernate.cfg.xml`, precrea `pgcrypto` en PostgreSQL y ejecuta `dspace database migrate` antes de arrancar el backend REST.
+- El frontend de DSpace se publica desde un snapshot estático versionado en `dspace-frontend/site` sobre Nginx, evitando arrastrar el repo Angular completo al repositorio principal.
+- CKAN usa un overlay Docker versionado en `ckan/` y el código fuente upstream en el submódulo `ckan-src`; así el bootstrap local queda controlado sin vendorear el árbol completo.
+- El compose raíz `docker-compose.yml` queda sólo como flujo legado para dashboard + CKAN; la operación institucional reproducible se concentra en `docker-compose.observatorio.yml`.
+
+### Modelo operativo 3 en 1
+
+| Superficie | Fuente de verdad | Interfaz canónica | Uso esperado |
+| ---------- | ---------------- | ----------------- | ------------ |
+| Dashboard | Indicadores derivados, benchmarking, narrativa ejecutiva | Streamlit + asistente | análisis, vigilancia, contexto y descubrimiento |
+| DSpace | publicaciones, informes, documentos finales | REST API + OAI-PMH | preservación y publicación documental |
+| CKAN | datasets, series, recursos descargables | Action API | distribución y reutilización de datos |
+
+El dashboard no debe transformarse en repositorio primario. Su rol es conectar, contextualizar y derivar valor analítico desde los activos publicados en DSpace y CKAN.
+
+### Stack objetivo (equipo propio, sin presupuesto externo)
+
+- **Repositorio académico:** DSpace 7.x (operación local reproducible)
+- **Portal datos abiertos:** CKAN 2.10 (operación local reproducible)
+- **Orquestación CI/CD:** GitHub Actions (workflows existentes)
+- **Automatización documentación:** GitHub Actions + LuaLaTeX (en implementación)
+- **Autenticación:** OAuth2 institucional CCHEN (pendiente)
 
 ---
 
@@ -806,7 +856,7 @@ TRL 7: Sistema en entorno real con conectividad estable institucional
 
 ### Hitos alcanzados en TRL 5 (marzo 2026)
 
-- Dashboard modularizado en 11 secciones independientes
+- Dashboard modularizado en 12 secciones independientes
 - Supabase con 35 tablas operativas, paginación completa y RLS aplicado
 - Grafo de citas OpenAlex: 714 papers × 9.840 citas × 8.499 papers citantes
 - EuroPMC: 74 papers con PMID/PMCID integrados

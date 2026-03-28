@@ -7,8 +7,12 @@ Basada en: `Docs/reports/acta_semanal_dgin_template_2026-03-24.md`
 - Semana de referencia: 2026-W14
 - Fecha: 2026-03-24
 - Hora: 09:00
+- Horario canónico del piloto: lunes 09:00-09:30 (America/Santiago)
 - Duración real (min): 30
-- Responsable DGIn: DGIn (por confirmar nombre responsable)
+- Responsable DGIn titular: Bastián Ayala Inostroza (provisorio piloto)
+- Responsable DGIn respaldo: Bastián Ayala Inostroza (provisorio piloto)
+- Correo de coordinación: b.ayalainostroza@gmail.com
+- Canal oficial semanal: Correo (provisorio piloto)
 - Analista Observatorio: Bastián Ayala
 - Participantes: Equipo DGIn (sesión piloto de arranque)
 
@@ -35,7 +39,7 @@ Basada en: `Docs/reports/acta_semanal_dgin_template_2026-03-24.md`
   - Score: 95
   - Estado de gestión: En evaluación
   - Decisión: Seguir
-  - Responsable: DGIn (asignar formulador)
+  - Responsable: Bastián Ayala Inostroza (provisorio piloto)
   - Fecha compromiso: 2026-03-31
   - Comentario: Activar pre-postulación inmediata con contraparte técnica.
 - Oportunidad 2:
@@ -44,7 +48,7 @@ Basada en: `Docs/reports/acta_semanal_dgin_template_2026-03-24.md`
   - Score: 90
   - Estado de gestión: En evaluación
   - Decisión: Seguir
-  - Responsable: DGIn (asignar formulador)
+  - Responsable: Bastián Ayala Inostroza (provisorio piloto)
   - Fecha compromiso: 2026-03-28
   - Comentario: Ventana <= 30 días; priorizar definición de antecedentes.
 - Oportunidad 3:
@@ -53,7 +57,7 @@ Basada en: `Docs/reports/acta_semanal_dgin_template_2026-03-24.md`
   - Score: 80
   - Estado de gestión: Pendiente
   - Decisión: Preparar
-  - Responsable: DGIn (pipeline)
+  - Responsable: Bastián Ayala Inostroza (provisorio piloto)
   - Fecha compromiso: 2026-04-03
   - Comentario: Preparar pipeline y designar formulador antes de apertura.
 
@@ -81,3 +85,7 @@ Basada en: `Docs/reports/acta_semanal_dgin_template_2026-03-24.md`
 - Exportable actualizado generado: `Docs/reports/dgin_cola_operativa_convocatorias_20260324_1547.csv`
 - Registro KPI actualizado: `Docs/reports/dgin_piloto_kpi_tracking_2026-03-24.csv`
 - Próxima revisión agendada para: 2026-04-06 09:00
+
+## 7) Nota de provisionalidad
+
+Esta acta usa asignación provisoria de titular y respaldo para asegurar continuidad semanal del piloto mientras DGIn formaliza la nominación institucional.

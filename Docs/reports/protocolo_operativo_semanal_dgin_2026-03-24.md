@@ -28,12 +28,20 @@ Y del soporte documental mínimo de cierre:
 - Duración sugerida: 30 minutos
 - Día sugerido: lunes (o primer día hábil)
 - Ventana sugerida: 09:00–09:30
+- Zona horaria operativa: America/Santiago
 
 ## 4) Roles mínimos
 
 - Responsable DGIn (owner semanal): lidera revisión, prioriza y asigna acciones.
 - Analista Observatorio: prepara datos, verifica consistencia del panel y exportables.
 - Apoyo temático (según perfil): valida elegibilidad/requisitos técnicos cuando aplique.
+
+### Asignación operativa vigente del piloto
+
+- Owner DGIn titular (provisorio piloto): Bastián Ayala Inostroza
+- Owner DGIn respaldo (provisorio piloto): Bastián Ayala Inostroza
+- Canal oficial semanal (provisorio piloto): correo `b.ayalainostroza@gmail.com`
+- Regla de reemplazo vigente: si no hay disponibilidad del titular, la sesión se reprograma dentro de 48h hábiles.
 
 ## 5) Flujo operativo (checklist 3 pasos)
 
@@ -131,7 +139,7 @@ Meta inicial sugerida (primer mes):
 
 - Semana 1: acta, exportable y tracker consistentes en 18 convocatorias revisadas, 2 activables, 2 acciones, 30 min.
 - Semana 2: acta, exportable y tracker consistentes en 18 convocatorias revisadas, 2 activables, 3 acciones, 27 min.
-- Pendiente abierto: confirmación nominal de responsable DGIn titular y respaldo antes de semana 3.
+- Gobernanza operativa vigente: owner y respaldo provisorios activos para continuidad del piloto; formalización DGIn nominal sigue pendiente para la decisión de semana 4.
 
 ---
 

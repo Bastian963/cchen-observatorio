@@ -5,8 +5,12 @@
 - Semana de referencia:
 - Fecha:
 - Hora:
+- Horario canónico del piloto: lunes 09:00-09:30 (America/Santiago)
 - Duración real (min):
-- Responsable DGIn:
+- Responsable DGIn titular:
+- Responsable DGIn respaldo:
+- Correo de coordinación:
+- Canal oficial semanal:
 - Analista Observatorio:
 - Participantes:
 
@@ -72,12 +76,16 @@
 - Acción 1:
 - Acción 2:
 - Acción 3:
+- Responsable de cierre semanal:
+- Próxima revisión agendada para:
 
 ## 6) Evidencia operativa mínima
 
 - Exportable actualizado generado: `dgin_cola_operativa_convocatorias_YYYYMMDD_HHMM.csv`
 - Template usado si aplica: `dgin_cola_operativa_template.csv`
+- Registro KPI actualizado: `Docs/reports/dgin_piloto_kpi_tracking_2026-03-24.csv`
 - Próxima revisión agendada para:
+- Decisión provisional del ciclo: Continuar / Ajustar / Escalar
 
 ---
 
