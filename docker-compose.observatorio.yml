@@ -1,0 +1,316 @@
+
+services:
+
+  # ─────────────────────────────────────────────────────────
+  #  Dashboard Streamlit — Observatorio Analítico
+  #  Capa analítica del modelo institucional 3 en 1.
+  # ─────────────────────────────────────────────────────────
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dashboard/Dockerfile
+      args:
+        INSTALL_AI: "false"
+    container_name: cchen-dashboard
+    environment:
+      CCHEN_DATA_ROOT: /app/Data
+      OBSERVATORIO_DASHBOARD_URL: "http://localhost:8501"
+      OBSERVATORIO_DSPACE_UI_URL: "http://localhost:4000"
+      OBSERVATORIO_DSPACE_API_URL: "http://localhost:8080/server/api"
+      OBSERVATORIO_CKAN_URL: "http://localhost:5001"
+      OBSERVATORIO_CKAN_API_URL: "http://localhost:5001/api/3/action/status_show"
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./Data:/app/Data:ro
+      - ./Database:/app/Database:ro
+      - ./Dashboard/.streamlit:/app/Dashboard/.streamlit:ro
+    depends_on:
+      dspace-frontend:
+        condition: service_healthy
+      ckan:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8501/_stcore/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - observatorio
+    restart: on-failure
+
+  # ─────────────────────────────────────────────────────────
+  #  DSpace 7.x — Backend REST (Tomcat)
+  #  Fuerza migración Flyway antes del arranque del webapp
+  #  para evitar que Hibernate valide el esquema vacío.
+  # ─────────────────────────────────────────────────────────
+  dspace-backend:
+    image: dspace/dspace:dspace-7_x
+    container_name: dspace-backend
+    environment:
+      db__P__url: "jdbc:postgresql://dspace-db:5432/dspace"
+      db__P__username: "dspace"
+      db__P__password: "dspace"
+      solr__P__server: "http://dspace-solr:8983/solr"
+      dspace__P__server__P__url: "http://localhost:8080/server"
+      dspace__P__server__P__ssr__P__url: "http://dspace-backend:8080/server"
+      dspace__P__ui__P__url: "http://localhost:4000"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: "none"
+      JAVA_TOOL_OPTIONS: "-Xmx1200m"
+    entrypoint:
+      - /bin/bash
+      - "-c"
+      - |
+        while (!</dev/tcp/dspace-db/5432) > /dev/null 2>&1; do sleep 1; done
+        /dspace/bin/dspace database migrate
+        exec catalina.sh run
+    ports:
+      - "8080:8080"
+    depends_on:
+      dspace-db:
+        condition: service_healthy
+      dspace-solr:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/server/api >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    networks:
+      - observatorio
+    volumes:
+      - ./dspace/config/local.cfg:/dspace/config/local.cfg:ro
+      - ./dspace/config/hibernate.cfg.xml:/dspace/config/hibernate.cfg.xml:ro
+      - dspace_assetstore:/dspace/assetstore
+    restart: on-failure
+
+  # ─────────────────────────────────────────────────────────
+  #  DSpace 7.x — Frontend Angular
+  # ─────────────────────────────────────────────────────────
+  dspace-frontend:
+    build:
+      context: ./dspace-frontend
+      dockerfile: Dockerfile
+    container_name: dspace-frontend
+    ports:
+      - "4000:80"
+    depends_on:
+      dspace-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/healthz >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
+    networks:
+      - observatorio
+    restart: on-failure
+
+  # ─────────────────────────────────────────────────────────
+  #  DSpace CLI — administración y reindex
+  #  Se usa vía docker compose run, no se levanta por defecto.
+  # ─────────────────────────────────────────────────────────
+  dspace-cli:
+    image: dspace/dspace:dspace-7_x
+    container_name: dspace-cli
+    profiles:
+      - ops
+    entrypoint:
+      - /dspace/bin/dspace
+    environment:
+      db__P__url: "jdbc:postgresql://dspace-db:5432/dspace"
+      db__P__username: "dspace"
+      db__P__password: "dspace"
+      solr__P__server: "http://dspace-solr:8983/solr"
+      dspace__P__server__P__url: "http://localhost:8080/server"
+      dspace__P__server__P__ssr__P__url: "http://dspace-backend:8080/server"
+      dspace__P__ui__P__url: "http://localhost:4000"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: "none"
+    depends_on:
+      dspace-db:
+        condition: service_healthy
+      dspace-solr:
+        condition: service_healthy
+    networks:
+      - observatorio
+    volumes:
+      - ./dspace/config/local.cfg:/dspace/config/local.cfg:ro
+      - ./dspace/config/hibernate.cfg.xml:/dspace/config/hibernate.cfg.xml:ro
+      - dspace_assetstore:/dspace/assetstore
+    restart: "no"
+
+  # ─────────────────────────────────────────────────────────
+  #  PostgreSQL — Base de datos DSpace
+  #  Se precrea pgcrypto para las migraciones Flyway.
+  # ─────────────────────────────────────────────────────────
+  dspace-db:
+    image: postgres:13
+    container_name: dspace-db
+    environment:
+      POSTGRES_DB: dspace
+      POSTGRES_USER: dspace
+      POSTGRES_PASSWORD: dspace
+    volumes:
+      - dspace_db_data:/var/lib/postgresql/data
+      - ./dspace/db-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - observatorio
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dspace -d dspace"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────────────────
+  #  Solr — Índice de búsqueda DSpace
+  # ─────────────────────────────────────────────────────────
+  dspace-solr:
+    image: dspace/dspace-solr:dspace-7_x
+    container_name: dspace-solr
+    entrypoint:
+      - /bin/bash
+      - "-c"
+      - |
+        precreate-core authority /opt/solr-8.11.4/server/solr/configsets/authority
+        precreate-core oai /opt/solr-8.11.4/server/solr/configsets/oai
+        precreate-core search /opt/solr-8.11.4/server/solr/configsets/search
+        precreate-core statistics /opt/solr-8.11.4/server/solr/configsets/statistics
+        precreate-core qaevent /opt/solr-8.11.4/server/solr/configsets/qaevent
+        precreate-core suggestion /opt/solr-8.11.4/server/solr/configsets/suggestion
+        precreate-core audit /opt/solr-8.11.4/server/solr/configsets/audit
+        exec solr -f
+    ports:
+      - "8983:8983"
+    volumes:
+      - dspace_solr_data:/var/solr/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8983/solr/search/admin/ping?wt=json | grep -q '\"status\"[: ]*\"OK\"'"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+    networks:
+      - observatorio
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────────────────
+  #  CKAN 2.10.x — Portal de datos abiertos
+  #  Imagen local del repo + bootstrap completo del datastore.
+  # ─────────────────────────────────────────────────────────
+  ckan:
+    build:
+      context: .
+      dockerfile: ckan/Dockerfile
+    container_name: ckan
+    environment:
+      CKAN_INI: /srv/app/ckan.ini
+      CKAN_SITE_URL: "http://localhost:5001"
+      CKAN_SQLALCHEMY_URL: "postgresql://ckan:ckan@ckan-db/ckan"
+      CKAN_DATASTORE_WRITE_URL: "postgresql://ckan:ckan@ckan-db/datastore"
+      CKAN_DATASTORE_READ_URL: "postgresql://datastore_ro:datastore@ckan-db/datastore"
+      CKAN_SOLR_URL: "http://ckan-solr:8983/solr/ckan"
+      CKAN_REDIS_URL: "redis://ckan-redis:6379/0"
+      CKAN__PLUGINS: "stats text_view image_view datastore"
+      CKAN_SYSADMIN_NAME: "${CKAN_SYSADMIN_NAME:-ckan_admin}"
+      CKAN_SYSADMIN_EMAIL: "${CKAN_SYSADMIN_EMAIL:-admin@localhost}"
+      CKAN_SYSADMIN_PASSWORD: "${CKAN_SYSADMIN_PASSWORD:-Admin.1234}"
+    ports:
+      - "5001:5000"
+    depends_on:
+      ckan-db:
+        condition: service_healthy
+      ckan-solr:
+        condition: service_healthy
+      ckan-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:5000/api/3/action/status_show >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 120s
+    volumes:
+      - ckan_storage:/var/lib/ckan
+    networks:
+      - observatorio
+    restart: on-failure
+
+  # ─────────────────────────────────────────────────────────
+  #  PostgreSQL — Base de datos CKAN + datastore
+  # ─────────────────────────────────────────────────────────
+  ckan-db:
+    image: postgres:13
+    container_name: ckan-db
+    environment:
+      POSTGRES_DB: ckan
+      POSTGRES_USER: ckan
+      POSTGRES_PASSWORD: ckan
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    volumes:
+      - ckan_db_data:/var/lib/postgresql/data
+      - ./ckan/db-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - observatorio
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ckan -d ckan && pg_isready -U ckan -d datastore"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────────────────
+  #  Solr — Índice de búsqueda CKAN con schema versionado
+  # ─────────────────────────────────────────────────────────
+  ckan-solr:
+    build:
+      context: .
+      dockerfile: ckan/solr-arm64.Dockerfile
+    container_name: ckan-solr
+    ports:
+      - "8984:8983"
+    command:
+      - solr-precreate
+      - ckan
+      - /opt/solr/server/solr/configsets/ckan
+    volumes:
+      - ckan_solr_data:/var/solr
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8983/solr/ckan/schema/name?wt=json | grep -q 'ckan'"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+    networks:
+      - observatorio
+    restart: unless-stopped
+
+  # ─────────────────────────────────────────────────────────
+  #  Redis — Cache y cola de jobs CKAN
+  # ─────────────────────────────────────────────────────────
+  ckan-redis:
+    image: redis:7-alpine
+    container_name: ckan-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    networks:
+      - observatorio
+    restart: unless-stopped
+
+volumes:
+  dspace_db_data:
+  dspace_solr_data:
+  dspace_assetstore:
+  ckan_db_data:
+  ckan_solr_data:
+  ckan_storage:
+
+networks:
+  observatorio:
+    driver: bridge
