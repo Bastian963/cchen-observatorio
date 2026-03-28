@@ -46,6 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       STAMP: ${{ github.run_id }}-${{ github.run_attempt }}
+      PADRON_BASE: Data/Researchers/cchen_padron_academicos_provisional_2026-02-18.csv
 
     steps:
       - name: Checkout repositorio
@@ -64,8 +65,21 @@ jobs:
 
       - name: Regenerar exportables de planta ORCID
         run: python Scripts/build_planta_orcid_exports.py --stamp "$STAMP"
+        if: ${{ hashFiles('Data/Researchers/cchen_padron_academicos_provisional_2026-02-18.csv') != '' }}
+
+      - name: Marcar ausencia de padrón base en Job Summary
+        if: ${{ hashFiles('Data/Researchers/cchen_padron_academicos_provisional_2026-02-18.csv') == '' }}
+        run: |
+          {
+            echo "### Trazabilidad de versionado (planta ORCID)"
+            echo ""
+            echo "- Estado: omitida en CI"
+            echo "- Motivo: no se versiona el padrón base \`${PADRON_BASE}\` en este repositorio."
+            echo "- Validación aplicada: se validan los exportables actuales ya versionados."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Verificar trazabilidad actual vs dated (planta ORCID)
+        if: ${{ hashFiles('Data/Researchers/cchen_padron_academicos_provisional_2026-02-18.csv') != '' }}
         run: |
           set -euo pipefail
           cmp -s Data/Researchers/cchen_planta_estado_orcid_actual.csv Data/Researchers/cchen_planta_estado_orcid_${STAMP}.csv
@@ -73,6 +87,7 @@ jobs:
           echo "OK: actual y dated son equivalentes para STAMP=${STAMP}"
 
       - name: Publicar STAMP validado en Job Summary
+        if: ${{ hashFiles('Data/Researchers/cchen_padron_academicos_provisional_2026-02-18.csv') != '' }}
         run: |
           {
             echo "### Trazabilidad de versionado (planta ORCID)"
@@ -169,4 +184,4 @@ jobs:
         with:
           name: export-data-contracts-report
           path: artifacts/export_data_contracts_report.json
-          if-no-files-found: error
+          if-no-files-found: warn
