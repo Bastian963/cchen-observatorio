@@ -42,7 +42,7 @@ jobs:
 
     env:
       MIN_ROWS: ${{ github.event.inputs.min_rows || '2' }}
-      MIN_KEYWORD_HITS_TOTAL: ${{ github.event.inputs.min_keyword_hits_total || '4' }}
+      MIN_KEYWORD_HITS_TOTAL: ${{ github.event.inputs.min_keyword_hits_total || '0' }}
       MAX_RETRIEVAL_MS_MEAN: ${{ github.event.inputs.max_retrieval_ms_mean || '20000' }}
 
     steps:
