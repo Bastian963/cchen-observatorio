@@ -43,6 +43,11 @@ def _normalize_text(frame: pd.DataFrame, column: str) -> pd.Series:
     return frame[column].fillna("").astype(str).str.strip()
 
 
+def _requires_local_source(publication_status: str, public_url: str) -> bool:
+    status = str(publication_status or "").strip().lower()
+    return not (status == "published" and _is_http_url(public_url))
+
+
 def _load_catalog(path: Path) -> pd.DataFrame:
     if not path.exists():
         raise FileNotFoundError(f"No existe el catalogo: {path}")
@@ -78,17 +83,22 @@ def validate_catalog(path: Path) -> tuple[pd.DataFrame, list[str]]:
     if invalid_statuses:
         errors.append(f"Hay publication_status invalidos: {', '.join(invalid_statuses)}")
 
-    for idx, local_path in enumerate(_normalize_text(frame, "local_path")):
-        if not local_path:
-            continue
-        absolute_path = REPO_ROOT / local_path
-        if not absolute_path.exists():
-            errors.append(f"local_path inexistente en fila {idx + 2}: {local_path}")
-
     public_urls = _normalize_text(frame, "public_url")
     for idx, url in enumerate(public_urls):
         if url and not _is_http_url(url):
             errors.append(f"public_url invalida en fila {idx + 2}: {url}")
+
+    local_paths = _normalize_text(frame, "local_path")
+    for idx, (local_path, status, public_url) in enumerate(zip(local_paths, statuses, public_urls)):
+        if not local_path:
+            if _requires_local_source(status, public_url):
+                errors.append(f"local_path vacio en fila {idx + 2} para activo no publicado")
+            continue
+        absolute_path = REPO_ROOT / local_path
+        if absolute_path.exists():
+            continue
+        if _requires_local_source(status, public_url):
+            errors.append(f"local_path inexistente en fila {idx + 2}: {local_path}")
 
     crosslinks = _normalize_text(frame, "vinculo_cruzado")
     for idx, url in enumerate(crosslinks):

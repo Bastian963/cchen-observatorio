@@ -1,0 +1,3 @@
+query_id,query,evaluation_mode,must_include_keywords,expected_focus,expected_data_sources
+Q04,Que evidencia hay sobre dosimetria y seguridad radiologica en publicaciones CCHEN?,publication_rag,dosimetria;radiodiagnosis;cyclotron,publication_rag,publications;paper_embeddings
+Q06,Identifica tendencias en medicina nuclear e imagenologia en el corpus CCHEN.,publication_rag,medicina nuclear;177lu;166ho;pet,publication_rag,publications;paper_embeddings
