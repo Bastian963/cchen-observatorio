@@ -58,7 +58,7 @@ jobs:
           python-version: "3.11"
 
       - name: Instalar dependencia mínima
-        run: pip install --quiet pandas
+        run: pip install --quiet pandas pytest
 
       - name: Compilar validador de contratos
         run: python -m py_compile Scripts/check_export_data_contracts.py
