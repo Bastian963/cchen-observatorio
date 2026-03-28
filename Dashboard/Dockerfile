@@ -1,5 +1,7 @@
 FROM python:3.11-slim
 
+ARG INSTALL_AI=false
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
@@ -17,8 +19,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies first to leverage Docker layer caching.
+COPY Dashboard/requirements-core.txt /app/Dashboard/requirements-core.txt
+COPY Dashboard/requirements-ai.txt /app/Dashboard/requirements-ai.txt
 COPY Dashboard/requirements.txt /app/Dashboard/requirements.txt
-RUN pip install --upgrade pip && pip install -r /app/Dashboard/requirements.txt
+RUN pip install --upgrade pip \
+    && pip install -r /app/Dashboard/requirements-core.txt \
+    && if [ "$INSTALL_AI" = "true" ]; then pip install -r /app/Dashboard/requirements-ai.txt; fi
 
 # Copy application code and required runtime assets.
 COPY Dashboard /app/Dashboard

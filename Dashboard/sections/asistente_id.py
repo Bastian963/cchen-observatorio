@@ -9,7 +9,10 @@ import streamlit as st
 
 from .shared import (
     PORTALES_CIENTIFICOS,
+    asset_catalog_frame,
+    filter_asset_catalog,
     kpi, kpi_row, sec,
+    match_assets_to_query,
     _access_context,
     _load_convocatorias_data,
     _load_portafolio_seed,
@@ -61,6 +64,7 @@ def _build_assistant_system_prompt(ctx: dict, patents_key: str = "") -> tuple:
     patents          = ctx.get("patents", pd.DataFrame())
     datacite         = ctx.get("datacite", pd.DataFrame())
     openaire         = ctx.get("openaire", pd.DataFrame())
+    asset_catalog    = asset_catalog_frame(ctx)
 
     # ── Contexto de datos para el sistema ──
     _kpis_ch  = ch_ej.get("kpis", {}) if isinstance(ch_ej, dict) else {}
@@ -390,6 +394,17 @@ def _build_assistant_system_prompt(ctx: dict, patents_key: str = "") -> tuple:
         ", ".join(f"{k} ({v})" for k, v in ch["tipo_norm"].value_counts().items())
         if not ch.empty and "tipo_norm" in ch.columns else "Sin modalidades registradas"
     )
+    _published_assets = filter_asset_catalog(
+        asset_catalog,
+        publication_status="published",
+        require_public_url=True,
+        limit=8,
+    )
+    _published_assets_ctx = "\n".join(
+        f"  - {row.title} | {row.surface} | tema: {row.tema or 'sin tema'} | "
+        f"url: {row.public_url} | vínculo cruzado: {row.vinculo_cruzado or 'sin vínculo'}"
+        for _, row in _published_assets.iterrows()
+    ) if not _published_assets.empty else "  - No hay activos institucionales publicados en el catálogo para citar todavía."
 
     _system_prompt = f"""Eres el asistente del Observatorio Tecnológico de la Comisión Chilena de Energía Nuclear (CCHEN), Chile. Apoyas al equipo de I+D con análisis de datos, redacción de informes técnicos y vigilancia tecnológica.
 
@@ -472,6 +487,9 @@ def _build_assistant_system_prompt(ctx: dict, patents_key: str = "") -> tuple:
 {_funding_ctx}
 {_iaea_ctx}
 
+### Activos institucionales publicados del observatorio 3 en 1
+{_published_assets_ctx}
+
 ### Modelo unificado y gobernanza
 - Entidades modeladas: {len(_entity_df)} | Relaciones definidas: {len(_rel_df)}
 - Registros observados por entidad: {_entity_ctx}
@@ -489,6 +507,8 @@ def _build_assistant_system_prompt(ctx: dict, patents_key: str = "") -> tuple:
 - Si preguntan por transferencia o portafolio tecnológico, aclara que el portafolio actual es una semilla analítica y que requiere validación técnica antes de tratarlo como inventario formal.
 - Si usas OpenAIRE, diferencia claramente entre vínculo fuerte (`cchen_ror_org` o `cchen_name_org`) y vínculo débil (`author_orcid_only`).
 - Si preguntan por gobernanza o integración de datos, usa los registros canónicos de personas, proyectos, convocatorias e institution_registry como marco operativo; aclara que no existe aún un grafo persistente separado.
+- Si existe un activo institucional publicado relevante, cita explícitamente la URL pública de DSpace o CKAN en la respuesta.
+- Si no existe un activo institucional publicado para la consulta, dilo de forma explícita y responde desde la capa analítica local.
 - Si una capa no está suficientemente poblada (por ejemplo, patentes o IAEA TC), dilo explícitamente y no extrapoles más allá de la evidencia.
 - Para comparaciones internacionales usa tu conocimiento general aclarando que es referencial.
 - No inventes cifras que no estén arriba. Si algo no está en los datos, dilo explícitamente.
@@ -512,6 +532,7 @@ def _build_assistant_system_prompt(ctx: dict, patents_key: str = "") -> tuple:
         "acuerdos": len(acuerdos),
         "datacite": len(datacite),
         "openaire": len(openaire),
+        "published_assets": len(_published_assets),
     }
 
     return _system_prompt, _context_trace
@@ -541,6 +562,7 @@ def render(ctx: dict) -> None:
     patents          = ctx["patents"]
     datacite         = ctx["datacite"]
     openaire         = ctx["openaire"]
+    asset_catalog    = asset_catalog_frame(ctx)
 
     assistant_access = _access_context()
     st.title("Asistente I+D — CCHEN")
@@ -693,8 +715,29 @@ def render(ctx: dict) -> None:
                         f"Puedes explorar los datos directamente en las secciones del panel lateral."
                     )
                 st.markdown(reply)
-            st.session_state.messages.append({"role": "assistant", "content": reply or ""})
             reply = reply or ""
+
+            _published_assets = filter_asset_catalog(
+                asset_catalog,
+                publication_status="published",
+                require_public_url=True,
+            )
+            _related_assets = match_assets_to_query(_published_assets, user_input, limit=4)
+            if not _related_assets.empty:
+                _asset_lines = [
+                    f"- [{row['title']}]({row['public_url']}) · {row['surface']} · tema: {row['tema'] or 'sin tema'}"
+                    for _, row in _related_assets.iterrows()
+                ]
+                _asset_note = "Activos institucionales relacionados:\n" + "\n".join(_asset_lines)
+            else:
+                _asset_note = (
+                    "Activos institucionales relacionados:\n"
+                    "- No hay un activo institucional publicado y relevante para esta consulta; "
+                    "la respuesta se apoya en la capa analítica local del observatorio."
+                )
+            st.markdown(_asset_note)
+            reply = f"{reply}\n\n{_asset_note}".strip()
+            st.session_state.messages.append({"role": "assistant", "content": reply})
 
             # ── Decisión dinámica de gráfico vía LLM ─────────────────────────
             _chart_decision = {}

@@ -1,5 +1,6 @@
 # Dashboard sections package
 from . import (
+    plataforma_institucional,
     panel_indicadores,
     produccion_cientifica,
     redes_colaboracion,

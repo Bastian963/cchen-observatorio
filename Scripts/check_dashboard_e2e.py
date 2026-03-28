@@ -27,6 +27,16 @@ TEST_USERNAME = "qa.e2e"
 TEST_PASSWORD = "observatorio-e2e"
 DEFAULT_TIMEOUT = 120
 SECTION_EXPECTATIONS: dict[str, dict[str, tuple[str, ...]]] = {
+    "Plataforma Institucional": {
+        "all": (
+            "Plataforma Institucional CCHEN",
+            "Modelo operativo 3 en 1",
+        ),
+        "any": (
+            "DSpace conserva publicaciones y documentos",
+            "Fuente de verdad por superficie",
+        ),
+    },
     "Panel de Indicadores": {
         "all": (
             "CCHEN — Observatorio Tecnológico I+D+i+Tt",

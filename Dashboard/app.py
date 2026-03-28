@@ -113,6 +113,7 @@ load_funding_complementario = _resolve_loader("load_funding_complementario", _cs
 load_iaea_tc = _resolve_loader("load_iaea_tc", _csv_loader("Funding", "cchen_iaea_tc.csv"))
 load_perfiles_institucionales = _resolve_loader("load_perfiles_institucionales", _csv_loader("Vigilancia", "perfiles_institucionales_cchen.csv"))
 load_matching_institucional = _resolve_loader("load_matching_institucional", _csv_loader("Vigilancia", "convocatorias_matching_institucional.csv"))
+load_asset_catalog = _resolve_loader("load_asset_catalog", _empty_loader)
 load_entity_registry_personas = _resolve_loader("load_entity_registry_personas", _csv_loader("Gobernanza", "entity_registry_personas.csv"))
 load_entity_registry_proyectos = _resolve_loader("load_entity_registry_proyectos", _csv_loader("Gobernanza", "entity_registry_proyectos.csv"))
 load_entity_registry_convocatorias = _resolve_loader("load_entity_registry_convocatorias", _csv_loader("Gobernanza", "entity_registry_convocatorias.csv"))
@@ -647,6 +648,7 @@ _DATASET_LOADERS = {
     "iaea_tc": lambda can_view_sensitive: load_iaea_tc(),
     "perfiles_inst": lambda can_view_sensitive: load_perfiles_institucionales(),
     "matching_inst": lambda can_view_sensitive: load_matching_institucional(),
+    "asset_catalog": lambda can_view_sensitive: load_asset_catalog(),
     "entity_personas": lambda can_view_sensitive: _maybe_sensitive(
         load_entity_registry_personas,
         can_view_sensitive,
@@ -674,9 +676,12 @@ _DATASET_LOADERS = {
 }
 
 _SECTION_DATASETS = {
+    "Plataforma Institucional": (
+        "pub", "anid", "datacite", "openaire", "patents", "asset_catalog",
+    ),
     "Panel de Indicadores": (
         "pub", "pub_enr", "anid", "ch", "ch_ej", "ch_adv",
-        "ror_pending_review", "patents", "orcid", "padron_acad",
+        "ror_pending_review", "patents", "orcid", "padron_acad", "asset_catalog",
     ),
     "Producción Científica": (
         "pub", "pub_enr", "auth", "dian", "concepts", "orcid", "unpaywall", "europmc",
@@ -692,7 +697,7 @@ _SECTION_DATASETS = {
         "anid", "crossref", "funding_plus", "iaea_tc", "acuerdos", "convenios",
     ),
     "Convocatorias y Matching": (
-        "matching_inst", "perfiles_inst",
+        "matching_inst", "perfiles_inst", "asset_catalog",
     ),
     "Transferencia y Portafolio": (
         "datacite", "openaire", "orcid", "patents", "pub_enr",
@@ -711,7 +716,7 @@ _SECTION_DATASETS = {
         "ror_registry", "ror_pending_review", "funding_plus", "iaea_tc",
         "matching_inst", "entity_personas", "entity_projects",
         "entity_convocatorias", "entity_links", "acuerdos", "convenios",
-        "patents", "datacite", "openaire",
+        "patents", "datacite", "openaire", "asset_catalog",
     ),
     "Grafo de Citas": (
         "pub", "pub_enr", "citation_graph", "citing_papers",
@@ -819,6 +824,12 @@ _DATASET_METADATA = {
         "label": "Matching institucional",
         "source": "Data/Vigilancia/convocatorias_matching_institucional.csv",
         "table_name": "convocatorias_matching_institucional",
+        "sensitive": False,
+    },
+    "asset_catalog": {
+        "label": "Catálogo activos 3 en 1",
+        "source": "Data/Gobernanza/catalogo_activos_3_en_1.csv",
+        "table_name": "catalogo_activos_3_en_1",
         "sensitive": False,
     },
     "entity_personas": {
@@ -940,7 +951,7 @@ def _load_section_datasets_cached(section_name: str, can_view_sensitive: bool) -
 
 
 def _current_section_name() -> str:
-    return str(globals().get("seccion") or "Panel de Indicadores")
+    return str(globals().get("seccion") or "Plataforma Institucional")
 
 
 def _build_section_ctx(section_name: str, can_view_sensitive: bool) -> dict:
@@ -983,6 +994,7 @@ from sections.shared import (
 )
 
 from sections import (
+    plataforma_institucional,
     panel_indicadores,
     produccion_cientifica,
     redes_colaboracion,
@@ -2056,6 +2068,7 @@ with st.sidebar:
         )
     st.markdown("---")
     seccion = st.radio("Sección del observatorio", [
+        "Plataforma Institucional",
         "Panel de Indicadores",
         "Producción Científica",
         "Redes y Colaboración",
@@ -2133,6 +2146,7 @@ _ctx["_section_name"] = seccion
 _ACTIVE_SECTION_CTX = _ctx
 
 _SECTION_MAP = {
+    "Plataforma Institucional":  plataforma_institucional.render,
     "Panel de Indicadores":       panel_indicadores.render,
     "Producción Científica":      produccion_cientifica.render,
     "Redes y Colaboración":       redes_colaboracion.render,
@@ -2151,4 +2165,3 @@ if _render_fn is not None:
     _render_fn(_ctx)
 else:
     st.error(f"Sección desconocida: {seccion!r}")
-

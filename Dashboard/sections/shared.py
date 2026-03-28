@@ -145,6 +145,212 @@ def make_csv(df) -> bytes:
     return df.to_csv(index=False).encode("utf-8-sig")
 
 
+# ── Catálogo institucional 3 en 1 ────────────────────────────────────────────
+ASSET_SURFACES = {"dspace", "ckan", "dashboard"}
+ASSET_PUBLICATION_STATUS = {"draft", "ready_for_publish", "published"}
+ASSET_CATALOG_COLUMNS = [
+    "asset_id",
+    "surface",
+    "title",
+    "local_path",
+    "area_unidad",
+    "tema",
+    "anio",
+    "responsables",
+    "palabras_clave",
+    "visibilidad",
+    "identificador",
+    "public_url",
+    "vinculo_cruzado",
+    "dashboard_section",
+    "publication_status",
+]
+
+
+def _split_catalog_values(value) -> list[str]:
+    if pd.isna(value):
+        return []
+    text = str(value).strip()
+    if not text:
+        return []
+    parts = re.split(r"[;,]\s*", text)
+    return [part.strip() for part in parts if part and part.strip()]
+
+
+def asset_catalog_frame(ctx: dict) -> pd.DataFrame:
+    asset_catalog = ctx.get("asset_catalog", pd.DataFrame())
+    if not isinstance(asset_catalog, pd.DataFrame) or asset_catalog.empty:
+        return pd.DataFrame(columns=ASSET_CATALOG_COLUMNS)
+
+    frame = asset_catalog.copy()
+    for col in ASSET_CATALOG_COLUMNS:
+        if col not in frame.columns:
+            frame[col] = pd.Series(dtype="object")
+    for col in ASSET_CATALOG_COLUMNS:
+        if col == "anio":
+            continue
+        frame[col] = frame[col].fillna("").astype(str).str.strip()
+    frame["surface"] = frame["surface"].str.lower()
+    frame["publication_status"] = frame["publication_status"].str.lower()
+    frame["anio"] = pd.to_numeric(frame["anio"], errors="coerce").astype("Int64")
+    return frame[ASSET_CATALOG_COLUMNS].copy()
+
+
+def filter_asset_catalog(
+    asset_catalog: pd.DataFrame,
+    *,
+    section_name: str | None = None,
+    surface: str | None = None,
+    publication_status: str | None = None,
+    require_public_url: bool = False,
+    limit: int | None = None,
+) -> pd.DataFrame:
+    if not isinstance(asset_catalog, pd.DataFrame) or asset_catalog.empty:
+        return pd.DataFrame(columns=ASSET_CATALOG_COLUMNS)
+
+    frame = asset_catalog.copy()
+    frame = frame.reindex(columns=ASSET_CATALOG_COLUMNS, fill_value="")
+    for col in ASSET_CATALOG_COLUMNS:
+        if col == "anio":
+            continue
+        frame[col] = frame[col].fillna("").astype(str).str.strip()
+    frame["surface"] = frame.get("surface", pd.Series(index=frame.index, dtype="object")).fillna("").astype(str).str.lower()
+    frame["publication_status"] = frame.get(
+        "publication_status",
+        pd.Series(index=frame.index, dtype="object"),
+    ).fillna("").astype(str).str.lower()
+
+    if surface:
+        frame = frame[frame["surface"] == str(surface).strip().lower()]
+    if publication_status:
+        frame = frame[
+            frame["publication_status"] == str(publication_status).strip().lower()
+        ]
+    if section_name:
+        expected = str(section_name).strip().lower()
+        frame = frame[
+            frame.get("dashboard_section", pd.Series(index=frame.index, dtype="object")).fillna("").astype(str).apply(
+                lambda value: expected in {item.lower() for item in _split_catalog_values(value)}
+            )
+        ]
+    if require_public_url:
+        frame = frame[
+            frame.get("public_url", pd.Series(index=frame.index, dtype="object")).fillna("").astype(str).str.strip() != ""
+        ]
+
+    status_order = {"published": 0, "ready_for_publish": 1, "draft": 2}
+    surface_order = {"dspace": 0, "ckan": 1, "dashboard": 2}
+    status_series = frame.get("publication_status", pd.Series(index=frame.index, dtype="object")).fillna("").astype(str)
+    surface_series = frame.get("surface", pd.Series(index=frame.index, dtype="object")).fillna("").astype(str)
+    title_series = frame.get("title", pd.Series(index=frame.index, dtype="object")).fillna("").astype(str)
+    frame = frame.assign(
+        _status_rank=status_series.map(status_order).fillna(9),
+        _surface_rank=surface_series.map(surface_order).fillna(9),
+        _title_sort=title_series.str.lower(),
+    ).sort_values(
+        ["_status_rank", "_surface_rank", "_title_sort"],
+        ascending=[True, True, True],
+        na_position="last",
+    )
+    frame = frame.drop(columns=["_status_rank", "_surface_rank", "_title_sort"], errors="ignore")
+    if limit is not None:
+        frame = frame.head(limit)
+    return frame.reset_index(drop=True)
+
+
+def match_assets_to_query(asset_catalog: pd.DataFrame, query: str, limit: int = 5) -> pd.DataFrame:
+    if not isinstance(asset_catalog, pd.DataFrame) or asset_catalog.empty:
+        return pd.DataFrame(columns=ASSET_CATALOG_COLUMNS)
+
+    terms = [term for term in re.findall(r"\w+", str(query).lower()) if len(term) >= 3]
+    if not terms:
+        return filter_asset_catalog(asset_catalog, require_public_url=True, limit=limit)
+
+    frame = asset_catalog.copy()
+    frame = frame.reindex(columns=ASSET_CATALOG_COLUMNS, fill_value="")
+    for col in ASSET_CATALOG_COLUMNS:
+        if col == "anio":
+            continue
+        frame[col] = frame[col].fillna("").astype(str).str.strip()
+    frame["surface"] = frame.get("surface", pd.Series(index=frame.index, dtype="object")).fillna("").astype(str).str.lower()
+    frame["publication_status"] = frame.get(
+        "publication_status",
+        pd.Series(index=frame.index, dtype="object"),
+    ).fillna("").astype(str).str.lower()
+
+    def _score_row(row: pd.Series) -> int:
+        score = 0
+        title = str(row.get("title", "")).lower()
+        tema = str(row.get("tema", "")).lower()
+        keywords = str(row.get("palabras_clave", "")).lower()
+        section = str(row.get("dashboard_section", "")).lower()
+        area = str(row.get("area_unidad", "")).lower()
+        publication_status = str(row.get("publication_status", "")).lower()
+
+        for term in terms:
+            if term in title:
+                score += 4
+            if term in tema:
+                score += 3
+            if term in keywords:
+                score += 3
+            if term in section:
+                score += 2
+            if term in area:
+                score += 2
+        if publication_status == "published":
+            score += 3
+        if str(row.get("public_url", "")).strip():
+            score += 2
+        return score
+
+    frame = frame.assign(_score=frame.apply(_score_row, axis=1))
+    frame = frame[frame["_score"] > 0].sort_values(
+        ["_score", "publication_status", "title"],
+        ascending=[False, True, True],
+        na_position="last",
+    )
+    frame = frame.drop(columns=["_score"], errors="ignore")
+    if limit is not None:
+        frame = frame.head(limit)
+    return frame.reset_index(drop=True)
+
+
+def render_asset_links_table(df: pd.DataFrame, title: str, empty_message: str) -> None:
+    sec(title)
+    if not isinstance(df, pd.DataFrame) or df.empty:
+        st.info(empty_message)
+        return
+
+    display = df.copy()
+    display["anio"] = display["anio"].astype("Int64").astype(str).replace("<NA>", "")
+    st.dataframe(
+        display[[
+            "title",
+            "surface",
+            "tema",
+            "anio",
+            "publication_status",
+            "public_url",
+            "vinculo_cruzado",
+        ]].rename(columns={
+            "title": "Activo",
+            "surface": "Superficie",
+            "tema": "Tema",
+            "anio": "Año",
+            "publication_status": "Estado",
+            "public_url": "URL pública",
+            "vinculo_cruzado": "Vínculo cruzado",
+        }),
+        width="stretch",
+        hide_index=True,
+        column_config={
+            "URL pública": st.column_config.LinkColumn("URL pública"),
+            "Vínculo cruzado": st.column_config.LinkColumn("Vínculo cruzado"),
+        },
+    )
+
+
 # ── Bool / text helpers ───────────────────────────────────────────────────────
 def _bool_from_any(value) -> bool:
     if isinstance(value, bool):

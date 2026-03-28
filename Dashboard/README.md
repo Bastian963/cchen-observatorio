@@ -1,5 +1,15 @@
 # Dashboard CCHEN - Notas operativas
 
+## Rol actual del dashboard
+
+El dashboard ya no se entiende como producto único. Pasa a ser la capa analítica del modelo institucional 3 en 1:
+
+- `Dashboard`: indicadores, vigilancia, asistente y narrativa ejecutiva.
+- `DSpace`: publicaciones, informes y documentos.
+- `CKAN`: datasets y recursos descargables.
+
+La portada `Plataforma Institucional` del dashboard usa las URLs del bloque `[platform]` en `Dashboard/.streamlit/secrets.toml` o variables `OBSERVATORIO_*` para enlazar y verificar DSpace/CKAN.
+
 ## Mejoras integradas
 
 - `DuckDB` como backend opcional para lectura rápida de CSVs en `data_loader.py`.
@@ -8,6 +18,7 @@
 - `st.fragment` para el bloque operativo del panel principal.
 - Autenticación OIDC opcional con `st.login()` / `st.logout()` para proteger vistas sensibles.
 - **Asistente I+D (2026-03-24):** spinner mientras espera Groq, expander "📚 Fuentes consultadas" con papers RAG, guard `reply or ""` para evitar crash en stream vacío.
+- **Portada institucional 3 en 1 (2026-03-27):** sección inicial que muestra la lógica Dashboard + DSpace + CKAN, enlaces profundos y estado operativo básico.
 
 ## Instalación / actualización de dependencias
 
@@ -17,6 +28,12 @@ Desde la carpeta raíz del repositorio:
 cd Dashboard
 pip install -r requirements.txt
 ```
+
+Capas de dependencias:
+
+- `requirements-core.txt`: Streamlit, loaders, visualización y operación DGIn.
+- `requirements-ai.txt`: búsqueda semántica y dependencias pesadas del asistente.
+- `requirements.txt`: instala ambas capas para entornos completos.
 
 Si `duckdb` no está instalado, el dashboard sigue funcionando y hace fallback automático a `pandas`.
 
@@ -45,6 +62,8 @@ docker run --rm -p 8501:8501 \
   -e CCHEN_DATA_ROOT=/app/Data \
   cchen-dashboard:latest
 ```
+
+Para la imagen canónica del piloto DGIn, el compose usa `INSTALL_AI=false`, de modo que el contenedor instala solo la capa `core`. El asistente sigue funcionando en modo degradado cuando no está disponible la búsqueda semántica.
 
 Healthcheck local del contenedor:
 

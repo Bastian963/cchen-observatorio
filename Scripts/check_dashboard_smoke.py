@@ -130,6 +130,11 @@ def _assert_loader_smoke() -> None:
             ["origin_type", "origin_id", "target_type"],
             [data_root / "Gobernanza" / "entity_links.csv"],
         ),
+        (
+            "load_asset_catalog",
+            ["asset_id", "surface", "title", "publication_status"],
+            [data_root / "Gobernanza" / "catalogo_activos_3_en_1.csv"],
+        ),
     ]
 
     for loader_name, required_columns, source_candidates in checks:

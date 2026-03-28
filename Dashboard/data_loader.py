@@ -56,6 +56,23 @@ CAPITAL_HUMANO_COLUMNS = [
     "flag_tipo_fuera_catalogo",
     "created_at",
 ]
+ASSET_CATALOG_COLUMNS = [
+    "asset_id",
+    "surface",
+    "title",
+    "local_path",
+    "area_unidad",
+    "tema",
+    "anio",
+    "responsables",
+    "palabras_clave",
+    "visibilidad",
+    "identificador",
+    "public_url",
+    "vinculo_cruzado",
+    "dashboard_section",
+    "publication_status",
+]
 
 PUBLIC_TABLE_CONFIG = {
     "publications": {"order_by": "openalex_id"},
@@ -330,6 +347,7 @@ def get_source_timestamps() -> dict:
         "Entidades proyecto": _mtime(BASE / "Gobernanza" / "entity_registry_proyectos.csv"),
         "Entidades convocatoria": _mtime(BASE / "Gobernanza" / "entity_registry_convocatorias.csv"),
         "Enlaces entre entidades": _mtime(BASE / "Gobernanza" / "entity_links.csv"),
+        "Catalogo activos 3 en 1": _mtime(BASE / "Gobernanza" / "catalogo_activos_3_en_1.csv"),
         "Convenios nacionales":     _mtime(BASE / "Institutional" / "clean_Convenios_suscritos_por_la_Com.csv"),
         "Acuerdos internacionales": _mtime(BASE / "Institutional" / "clean_Acuerdos_e_instrumentos_intern.csv"),
         "Altmetric": _mtime(BASE_PUB / "cchen_altmetric.csv"),
@@ -898,6 +916,28 @@ def _load_governance_csv(filename: str) -> pd.DataFrame:
         return _read_csv_fast(p)
     except Exception:
         return pd.DataFrame()
+
+
+def load_asset_catalog() -> pd.DataFrame:
+    """Catálogo maestro de activos institucionales del observatorio 3 en 1."""
+    df = _load_governance_csv("catalogo_activos_3_en_1.csv")
+    if df.empty:
+        return pd.DataFrame(columns=ASSET_CATALOG_COLUMNS)
+
+    df = df.copy()
+    for col in ASSET_CATALOG_COLUMNS:
+        if col not in df.columns:
+            df[col] = pd.Series(dtype="object")
+
+    for col in ASSET_CATALOG_COLUMNS:
+        if col == "anio":
+            continue
+        df[col] = df[col].fillna("").astype(str).str.strip()
+
+    df["surface"] = df["surface"].str.lower()
+    df["publication_status"] = df["publication_status"].str.lower()
+    df["anio"] = pd.to_numeric(df["anio"], errors="coerce").astype("Int64")
+    return df[ASSET_CATALOG_COLUMNS].copy()
 
 
 def load_entity_registry_personas():
