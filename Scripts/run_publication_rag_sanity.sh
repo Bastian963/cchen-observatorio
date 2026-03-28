@@ -34,6 +34,7 @@ Opciones:
 Notas:
   - Ejecuta assistant_eval_batch.py filtrando con --mode publication_rag.
   - No consume tokens Groq (evalúa retrieval RAG local).
+  - Si .venv/bin/python no existe, intenta usar python3 y luego python.
 EOF
 }
 
@@ -105,7 +106,22 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ -x "$PYTHON_BIN" ]] || fail "Python no ejecutable: $PYTHON_BIN"
+if [[ -x "$PYTHON_BIN" ]]; then
+  :
+elif command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+  PYTHON_BIN="$(command -v "$PYTHON_BIN")"
+elif [[ "$PYTHON_BIN" == ".venv/bin/python" ]]; then
+  if command -v python3 >/dev/null 2>&1; then
+    PYTHON_BIN="$(command -v python3)"
+  elif command -v python >/dev/null 2>&1; then
+    PYTHON_BIN="$(command -v python)"
+  else
+    fail "Python no ejecutable: $PYTHON_BIN"
+  fi
+else
+  fail "Python no ejecutable: $PYTHON_BIN"
+fi
+
 [[ -f "$INPUT" ]] || fail "Input no encontrado: $INPUT"
 if [[ -n "$COMPARE_WITH" && ! -f "$COMPARE_WITH" ]]; then
   fail "compare-with no encontrado: $COMPARE_WITH"
