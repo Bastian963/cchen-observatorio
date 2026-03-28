@@ -3,6 +3,7 @@
     {
       "name": "convocatorias_curadas_source",
       "path_glob": "Data/Vigilancia/convocatorias_curadas.csv",
+      "optional_if_missing": true,
       "min_rows": 1,
       "required_columns": [
         "conv_id",
@@ -27,6 +28,7 @@
     {
       "name": "matching_rules_source",
       "path_glob": "Data/Vigilancia/convocatorias_matching_rules.csv",
+      "optional_if_missing": true,
       "min_rows": 1,
       "required_columns": [
         "rule_id",
@@ -79,6 +81,7 @@
     {
       "name": "planta_estado_orcid_actual",
       "path_glob": "Data/Researchers/cchen_planta_estado_orcid_actual.csv",
+      "optional_if_missing": true,
       "min_rows": 1,
       "required_columns": [
         "nombre_completo",
@@ -122,6 +125,7 @@
     {
       "name": "planta_orcid_brechas_actual",
       "path_glob": "Data/Researchers/cchen_planta_orcid_brechas_actual.csv",
+      "optional_if_missing": true,
       "min_rows": 1,
       "required_columns": [
         "nombre_completo",

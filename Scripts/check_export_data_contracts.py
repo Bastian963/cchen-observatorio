@@ -78,16 +78,19 @@ def _validate_contract(contract: dict[str, Any], base_dir: Path) -> tuple[list[s
     errors: list[str] = []
     name = contract["name"]
     path_glob = contract["path_glob"]
+    optional_if_missing = bool(contract.get("optional_if_missing", False))
     path = _resolve_path(base_dir, path_glob)
     if path is None:
-        return [f"[{name}] No se encontró archivo para patrón: {path_glob}"], {
+        status = "skipped_missing_optional" if optional_if_missing else "missing_file"
+        missing_msg = f"No se encontró archivo para patrón: {path_glob}"
+        return ([] if optional_if_missing else [f"[{name}] {missing_msg}"]), {
             "name": name,
             "path": path_glob,
             "path_glob": path_glob,
             "rows": 0,
             "columns": 0,
-            "status": "missing_file",
-            "errors": [f"No se encontró archivo para patrón: {path_glob}"],
+            "status": status,
+            "errors": ([] if optional_if_missing else [missing_msg]),
         }
 
     try:
