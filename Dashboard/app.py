@@ -117,6 +117,8 @@ load_iaea_tc = _resolve_loader("load_iaea_tc", _csv_loader("Funding", "cchen_iae
 load_perfiles_institucionales = _resolve_loader("load_perfiles_institucionales", _csv_loader("Vigilancia", "perfiles_institucionales_cchen.csv"))
 load_matching_institucional = _resolve_loader("load_matching_institucional", _csv_loader("Vigilancia", "convocatorias_matching_institucional.csv"))
 load_asset_catalog = _resolve_loader("load_asset_catalog", _empty_loader)
+load_data_sources_runtime = _resolve_loader("load_data_sources_runtime", _empty_loader)
+load_data_source_runs = _resolve_loader("load_data_source_runs", _empty_loader)
 load_entity_registry_personas = _resolve_loader("load_entity_registry_personas", _csv_loader("Gobernanza", "entity_registry_personas.csv"))
 load_entity_registry_proyectos = _resolve_loader("load_entity_registry_proyectos", _csv_loader("Gobernanza", "entity_registry_proyectos.csv"))
 load_entity_registry_convocatorias = _resolve_loader("load_entity_registry_convocatorias", _csv_loader("Gobernanza", "entity_registry_convocatorias.csv"))
@@ -1214,6 +1216,44 @@ def _summarize_runtime_dataset_status(status_df: pd.DataFrame) -> dict:
     }
 
 
+def _build_source_refresh_status() -> tuple[pd.DataFrame, pd.DataFrame]:
+    registry_df = load_data_sources_runtime()
+    runs_df = load_data_source_runs()
+    if registry_df.empty:
+        return pd.DataFrame(), pd.DataFrame()
+
+    status_df = registry_df.copy()
+    for column in ("last_updated", "next_update_due"):
+        if column in status_df.columns:
+            status_df[column] = pd.to_datetime(status_df[column], errors="coerce")
+    status_df["enabled"] = status_df.get("enabled", False).fillna(False).astype(bool)
+    status_df["blocking"] = status_df.get("blocking", False).fillna(False).astype(bool)
+    status_df["is_overdue"] = status_df["enabled"] & status_df["next_update_due"].notna() & (
+        status_df["next_update_due"].dt.date <= dt.date.today()
+    )
+    status_df["last_updated_label"] = status_df["last_updated"].dt.strftime("%d/%m/%Y").fillna("—")
+    status_df["next_update_due_label"] = status_df["next_update_due"].dt.strftime("%d/%m/%Y").fillna("—")
+    status_df["last_run_status"] = status_df.get("last_run_status", "").fillna("").replace("", "sin registro")
+    status_df["freshness_sla_days"] = pd.to_numeric(
+        status_df.get("freshness_sla_days"), errors="coerce"
+    ).astype("Int64")
+
+    if not runs_df.empty:
+        runs_df = runs_df.copy()
+        for column in ("started_at", "finished_at"):
+            if column in runs_df.columns:
+                runs_df[column] = pd.to_datetime(runs_df[column], errors="coerce")
+        runs_df["finished_at_label"] = runs_df["finished_at"].dt.strftime("%d/%m/%Y %H:%M").fillna("—")
+        runs_df["records_written"] = pd.to_numeric(runs_df.get("records_written"), errors="coerce").fillna(0).astype(int)
+        runs_df = runs_df.sort_values(["finished_at", "source_key"], ascending=[False, True]).reset_index(drop=True)
+
+    status_df = status_df.sort_values(
+        ["is_overdue", "blocking", "enabled", "source_name"],
+        ascending=[False, False, False, True],
+    ).reset_index(drop=True)
+    return status_df, runs_df
+
+
 @_dialog("Inspector de datasets", width="large")
 def open_dataset_inspector():
     access = _access_context()
@@ -2100,6 +2140,63 @@ with st.sidebar:
     )
     st.markdown("---")
     with st.expander("Fuentes y actualización", expanded=False):
+        if access.get("app_mode") != "public":
+            source_status_df, source_runs_df = _build_source_refresh_status()
+            if not source_status_df.empty:
+                enabled_df = source_status_df[source_status_df["enabled"]]
+                overdue_count = int(enabled_df["is_overdue"].sum()) if not enabled_df.empty else 0
+                failed_count = int(enabled_df["last_run_status"].astype(str).str.lower().eq("failed").sum()) if not enabled_df.empty else 0
+                c_status_1, c_status_2, c_status_3 = st.columns(3)
+                c_status_1.metric("Fuentes habilitadas", f"{len(enabled_df):,}")
+                c_status_2.metric("Vencidas", f"{overdue_count:,}")
+                c_status_3.metric("Últ. fallo", f"{failed_count:,}")
+                st.caption(
+                    "Estado operativo del runner canónico de refresh. "
+                    "Las fuentes manuales siguen registradas pero fuera del scheduler."
+                )
+                st.dataframe(
+                    source_status_df[
+                        [
+                            "source_name",
+                            "update_frequency",
+                            "last_updated_label",
+                            "next_update_due_label",
+                            "last_run_status",
+                        ]
+                    ].rename(
+                        columns={
+                            "source_name": "Fuente",
+                            "update_frequency": "Frecuencia",
+                            "last_updated_label": "Última actualización",
+                            "next_update_due_label": "Próxima esperada",
+                            "last_run_status": "Estado",
+                        }
+                    ),
+                    width="stretch",
+                    height=260,
+                    hide_index=True,
+                )
+                if not source_runs_df.empty:
+                    st.caption("Últimas corridas registradas")
+                    st.dataframe(
+                        source_runs_df[
+                            ["source_key", "status", "records_written", "finished_at_label", "trigger_kind"]
+                        ]
+                        .head(6)
+                        .rename(
+                            columns={
+                                "source_key": "Source key",
+                                "status": "Estado",
+                                "records_written": "Registros",
+                                "finished_at_label": "Finalizó",
+                                "trigger_kind": "Trigger",
+                            }
+                        ),
+                        width="stretch",
+                        height=220,
+                        hide_index=True,
+                    )
+                st.divider()
         if _backend.get("source_mode") != "local":
             st.caption(
                 "Modo de datos no-local activo: estas fechas corresponden a snapshots/archivos locales "

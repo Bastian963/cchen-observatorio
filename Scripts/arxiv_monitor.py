@@ -8,8 +8,8 @@ y guarda los papers nuevos en Data/Vigilancia/arxiv_monitor.csv.
 Uso manual:
     python Scripts/arxiv_monitor.py
 
-Uso automático (GitHub Actions):
-    Ver .github/workflows/arxiv_monitor.yml
+Uso automático (runner canónico):
+    python Scripts/run_source_refresh.py --source-key arxiv_monitor
 
 Áreas monitoreadas (ajustar en FEEDS según necesidad):
     nucl-ex      → Nuclear Experiment
