@@ -19,12 +19,16 @@ import csv
 import datetime as dt
 import hashlib
 import re
+import sys
 from html import unescape
 from pathlib import Path
 from urllib.request import Request, urlopen
 
 
 BASE = Path(__file__).parent.parent
+if str(BASE) not in sys.path:
+    sys.path.insert(0, str(BASE))
+
 OUT_DIR = BASE / "Data" / "Vigilancia"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 OUT_CSV = OUT_DIR / "convocatorias_curadas.csv"
@@ -274,16 +278,60 @@ def parse_anid_calendar(html: str):
     return list(dedup.values())
 
 
+def _normalize_snapshot_rows(rows: list[dict]) -> list[dict]:
+    normalized: list[dict] = []
+    for raw in rows:
+        row = {}
+        for field in CSV_FIELDS:
+            value = raw.get(field, "")
+            if value is None:
+                row[field] = ""
+            elif field in {"es_oficial", "postulable"}:
+                row[field] = str(value).strip().lower() in {"true", "1", "yes", "si", "sí"}
+            elif field.endswith("_iso"):
+                text = str(value).strip()
+                row[field] = text[:10] if text and text.lower() != "nat" else ""
+            else:
+                row[field] = str(value).strip()
+        normalized.append(row)
+    return normalized
+
+
+def load_snapshot_rows() -> list[dict]:
+    try:
+        from Dashboard import data_loader
+
+        df = data_loader.load_convocatorias().fillna("")
+    except Exception as exc:
+        print(f"[WARN] No se pudo cargar snapshot curado de respaldo: {exc}")
+        return []
+
+    if df.empty:
+        return []
+
+    rows = df.to_dict(orient="records")
+    return _normalize_snapshot_rows(rows)
+
+
 def main():
     print("Radar curado de convocatorias — CCHEN")
     print(f"Fecha de ejecucion: {dt.datetime.now().strftime('%Y-%m-%d %H:%M')}")
     print(f"Fuente principal: {ANID_CALENDAR_URL}")
 
-    html = fetch_html(ANID_CALENDAR_URL)
-    rows = parse_anid_calendar(html)
-
-    if not rows:
-        raise RuntimeError("No se pudieron extraer convocatorias desde el calendario oficial de ANID.")
+    rows = []
+    try:
+        html = fetch_html(ANID_CALENDAR_URL)
+        rows = parse_anid_calendar(html)
+        if not rows:
+            raise RuntimeError("No se pudieron extraer convocatorias desde el calendario oficial de ANID.")
+    except Exception as exc:
+        print(f"[WARN] Falló la extracción en vivo desde ANID: {exc}")
+        rows = load_snapshot_rows()
+        if not rows:
+            raise RuntimeError(
+                "No se pudieron extraer convocatorias desde ANID y tampoco hay snapshot curado disponible."
+            ) from exc
+        print(f"[WARN] Usando snapshot curado de respaldo con {len(rows)} convocatorias.")
 
     with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)

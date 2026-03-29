@@ -76,7 +76,7 @@ SET source_key = 'openalex_conceptos',
     visibility = 'publico',
     blocking = FALSE,
     freshness_sla_days = 90
-WHERE source_name = 'OpenAlex conceptos';
+WHERE source_name IN ('OpenAlex conceptos', 'OpenAlex Conceptos');
 
 UPDATE data_sources
 SET source_key = 'orcid',
@@ -84,7 +84,7 @@ SET source_key = 'orcid',
     runner_command = NULL,
     output_targets = '["Data/Researchers/cchen_researchers_orcid.csv"]'::jsonb,
     owner = 'observatorio-cchen',
-    visibility = 'operador',
+    visibility = 'publico',
     blocking = FALSE,
     freshness_sla_days = 180
 WHERE source_name = 'ORCID';
@@ -98,7 +98,7 @@ SET source_key = 'patentsview_uspto',
     visibility = 'publico',
     blocking = FALSE,
     freshness_sla_days = 180
-WHERE source_name = 'PatentsView/USPTO';
+WHERE source_name IN ('PatentsView/USPTO', 'PatentsView / USPTO');
 
 UPDATE data_sources
 SET source_key = 'anid_repositorio',
@@ -140,7 +140,7 @@ SET source_key = 'ror_registry',
     output_targets = '["Data/Institutional/cchen_institution_registry.csv"]'::jsonb,
     owner = 'observatorio-cchen',
     visibility = 'publico',
-    blocking = TRUE,
+    blocking = FALSE,
     freshness_sla_days = 180
 WHERE source_name = 'ROR registry';
 
@@ -197,7 +197,7 @@ SET source_key = 'sjr_scimago',
     visibility = 'publico',
     blocking = FALSE,
     freshness_sla_days = 365
-WHERE source_name = 'SJR/Scimago';
+WHERE source_name IN ('SJR/Scimago', 'SJR Scimago');
 
 UPDATE data_sources
 SET source_key = 'perfiles_institucionales',
@@ -217,7 +217,7 @@ SET source_key = 'convocatorias_curadas',
     output_targets = '["Data/Vigilancia/convocatorias_curadas.csv"]'::jsonb,
     owner = 'observatorio-cchen',
     visibility = 'publico',
-    blocking = FALSE,
+    blocking = TRUE,
     freshness_sla_days = 14
 WHERE source_name = 'Convocatorias curadas';
 
@@ -230,7 +230,7 @@ SET source_key = 'matching_rules',
     visibility = 'operador',
     blocking = FALSE,
     freshness_sla_days = 14
-WHERE source_name = 'Matching rules';
+WHERE source_name IN ('Matching rules', 'Reglas de matching');
 
 UPDATE data_sources
 SET source_key = 'matching_institucional',
@@ -238,8 +238,8 @@ SET source_key = 'matching_institucional',
     runner_command = 'python Scripts/build_operational_core.py',
     output_targets = '["Data/Vigilancia/convocatorias_matching_institucional.csv"]'::jsonb,
     owner = 'observatorio-cchen',
-    visibility = 'operador',
-    blocking = FALSE,
+    visibility = 'publico',
+    blocking = TRUE,
     freshness_sla_days = 8
 WHERE source_name = 'Matching institucional';
 
@@ -296,7 +296,7 @@ SET source_key = 'europmc_works',
     visibility = 'publico',
     blocking = FALSE,
     freshness_sla_days = 180
-WHERE source_name = 'EuropePMC';
+WHERE source_name IN ('EuropePMC', 'EuroPMC works');
 
 UPDATE data_sources
 SET source_key = 'bertopic_topics',
@@ -337,10 +337,10 @@ SET source_key = 'funding_complementario',
     runner_command = 'python Scripts/fetch_funding_plus.py',
     output_targets = '["Data/Funding/cchen_funding_complementario.csv"]'::jsonb,
     owner = 'observatorio-cchen',
-    visibility = 'operador',
+    visibility = 'interno',
     blocking = FALSE,
     freshness_sla_days = 180
-WHERE source_name = 'Funding complementario';
+WHERE source_name IN ('Funding complementario', 'Financiamiento complementario');
 
 UPDATE data_sources
 SET source_key = 'entity_registry_personas',
@@ -348,8 +348,8 @@ SET source_key = 'entity_registry_personas',
     runner_command = 'python Scripts/build_operational_core.py',
     output_targets = '["Data/Gobernanza/entity_registry_personas.csv"]'::jsonb,
     owner = 'observatorio-cchen',
-    visibility = 'operador',
-    blocking = FALSE,
+    visibility = 'interno',
+    blocking = TRUE,
     freshness_sla_days = 14
 WHERE source_name = 'Entity registry personas';
 
@@ -359,8 +359,8 @@ SET source_key = 'entity_registry_proyectos',
     runner_command = 'python Scripts/build_operational_core.py',
     output_targets = '["Data/Gobernanza/entity_registry_proyectos.csv"]'::jsonb,
     owner = 'observatorio-cchen',
-    visibility = 'operador',
-    blocking = FALSE,
+    visibility = 'publico',
+    blocking = TRUE,
     freshness_sla_days = 14
 WHERE source_name = 'Entity registry proyectos';
 
@@ -370,8 +370,8 @@ SET source_key = 'entity_registry_convocatorias',
     runner_command = 'python Scripts/build_operational_core.py',
     output_targets = '["Data/Gobernanza/entity_registry_convocatorias.csv"]'::jsonb,
     owner = 'observatorio-cchen',
-    visibility = 'operador',
-    blocking = FALSE,
+    visibility = 'publico',
+    blocking = TRUE,
     freshness_sla_days = 14
 WHERE source_name = 'Entity registry convocatorias';
 
@@ -381,8 +381,8 @@ SET source_key = 'entity_links',
     runner_command = 'python Scripts/build_operational_core.py',
     output_targets = '["Data/Gobernanza/entity_links.csv"]'::jsonb,
     owner = 'observatorio-cchen',
-    visibility = 'operador',
-    blocking = FALSE,
+    visibility = 'interno',
+    blocking = TRUE,
     freshness_sla_days = 14
 WHERE source_name = 'Entity links';
 
@@ -392,7 +392,7 @@ SET source_key = 'capital_humano',
     runner_command = NULL,
     output_targets = '["Data/Capital humano CCHEN/salida_dataset_maestro/dataset_maestro_limpio.csv"]'::jsonb,
     owner = 'observatorio-cchen',
-    visibility = 'operador',
+    visibility = 'interno',
     blocking = FALSE,
     freshness_sla_days = 180
 WHERE source_name = 'Capital humano';

@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import sys
 import time
 from pathlib import Path
 from urllib.request import Request, urlopen
@@ -36,6 +37,9 @@ from urllib.parse import urlencode
 import pandas as pd
 
 ROOT    = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 PUB_DIR = ROOT / "Data" / "Publications"
 
 IN_CSV          = PUB_DIR / "cchen_openalex_works.csv"
@@ -107,6 +111,27 @@ def _extract_institutions(authorships: list) -> str:
     return "; ".join(sorted(insts)[:5])
 
 
+def _load_cchen_works() -> pd.DataFrame:
+    if IN_CSV.exists():
+        return pd.read_csv(IN_CSV)
+
+    try:
+        from Dashboard import data_loader
+
+        works = data_loader.load_publications()
+    except Exception as exc:
+        raise RuntimeError(
+            "No se pudo cargar cchen_openalex_works.csv ni recuperar publicaciones desde Supabase."
+        ) from exc
+
+    if works.empty:
+        raise RuntimeError(
+            "La tabla remota publications está vacía y no existe Data/Publications/cchen_openalex_works.csv."
+        )
+
+    return works
+
+
 # ── Estado / cache ────────────────────────────────────────────────────────────
 
 def _load_state() -> set[str]:
@@ -130,7 +155,7 @@ def main() -> None:
     parser.add_argument("--reset",  action="store_true",  help="Ignorar cache y reprocesar todo")
     args = parser.parse_args()
 
-    works = pd.read_csv(IN_CSV)
+    works = _load_cchen_works()
     all_ids = works["openalex_id"].dropna().unique().tolist()
     print(f"Papers CCHEN totales: {len(all_ids)}")
 
