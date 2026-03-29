@@ -14,6 +14,7 @@ import argparse
 import datetime as dt
 import json
 import subprocess
+import sys
 import time
 import unicodedata
 from pathlib import Path
@@ -24,6 +25,9 @@ import pandas as pd
 
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 RESEARCHERS_CSV = ROOT / "Data" / "Researchers" / "cchen_researchers_orcid.csv"
 OUT_DIR = ROOT / "Data" / "ResearchOutputs"
 OUT_CSV = OUT_DIR / "cchen_openaire_outputs.csv"
@@ -32,6 +36,30 @@ OUT_STATE = OUT_DIR / "openaire_state.json"
 OPENAIRE_API = "https://api.openaire.eu/graph/v2/researchProducts"
 CCHEN_ROR = "https://ror.org/03hv95d67"
 PAGE_SIZE = 100
+
+
+def _load_researchers() -> pd.DataFrame:
+    if RESEARCHERS_CSV.exists():
+        researchers = pd.read_csv(RESEARCHERS_CSV)
+    else:
+        try:
+            from Dashboard import data_loader
+
+            researchers = data_loader.load_orcid_researchers()
+        except Exception as exc:
+            raise RuntimeError(
+                "No se pudo cargar cchen_researchers_orcid.csv ni recuperar investigadores ORCID desde Supabase."
+            ) from exc
+
+    required = ["orcid_id", "full_name"]
+    for column in required:
+        if column not in researchers.columns:
+            raise RuntimeError(f"La fuente ORCID no contiene la columna requerida: {column}")
+
+    researchers = researchers[required].dropna().drop_duplicates()
+    if researchers.empty:
+        raise RuntimeError("La fuente ORCID quedó vacía; no hay investigadores para consultar en OpenAIRE.")
+    return researchers
 
 
 def _join_unique(values) -> str:
@@ -252,7 +280,7 @@ def main() -> None:
     args = parser.parse_args()
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    researchers = pd.read_csv(RESEARCHERS_CSV)[["orcid_id", "full_name"]].dropna().drop_duplicates()
+    researchers = _load_researchers()
     if args.limit_authors:
         researchers = researchers.head(args.limit_authors)
 

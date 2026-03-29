@@ -16,6 +16,7 @@ from data_loader import (
     load_entity_links, load_publications_with_concepts,
     load_convenios_nacionales, load_acuerdos_internacionales,
     load_iaea_inis, load_dian_publications, load_crossref_enriched,
+    load_data_sources_runtime, load_data_source_runs,
     get_source_timestamps, get_data_backend_info,
 )
 
@@ -61,6 +62,8 @@ EXPECTED_COLS = {
     ("iaea_inis",               load_iaea_inis,               []),
     ("dian_publications",       load_dian_publications,       []),
     ("crossref_enriched",       load_crossref_enriched,       ["doi"]),
+    ("data_sources_runtime",    load_data_sources_runtime,    ["source_key", "source_name"]),
+    ("data_source_runs",        load_data_source_runs,        []),
 ])
 def test_loader_returns_dataframe(loader_name, loader_fn, min_cols):
     """Cada loader debe retornar un DataFrame (puede estar vacío)."""

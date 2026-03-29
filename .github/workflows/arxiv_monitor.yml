@@ -1,10 +1,7 @@
-name: Vigilancia Monitor — CCHEN
+name: Vigilancia manual y boletín — CCHEN
 
 on:
-  schedule:
-    # Cada lunes a las 08:00 UTC (05:00 Chile)
-    - cron: "0 8 * * 1"
-  workflow_dispatch:  # Permite ejecución manual desde GitHub
+  workflow_dispatch:
     inputs:
       send_real_email:
         description: "Enviar boletin real por Brevo (si no, queda en dry-run)"
@@ -16,7 +13,7 @@ jobs:
   monitor:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # necesario para hacer push de los CSV actualizados
+      contents: write
 
     steps:
       - name: Checkout repositorio
@@ -30,7 +27,7 @@ jobs:
       - name: Instalar dependencias
         run: pip install --quiet requests pandas openpyxl supabase python-dotenv
 
-      # ── Módulo Vigilancia ────────────────────────────────────────────────
+      # ── Módulo Vigilancia manual / legado ───────────────────────────────
 
       - name: Ejecutar monitor arXiv
         run: |
@@ -133,7 +130,7 @@ jobs:
           git config user.email "observatory@cchen.cl"
 
           # Solo los archivos tracked (Docs/) se commitean.
-          # Data/ está en .gitignore → los CSVs de vigilancia van a Supabase, no al repo.
+          # Data/ está en .gitignore → los CSVs y snapshots operativos van a Supabase o artefactos, no al repo.
           if [ -d "Docs/boletines" ]; then
             git add Docs/boletines/ Docs/index.html
           fi

@@ -197,6 +197,7 @@ Al abrir el dashboard:
 - `bertopic_topic_info`
 - `citing_papers`
 - `data_sources`
+- `data_source_runs`
 
 ### Tablas que siguen locales en esta fase
 

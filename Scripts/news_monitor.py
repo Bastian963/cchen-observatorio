@@ -10,8 +10,8 @@ Uso manual:
     python3 Scripts/news_monitor.py --log              # escribe log en Data/Vigilancia/news_monitor.log
     python3 Scripts/news_monitor.py --log Docs/news.log  # ruta personalizada
 
-Uso automático (GitHub Actions):
-    Configurable junto a arxiv_monitor.yml
+Uso automático (runner canónico):
+    python Scripts/run_source_refresh.py --source-key news_monitor
 """
 
 import argparse

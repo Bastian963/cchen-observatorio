@@ -8,6 +8,31 @@ PUBLIC_COMPOSE_FILE="${PUBLIC_COMPOSE_FILE:-$ROOT_DIR/docker-compose.observatori
 TMP_CONFIG="$(mktemp)"
 trap 'rm -f "$TMP_CONFIG"' EXIT
 
+search_text() {
+  if command -v rg >/dev/null 2>&1; then
+    rg "$@"
+    return
+  fi
+
+  case "${1:-}" in
+    -Fq)
+      shift
+      grep -Fq -- "$1" "$2"
+      ;;
+    -q)
+      shift
+      grep -q -- "$1" "$2"
+      ;;
+    -n)
+      shift
+      grep -En -- "$1" "$2"
+      ;;
+    *)
+      grep -E -- "$1" "$2"
+      ;;
+  esac
+}
+
 required_files=(
   "$ROOT_DIR/.env.public.example"
   "$ROOT_DIR/docker-compose.observatorio.public.yml"
@@ -46,21 +71,21 @@ docker compose \
   -f "$PUBLIC_COMPOSE_FILE" \
   config > "$TMP_CONFIG"
 
-published_ports="$(rg 'published:' "$TMP_CONFIG" | awk '{print $2}' | tr -d '"' | sort -n -u | paste -sd' ' -)"
+published_ports="$(search_text 'published:' "$TMP_CONFIG" | awk '{print $2}' | tr -d '"' | sort -n -u | paste -sd' ' -)"
 if [[ "$published_ports" != "80 443" ]]; then
   echo "[public-overlay] ERROR: puertos publicados inesperados: '${published_ports}'"
   exit 1
 fi
 
-if rg -n 'published: "(8501|8080|5001|8983|8984|5432|6379)"' "$TMP_CONFIG" >/dev/null; then
+if search_text -n 'published: "(8501|8080|5001|8983|8984|5432|6379)"' "$TMP_CONFIG" >/dev/null; then
   echo "[public-overlay] ERROR: hay puertos internos publicados en el overlay publico"
   exit 1
 fi
 
-rg -q 'OBSERVATORIO_APP_MODE: public' "$TMP_CONFIG"
-rg -q 'OBSERVATORIO_APP_MODE: internal' "$TMP_CONFIG"
-rg -Fq 'OBSERVATORIO_PUBLIC_SECRETS_FILE' "$ROOT_DIR/.env.public.example"
-rg -Fq 'secrets.public.toml' "$TMP_CONFIG"
-rg -Fq 'server_name ${OBSERVATORIO_PUBLIC_DASHBOARD_HOST};' "$ROOT_DIR/deploy/nginx/templates/observatorio-public-portal.conf.template"
+search_text -q 'OBSERVATORIO_APP_MODE: public' "$TMP_CONFIG"
+search_text -q 'OBSERVATORIO_APP_MODE: internal' "$TMP_CONFIG"
+search_text -Fq 'OBSERVATORIO_PUBLIC_SECRETS_FILE' "$ROOT_DIR/.env.public.example"
+search_text -Fq 'secrets.public.toml' "$TMP_CONFIG"
+search_text -Fq 'server_name ${OBSERVATORIO_PUBLIC_DASHBOARD_HOST};' "$ROOT_DIR/deploy/nginx/templates/observatorio-public-portal.conf.template"
 
 echo "[public-overlay] OK: overlay publico renderiza solo 80/443 y separa dashboard publico e interno"

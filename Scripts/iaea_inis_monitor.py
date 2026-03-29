@@ -15,8 +15,8 @@ Uso manual:
     python Scripts/iaea_inis_monitor.py
     python Scripts/iaea_inis_monitor.py --days-back 30
 
-Uso automático (GitHub Actions):
-    Ver .github/workflows/arxiv_monitor.yml — agregar paso INIS
+Uso automático (runner canónico):
+    python Scripts/run_source_refresh.py --source-key iaea_inis_monitor
 """
 
 from __future__ import annotations

@@ -10,7 +10,7 @@
 
 | KPI | Definición | Fórmula | Meta (verde) | Umbral amarillo | Umbral rojo | Fuente |
 |-----|------------|---------|---------------|------------------|-------------|--------|
-| K1. Éxito del pipeline semanal | Estado del workflow `arxiv_monitor.yml` | `success_runs / total_runs_semana * 100` | 100% | 1 run en fallo parcial | `conclusion != success` | GitHub Actions logs |
+| K1. Éxito del refresh canónico | Estado del workflow `actualizacion_datos.yml` | `success_runs / total_runs_periodo * 100` | 100% | 1 run en fallo parcial | `conclusion != success` | GitHub Actions logs |
 | K2. Volumen crítico de ingesta | Cobertura de fuentes críticas (arXiv + News) | `arxiv_filas + news_filas` | `>= 30` y ambos >0 | 1 fuente entre 1 y umbral | 1 fuente en 0 o SKIP | Estado operativo en log |
 | K3. Paridad de migración | Consistencia entre filas leídas y migradas | `migradas / leidas * 100` por fuente | 100% ambas fuentes | 90%-99% | <90% o error de migración | Log de `migrate_vigilancia.py` |
 | K4. Estabilidad best-effort | Comportamiento de IAEA + Convocatorias | `semanas_consecutivas_skip` por fuente | 0 semanas | 1 semana | >=2 semanas | `sla_semanal.md` historial |
@@ -96,9 +96,9 @@ Notas de cálculo S13-2026:
 
 ```bash
 # 1) Estado operativo del último run
-RUN_ID=$(gh run list --workflow arxiv_monitor.yml --limit 1 --json databaseId -q '.[0].databaseId')
+RUN_ID=$(gh run list --workflow actualizacion_datos.yml --limit 1 --json databaseId -q '.[0].databaseId')
 gh run view "$RUN_ID" --log | grep -E \
-"Estado operativo|arXiv|News.*fila|IAEA|SKIP|convocatorias|Boletín guardado|filas migradas|Leídas:|TLS"
+"source-refresh|arXiv|News|IAEA|convocatorias|Citation|quality|failed|success"
 
 # 2) Calidad mensual (o semanal si se requiere)
 python3 Database/data_quality.py --output Docs/reports/calidad_$(date +%Y-%m).csv

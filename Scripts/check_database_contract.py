@@ -10,9 +10,13 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_PATH = REPO_ROOT / "Database" / "schema.sql"
-MIGRATE_PATH = REPO_ROOT / "Database" / "migrate_to_supabase.py"
+MIGRATE_PATHS = [
+    REPO_ROOT / "Database" / "migrate_to_supabase.py",
+    REPO_ROOT / "Database" / "migrate_dian.py",
+    REPO_ROOT / "Database" / "migrate_embeddings.py",
+]
 DATALOADER_PATH = REPO_ROOT / "Dashboard" / "data_loader.py"
-ALLOWED_SCHEMA_ONLY = {"data_sources"}
+ALLOWED_SCHEMA_ONLY = {"data_sources", "data_source_runs"}
 
 
 def _extract_schema_tables(schema_text: str) -> set[str]:
@@ -40,7 +44,6 @@ def _extract_migration_tables(tree: ast.AST) -> set[str]:
                 isinstance(func, ast.Attribute)
                 and func.attr == "table"
                 and isinstance(func.value, ast.Name)
-                and func.value.id == "supabase"
             ):
                 if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
                     tables.add(node.args[0].value)
@@ -64,13 +67,14 @@ def _extract_public_table_config(path: Path) -> set[str]:
 
 def main() -> int:
     schema_text = SCHEMA_PATH.read_text(encoding="utf-8")
-    migrate_text = MIGRATE_PATH.read_text(encoding="utf-8")
-    migrate_tree = ast.parse(migrate_text, filename=str(MIGRATE_PATH))
-
     schema_tables = _extract_schema_tables(schema_text)
     rls_tables = _extract_rls_tables(schema_text)
     policy_tables = _extract_policy_tables(schema_text)
-    migration_tables = _extract_migration_tables(migrate_tree)
+    migration_tables: set[str] = set()
+    for migrate_path in MIGRATE_PATHS:
+        migrate_text = migrate_path.read_text(encoding="utf-8")
+        migrate_tree = ast.parse(migrate_text, filename=str(migrate_path))
+        migration_tables |= _extract_migration_tables(migrate_tree)
     public_loader_tables = _extract_public_table_config(DATALOADER_PATH)
     public_schema_tables = {
         table
