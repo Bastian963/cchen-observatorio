@@ -37,6 +37,7 @@ El despliegue público usa:
 ## 4. Preparación
 
 ```bash
+OBSERVATORIO_ENV_FILE=.env.public \
 OBSERVATORIO_BASIC_AUTH_PASSWORD='CAMBIAR-CLAVE' \
 bash Scripts/bootstrap_observatorio_vm.sh
 

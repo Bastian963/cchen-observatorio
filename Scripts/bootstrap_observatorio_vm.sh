@@ -2,8 +2,32 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-ENV_TEMPLATE="${ENV_TEMPLATE:-$ROOT_DIR/.env.prod.example}"
-ENV_FILE="${ENV_FILE:-$ROOT_DIR/.env.prod}"
+
+if [[ -n "${OBSERVATORIO_ENV_FILE:-}" ]]; then
+  if [[ "${OBSERVATORIO_ENV_FILE}" = /* ]]; then
+    DEFAULT_ENV_FILE="${OBSERVATORIO_ENV_FILE}"
+  else
+    DEFAULT_ENV_FILE="$ROOT_DIR/${OBSERVATORIO_ENV_FILE}"
+  fi
+else
+  DEFAULT_ENV_FILE="$ROOT_DIR/.env.prod"
+fi
+
+ENV_FILE="${ENV_FILE:-$DEFAULT_ENV_FILE}"
+
+if [[ -z "${ENV_TEMPLATE:-}" ]]; then
+  case "$(basename "$ENV_FILE")" in
+    .env.public)
+      ENV_TEMPLATE="$ROOT_DIR/.env.public.example"
+      ;;
+    .env.prod)
+      ENV_TEMPLATE="$ROOT_DIR/.env.prod.example"
+      ;;
+    *)
+      ENV_TEMPLATE="$ROOT_DIR/.env.prod.example"
+      ;;
+  esac
+fi
 
 OBSERVATORIO_ROOT="${OBSERVATORIO_ROOT:-/srv/observatorio}"
 TLS_DIR="${OBSERVATORIO_TLS_DIR:-$OBSERVATORIO_ROOT/tls}"
@@ -25,7 +49,7 @@ mkdir -p "$TLS_DIR" "$NGINX_DIR" "$LOG_DIR" "$BACKUP_DIR"
 
 if [[ ! -f "$ENV_FILE" ]]; then
   cp "$ENV_TEMPLATE" "$ENV_FILE"
-  echo "[bootstrap-vm] .env.prod creado desde la plantilla: $ENV_FILE"
+  echo "[bootstrap-vm] archivo de entorno creado desde la plantilla: $ENV_FILE"
 else
   echo "[bootstrap-vm] reutilizando archivo de entorno existente: $ENV_FILE"
 fi
