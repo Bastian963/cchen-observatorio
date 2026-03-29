@@ -4,6 +4,7 @@ Database/.env
 .env.public
 .streamlit/secrets.toml
 Dashboard/.streamlit/secrets.toml
+Dashboard/.streamlit/secrets.public.toml
 credentials.json
 token_forms.json
 Scripts/intake_form_id.txt

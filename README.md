@@ -28,11 +28,11 @@ Regla operativa del sistema:
 
 ## Plataforma Institucional 3 en 1
 
-| Superficie | Rol | Estado actual | URL / entrada |
+| Superficie | Rol | Estado actual | URL pública |
 | --- | --- | --- | --- |
-| `Observatorio Analítico` | Indicadores, vigilancia, asistente y narrativa ejecutiva | Operativo | `http://localhost:8501` |
-| `Repositorio Institucional DSpace` | Publicaciones, informes, policy briefs y documentos | Operación local reproducible | `http://localhost:4000` |
-| `Portal de Datos CKAN` | Datasets, series, recursos y metadatos descargables | Operación local reproducible | `http://localhost:5001` |
+| `Observatorio Analítico` | Indicadores, vigilancia, asistente y narrativa ejecutiva | Beta pública en preparación | `https://observatorio.cchen.cl` |
+| `Repositorio Institucional DSpace` | Publicaciones, informes, policy briefs y documentos | Publicación documental canónica | `https://repo.cchen.cl` |
+| `Portal de Datos CKAN` | Datasets, series, recursos y metadatos descargables | Publicación de datos canónica | `https://datos.cchen.cl` |
 
 Documentación base:
 
@@ -44,6 +44,10 @@ Documentación base:
 - [Docs/operations/runbook_publicacion_vm_observatorio_3en1.md](Docs/operations/runbook_publicacion_vm_observatorio_3en1.md)
 - [Docs/operations/runbook_backup_restore_observatorio_3en_1.md](Docs/operations/runbook_backup_restore_observatorio_3en_1.md)
 - [Docs/operations/acceso_interno_observatorio_3en1.md](Docs/operations/acceso_interno_observatorio_3en1.md)
+
+Para desarrollo local y operación sobre `localhost`, usa el runbook:
+
+- [Docs/operations/runbook_plataforma_3_en_1.md](Docs/operations/runbook_plataforma_3_en_1.md)
 
 ---
 

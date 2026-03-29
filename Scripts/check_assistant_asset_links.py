@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from urllib.parse import urlparse
 
 import pandas as pd
 
@@ -53,6 +54,12 @@ def _filter_published(frame: pd.DataFrame) -> pd.DataFrame:
     return published.reset_index(drop=True)
 
 
+def _is_local_url(value: str) -> bool:
+    parsed = urlparse(str(value).strip())
+    hostname = (parsed.hostname or "").strip().lower()
+    return hostname in {"localhost", "127.0.0.1"}
+
+
 def _match_assets_to_query(frame: pd.DataFrame, query: str, limit: int = 4) -> pd.DataFrame:
     terms = [term for term in re.findall(r"\w+", str(query).lower()) if len(term) >= 3]
     if not terms:
@@ -95,6 +102,7 @@ def main() -> int:
     catalog = _load_catalog()
     published = _filter_published(catalog)
     hits = 0
+    local_hits = 0
 
     print(f"[assistant-assets] catalogo: {CATALOG_PATH}")
     print(f"[assistant-assets] activos publicados con URL: {len(published)}")
@@ -108,11 +116,17 @@ def main() -> int:
 
         hits += 1
         for _, row in related.iterrows():
+            if _is_local_url(row["public_url"]):
+                local_hits += 1
             print(f"  - {row['title']} | {row['surface']} | {row['public_url']}")
 
     print(f"\n[assistant-assets] queries con links: {hits}/{len(QUERIES)}")
     if hits < 4:
         print("[assistant-assets] ERROR: menos de 4 consultas devuelven URLs institucionales.")
+        return 1
+
+    if local_hits > 0:
+        print(f"[assistant-assets] ERROR: se detectaron {local_hits} links locales en resultados publicados.")
         return 1
 
     print("[assistant-assets] validacion ok")

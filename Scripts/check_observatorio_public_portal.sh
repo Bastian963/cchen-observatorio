@@ -45,7 +45,8 @@ check_url() {
   echo "[public-portal] OK: ${label}"
 }
 
-check_url "Dashboard publico" "${OBSERVATORIO_DASHBOARD_URL%/}/_stcore/health" "ok"
+check_url "Dashboard publico" "${OBSERVATORIO_DASHBOARD_URL}" "Portal público|Portal publico"
+check_url "Dashboard publico health" "${OBSERVATORIO_DASHBOARD_URL%/}/_stcore/health" "ok"
 check_url "DSpace UI" "${OBSERVATORIO_DSPACE_UI_URL}"
 check_url "DSpace REST" "${OBSERVATORIO_DSPACE_API_URL}" "_links"
 check_url "CKAN UI" "${OBSERVATORIO_CKAN_URL}"

@@ -48,6 +48,8 @@ services:
       OBSERVATORIO_DSPACE_API_URL: "${OBSERVATORIO_DSPACE_API_URL:-https://repo.cchen.cl/server/api}"
       OBSERVATORIO_CKAN_URL: "${OBSERVATORIO_CKAN_URL:-https://datos.cchen.cl}"
       OBSERVATORIO_CKAN_API_URL: "${OBSERVATORIO_CKAN_API_URL:-https://datos.cchen.cl/api/3/action/status_show}"
+    volumes:
+      - ${OBSERVATORIO_PUBLIC_SECRETS_FILE:-./Dashboard/.streamlit/secrets.public.toml}:/app/Dashboard/.streamlit/secrets.toml:ro
     ports: !reset []
     expose:
       - "8501"
@@ -70,7 +72,7 @@ services:
     volumes:
       - ./Data:/app/Data:ro
       - ./Database:/app/Database:ro
-      - ./Dashboard/.streamlit:/app/Dashboard/.streamlit:ro
+      - ${OBSERVATORIO_INTERNAL_SECRETS_FILE:-./Dashboard/.streamlit/secrets.toml}:/app/Dashboard/.streamlit/secrets.toml:ro
     depends_on:
       dspace-frontend:
         condition: service_healthy

@@ -13,9 +13,11 @@ required_files=(
   "$ROOT_DIR/docker-compose.observatorio.public.yml"
   "$ROOT_DIR/deploy/nginx/Dockerfile"
   "$ROOT_DIR/deploy/nginx/templates/observatorio-public-portal.conf.template"
+  "$ROOT_DIR/Dashboard/.streamlit/secrets.public.toml.example"
   "$ROOT_DIR/Scripts/check_observatorio_public_portal.sh"
   "$ROOT_DIR/Scripts/wait_and_check_observatorio_public_portal.sh"
   "$ROOT_DIR/Scripts/deploy_observatorio_public.sh"
+  "$ROOT_DIR/Scripts/check_public_beta_readiness.py"
 )
 
 for path in "${required_files[@]}"; do
@@ -33,6 +35,10 @@ bash -n \
   "$ROOT_DIR/Scripts/check_observatorio_public_portal.sh" \
   "$ROOT_DIR/Scripts/wait_and_check_observatorio_public_portal.sh" \
   "$ROOT_DIR/Scripts/deploy_observatorio_public.sh"
+
+python3 "$ROOT_DIR/Scripts/validate_asset_catalog.py"
+python3 "$ROOT_DIR/Scripts/check_assistant_asset_links.py"
+python3 "$ROOT_DIR/Scripts/check_public_beta_readiness.py"
 
 docker compose \
   --env-file "$ENV_FILE" \
@@ -53,6 +59,8 @@ fi
 
 rg -q 'OBSERVATORIO_APP_MODE: public' "$TMP_CONFIG"
 rg -q 'OBSERVATORIO_APP_MODE: internal' "$TMP_CONFIG"
+rg -Fq 'OBSERVATORIO_PUBLIC_SECRETS_FILE' "$ROOT_DIR/.env.public.example"
+rg -Fq 'secrets.public.toml' "$TMP_CONFIG"
 rg -Fq 'server_name ${OBSERVATORIO_PUBLIC_DASHBOARD_HOST};' "$ROOT_DIR/deploy/nginx/templates/observatorio-public-portal.conf.template"
 
 echo "[public-overlay] OK: overlay publico renderiza solo 80/443 y separa dashboard publico e interno"

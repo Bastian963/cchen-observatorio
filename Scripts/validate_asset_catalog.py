@@ -39,6 +39,12 @@ def _is_http_url(value: str) -> bool:
     return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
 
 
+def _is_local_url(value: str) -> bool:
+    parsed = urlparse(str(value).strip())
+    hostname = (parsed.hostname or "").strip().lower()
+    return hostname in {"localhost", "127.0.0.1"}
+
+
 def _normalize_text(frame: pd.DataFrame, column: str) -> pd.Series:
     return frame[column].fillna("").astype(str).str.strip()
 
@@ -87,6 +93,8 @@ def validate_catalog(path: Path) -> tuple[pd.DataFrame, list[str]]:
     for idx, url in enumerate(public_urls):
         if url and not _is_http_url(url):
             errors.append(f"public_url invalida en fila {idx + 2}: {url}")
+        if statuses.iloc[idx] == "published" and url and _is_local_url(url):
+            errors.append(f"public_url local no permitida en fila {idx + 2}: {url}")
 
     local_paths = _normalize_text(frame, "local_path")
     for idx, (local_path, status, public_url) in enumerate(zip(local_paths, statuses, public_urls)):
@@ -104,6 +112,8 @@ def validate_catalog(path: Path) -> tuple[pd.DataFrame, list[str]]:
     for idx, url in enumerate(crosslinks):
         if url and not _is_http_url(url):
             errors.append(f"vinculo_cruzado invalido en fila {idx + 2}: {url}")
+        if statuses.iloc[idx] == "published" and url and _is_local_url(url):
+            errors.append(f"vinculo_cruzado local no permitido en fila {idx + 2}: {url}")
 
     published_without_url = frame.index[(statuses == "published") & (public_urls == "")].tolist()
     if published_without_url:

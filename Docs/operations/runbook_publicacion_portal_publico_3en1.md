@@ -30,6 +30,7 @@ El despliegue público usa:
 ## 3. Archivos no versionados en la VM
 
 - `.env.public`
+- `Dashboard/.streamlit/secrets.public.toml`
 - `Dashboard/.streamlit/secrets.toml`
 - `/srv/observatorio/nginx/.htpasswd`
 - certificados TLS en `/srv/observatorio/tls`
@@ -50,7 +51,14 @@ Completar:
 - `OBSERVATORIO_INTERNAL_DASHBOARD_HOST`
 - `OBSERVATORIO_DSPACE_HOST`
 - `OBSERVATORIO_CKAN_HOST`
+- `OBSERVATORIO_PUBLIC_SECRETS_FILE`
+- `OBSERVATORIO_INTERNAL_SECRETS_FILE`
 - rutas TLS y logs
+
+Crear y mantener separados:
+
+- `Dashboard/.streamlit/secrets.public.toml` para el dashboard público, sin `service_role_key`
+- `Dashboard/.streamlit/secrets.toml` para la superficie interna, con `internal_auth` y credenciales ampliadas si aplican
 
 ## 5. Despliegue
 
