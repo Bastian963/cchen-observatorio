@@ -73,6 +73,17 @@ Documentos recomendados para esta separación:
 - [Docs/matriz_visibilidad_publico_interno_3en1.md](Docs/matriz_visibilidad_publico_interno_3en1.md)
 - [Docs/operations/runbook_publicacion_portal_publico_3en1.md](Docs/operations/runbook_publicacion_portal_publico_3en1.md)
 
+Baseline operativo actual:
+
+- rama fuente de verdad: `feat/observatorio-3en1-public-portal`
+- gate de repo previo a la VM pública:
+
+```bash
+bash Scripts/check_public_beta_release.sh
+```
+
+- `docker-compose.yml` legado queda fuera del baseline institucional y no debe mezclarse con esta ruta.
+
 ## Publicación interna por URL
 
 La vía canónica para compartir el Observatorio 3 en 1 dentro de CCHEN es una VM Linux con Docker Compose, `Nginx` reverse proxy, TLS institucional y subdominios separados:
@@ -379,6 +390,20 @@ Comportamiento operativo del workflow `arxiv_monitor.yml`:
 
 ## Setup & Deployment
 
+### Gate de beta pública del portal
+
+Antes de preparar una VM pública o congelar un SHA de publicación, deja el repo en verde con:
+
+```bash
+bash Scripts/check_public_beta_release.sh
+```
+
+Ese gate valida:
+
+- smoke local del dashboard,
+- contrato del overlay público,
+- modo público real del dashboard sin muralla beta ni secciones internas.
+
 ### Instalación local
 
 ```bash
@@ -596,6 +621,23 @@ can_view_sensitive = true
 ```
 
 7. Levantar localmente, desplegar el dashboard en la VM 3 en 1 o usar Streamlit Cloud sólo como contingencia.
+
+### Preparación de beta pública en VM
+
+Para la ruta pública real del portal 3 en 1 usa:
+
+- `.env.public.example`
+- `Dashboard/.streamlit/secrets.public.toml.example`
+- `Docs/operations/runbook_publicacion_portal_publico_3en1.md`
+- `Scripts/deploy_observatorio_public.sh`
+- `Scripts/wait_and_check_observatorio_public_portal.sh`
+
+La política objetivo de acceso es:
+
+- `https://observatorio.cchen.cl` público
+- `https://repo.cchen.cl` público
+- `https://datos.cchen.cl` público
+- `https://obs-int.cchen.cl` protegido con `Basic Auth` + `internal_auth`
 
 ### Cómo verificar desde la app
 

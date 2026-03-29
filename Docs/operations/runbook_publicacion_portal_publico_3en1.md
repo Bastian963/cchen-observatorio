@@ -16,6 +16,16 @@ El despliegue público usa:
 - `.env.public.example`
 - `deploy/nginx/templates/observatorio-public-portal.conf.template`
 
+La rama fuente de verdad para este bloque es:
+
+- `feat/observatorio-3en1-public-portal`
+
+Antes de tocar una VM pública, el repo debe quedar en verde con:
+
+```bash
+bash Scripts/check_public_beta_release.sh
+```
+
 ## 2. Supuestos de infraestructura
 
 - VM pública con Docker Compose

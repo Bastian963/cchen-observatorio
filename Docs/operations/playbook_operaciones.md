@@ -4,6 +4,7 @@
 **Fecha:** 2026-03-28  
 **Propietario:** Bastián Ayala I.  
 **Repositorio:** https://github.com/Bastian963/cchen-observatorio  
+**Rama baseline público actual:** `feat/observatorio-3en1-public-portal`  
 **Portal público dashboard:** https://observatorio.cchen.cl  
 **Dashboard interno:** https://obs-int.cchen.cl  
 **DSpace público:** https://repo.cchen.cl  
@@ -19,6 +20,12 @@
 4. [Playbooks por escenario](#4-playbooks-por-escenario)
 5. [Mantenimiento preventivo](#5-mantenimiento-preventivo)
 6. [Comandos de diagnóstico rápido](#6-comandos-de-diagnóstico-rápido)
+
+Gate recomendado antes de preparar una VM pública:
+
+```bash
+bash Scripts/check_public_beta_release.sh
+```
 
 ---
 

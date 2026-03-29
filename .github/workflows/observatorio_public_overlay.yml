@@ -16,6 +16,7 @@ on:
       - "dspace-frontend/**"
       - "Data/Gobernanza/catalogo_activos_3_en_1.csv"
       - "Scripts/check_observatorio_public_overlay.sh"
+      - "Scripts/check_public_beta_release.sh"
       - "Scripts/check_observatorio_public_portal.sh"
       - "Scripts/wait_and_check_observatorio_public_portal.sh"
       - "Scripts/deploy_observatorio_public.sh"
@@ -40,6 +41,7 @@ on:
       - "dspace-frontend/**"
       - "Data/Gobernanza/catalogo_activos_3_en_1.csv"
       - "Scripts/check_observatorio_public_overlay.sh"
+      - "Scripts/check_public_beta_release.sh"
       - "Scripts/check_observatorio_public_portal.sh"
       - "Scripts/wait_and_check_observatorio_public_portal.sh"
       - "Scripts/deploy_observatorio_public.sh"
@@ -70,11 +72,8 @@ jobs:
       - name: Instalar dependencias del dashboard
         run: pip install -r requirements.txt
 
-      - name: Validar scripts y compose publico
-        run: bash Scripts/check_observatorio_public_overlay.sh
-
-      - name: Smoke del dashboard en modo publico
-        run: python Scripts/check_dashboard_public_mode.py
+      - name: Gate de beta publica del portal
+        run: bash Scripts/check_public_beta_release.sh
 
       - name: Construir imagen del frontend DSpace parametrizable
         run: docker build -t dspace-frontend-ci -f dspace-frontend/Dockerfile dspace-frontend
