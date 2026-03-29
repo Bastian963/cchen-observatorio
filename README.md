@@ -6,7 +6,7 @@
 
 **Comisión Chilena de Energía Nuclear — Proyecto CORFO CCHEN 360**
 **Responsable:** Bastián Ayala Inostroza · Analista de Datos I+D
-**Inicio:** 2024 · **Estado:** Beta interna v0.2 (TRL 5)
+**Inicio:** 2024 · **Estado:** Plataforma 3 en 1 en consolidación (interno + portal público por fases)
 
 ---
 
@@ -47,6 +47,28 @@ Documentación base:
 
 ---
 
+## Superficies de publicación
+
+La estrategia de despliegue queda separada en dos superficies:
+
+- **Portal público 3 en 1**
+  - `https://observatorio.cchen.cl` → dashboard público
+  - `https://repo.cchen.cl` → DSpace público
+  - `https://datos.cchen.cl` → CKAN público
+- **Superficie interna**
+  - `https://obs-int.cchen.cl` → dashboard interno completo
+
+Regla operativa:
+
+- el portal público sólo muestra vistas y activos publicables;
+- la superficie interna mantiene `internal_auth`, diagnóstico operativo y capas sensibles;
+- `DSpace` y `CKAN` siguen siendo las fuentes de verdad públicas.
+
+Documentos recomendados para esta separación:
+
+- [Docs/matriz_visibilidad_publico_interno_3en1.md](Docs/matriz_visibilidad_publico_interno_3en1.md)
+- [Docs/operations/runbook_publicacion_portal_publico_3en1.md](Docs/operations/runbook_publicacion_portal_publico_3en1.md)
+
 ## Publicación interna por URL
 
 La vía canónica para compartir el Observatorio 3 en 1 dentro de CCHEN es una VM Linux con Docker Compose, `Nginx` reverse proxy, TLS institucional y subdominios separados:
@@ -69,6 +91,7 @@ Piezas versionadas para este despliegue:
 Runbooks asociados:
 
 - `Docs/operations/runbook_publicacion_vm_observatorio_3en1.md`
+- `Docs/operations/runbook_publicacion_portal_publico_3en1.md`
 - `Docs/operations/runbook_backup_restore_observatorio_3en_1.md`
 - `Docs/operations/acceso_interno_observatorio_3en1.md`
 

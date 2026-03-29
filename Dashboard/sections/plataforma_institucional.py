@@ -238,6 +238,8 @@ def render(ctx: dict) -> None:
     openaire = ctx.get("openaire", pd.DataFrame())
     patents = ctx.get("patents", pd.DataFrame())
     asset_catalog = asset_catalog_frame(ctx)
+    app_mode = str(ctx.get("app_mode", "internal")).lower()
+    is_public_app = app_mode == "public"
 
     links = _platform_links()
     service_rows = _service_rows(links)
@@ -262,10 +264,16 @@ def render(ctx: dict) -> None:
         a operar como una plataforma institucional de conocimiento con tres superficies coordinadas.
         """
     )
-    st.info(
-        "Regla operativa: DSpace conserva publicaciones y documentos; CKAN conserva datos publicables; "
-        "el dashboard consume, relaciona y explica."
-    )
+    if is_public_app:
+        st.info(
+            "Portal público del observatorio: aquí se exponen sólo indicadores, publicaciones y datos "
+            "que ya cuentan con visibilidad abierta o mixta."
+        )
+    else:
+        st.info(
+            "Regla operativa: DSpace conserva publicaciones y documentos; CKAN conserva datos publicables; "
+            "el dashboard consume, relaciona y explica."
+        )
 
     kpi_row(
         kpi("Publicaciones candidatas a repositorio", f"{_safe_len(pub):,}", "base analítica utilizable por DSpace"),
@@ -282,7 +290,7 @@ def render(ctx: dict) -> None:
     left, right = st.columns([1.1, 1], gap="large")
 
     with left:
-        sec("Estado operativo del stack")
+        sec("Estado de servicios publicados" if is_public_app else "Estado operativo del stack")
         st.dataframe(_service_table(service_rows), width="stretch", hide_index=True)
         st.caption(
             "Las URLs se configuran con variables `OBSERVATORIO_*` o con el bloque `[platform]` en "
@@ -290,8 +298,20 @@ def render(ctx: dict) -> None:
         )
 
     with right:
-        sec("Fuente de verdad por superficie")
-        st.dataframe(_surface_matrix(), width="stretch", hide_index=True)
+        if is_public_app:
+            sec("Acerca del portal público")
+            st.markdown(
+                """
+                - **Explorar indicadores y análisis** desde el dashboard público.
+                - **Consultar publicaciones** en `DSpace` con URL institucional estable.
+                - **Descargar datos reutilizables** desde `CKAN` con su metadata propia.
+                - **Metodología y gobernanza**: revisar `ARCHITECTURE.md`, `Docs/matriz_publicacion_3_en_1.md` y los vínculos cruzados del catálogo.
+                - **Uso de datos**: cada activo mantiene su fuente de verdad; el dashboard no reemplaza al repositorio ni al portal.
+                """
+            )
+        else:
+            sec("Fuente de verdad por superficie")
+            st.dataframe(_surface_matrix(), width="stretch", hide_index=True)
 
     st.divider()
     left, right = st.columns([1.15, 1], gap="large")
@@ -302,11 +322,22 @@ def render(ctx: dict) -> None:
             "Aún no hay activos publicados con URL pública para esta portada.",
         )
     with right:
-        render_asset_links_table(
-            editorial_queue,
-            "Cola editorial inmediata",
-            "No hay activos marcados como listos para publicar en esta ola.",
-        )
+        if is_public_app:
+            sec("Metodología, licencias y contacto")
+            st.markdown(
+                """
+                1. **Metodología**: cada vista pública debe enlazar al activo documental o dataset que le da soporte.
+                2. **Frecuencia de actualización**: depende de la capa fuente; DSpace y CKAN mantienen su metadata propia.
+                3. **Licencias y uso**: los datasets deben reutilizarse según la licencia publicada en `CKAN`.
+                4. **Contacto**: las solicitudes editoriales o correcciones deben canalizarse por el equipo del Observatorio CCHEN.
+                """
+            )
+        else:
+            render_asset_links_table(
+                editorial_queue,
+                "Cola editorial inmediata",
+                "No hay activos marcados como listos para publicar en esta ola.",
+            )
 
     st.divider()
     left, right = st.columns([1, 1], gap="large")

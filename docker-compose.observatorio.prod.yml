@@ -38,6 +38,7 @@ services:
 
   dashboard:
     environment:
+      OBSERVATORIO_APP_MODE: "internal"
       OBSERVATORIO_DASHBOARD_URL: "${OBSERVATORIO_DASHBOARD_URL:-https://obs-int.cchen.cl}"
       OBSERVATORIO_DSPACE_UI_URL: "${OBSERVATORIO_DSPACE_UI_URL:-https://repo-int.cchen.cl}"
       OBSERVATORIO_DSPACE_API_URL: "${OBSERVATORIO_DSPACE_API_URL:-https://repo-int.cchen.cl/server/api}"

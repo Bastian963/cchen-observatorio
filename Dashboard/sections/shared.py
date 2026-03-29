@@ -166,6 +166,35 @@ ASSET_CATALOG_COLUMNS = [
     "publication_status",
 ]
 
+OBSERVATORIO_APP_MODES = {"internal", "public"}
+SECTION_VISIBILITY = {
+    "Plataforma Institucional": "publica",
+    "Panel de Indicadores": "interna",
+    "Producción Científica": "publica",
+    "Redes y Colaboración": "publica",
+    "Vigilancia Tecnológica": "publica",
+    "Financiamiento I+D": "publica",
+    "Convocatorias y Matching": "publica",
+    "Transferencia y Portafolio": "publica",
+    "Modelo y Gobernanza": "interna",
+    "Formación de Capacidades": "interna",
+    "Asistente I+D": "mixta",
+    "Grafo de Citas": "publica",
+}
+DEFAULT_PUBLIC_SECTIONS = tuple(
+    section for section, visibility in SECTION_VISIBILITY.items()
+    if visibility in {"publica", "mixta"}
+)
+DEFAULT_INTERNAL_SECTIONS = tuple(SECTION_VISIBILITY.keys())
+
+_PLATFORM_URL_KEYS = {
+    "dashboard_url": "http://localhost:8501",
+    "dspace_ui_url": "http://localhost:4000",
+    "dspace_api_url": "http://localhost:8080/server/api",
+    "ckan_url": "http://localhost:5001",
+    "ckan_api_url": "http://localhost:5001/api/3/action/status_show",
+}
+
 
 def _split_catalog_values(value) -> list[str]:
     if pd.isna(value):
@@ -175,6 +204,32 @@ def _split_catalog_values(value) -> list[str]:
         return []
     parts = re.split(r"[;,]\s*", text)
     return [part.strip() for part in parts if part and part.strip()]
+
+
+def _normalize_url_with_platform(value: str, platform_links: dict[str, str]) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+
+    replacements = {
+        "http://localhost:8501": platform_links.get("dashboard_url", ""),
+        "https://localhost:8501": platform_links.get("dashboard_url", ""),
+        "http://localhost:4000": platform_links.get("dspace_ui_url", ""),
+        "https://localhost:4000": platform_links.get("dspace_ui_url", ""),
+        "http://localhost:8080/server/api": platform_links.get("dspace_api_url", ""),
+        "https://localhost:8080/server/api": platform_links.get("dspace_api_url", ""),
+        "http://localhost:8080/server": platform_links.get("dspace_api_url", "").removesuffix("/api"),
+        "https://localhost:8080/server": platform_links.get("dspace_api_url", "").removesuffix("/api"),
+        "http://localhost:5001/api/3/action/status_show": platform_links.get("ckan_api_url", ""),
+        "https://localhost:5001/api/3/action/status_show": platform_links.get("ckan_api_url", ""),
+        "http://localhost:5001": platform_links.get("ckan_url", ""),
+        "https://localhost:5001": platform_links.get("ckan_url", ""),
+    }
+
+    for source, target in replacements.items():
+        if source and target and text.startswith(source):
+            return text.replace(source, target, 1)
+    return text
 
 
 def asset_catalog_frame(ctx: dict) -> pd.DataFrame:
@@ -193,6 +248,9 @@ def asset_catalog_frame(ctx: dict) -> pd.DataFrame:
     frame["surface"] = frame["surface"].str.lower()
     frame["publication_status"] = frame["publication_status"].str.lower()
     frame["anio"] = pd.to_numeric(frame["anio"], errors="coerce").astype("Int64")
+    platform_links = _platform_links()
+    for col in ("public_url", "vinculo_cruzado"):
+        frame[col] = frame[col].apply(lambda value: _normalize_url_with_platform(value, platform_links))
     return frame[ASSET_CATALOG_COLUMNS].copy()
 
 
@@ -689,6 +747,85 @@ def _normalize_username(value: str) -> str:
     return str(value or "").strip().lower()
 
 
+def _coerce_bool(value, default: bool = False) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().lower()
+    if text in {"1", "true", "yes", "si", "sí", "on"}:
+        return True
+    if text in {"0", "false", "no", "off"}:
+        return False
+    return default
+
+
+def _platform_links() -> dict[str, str]:
+    secrets = _get_secret_block("platform")
+    resolved: dict[str, str] = {}
+    for key, default in _PLATFORM_URL_KEYS.items():
+        env_key = f"OBSERVATORIO_{key.upper()}"
+        resolved[key] = str(os.getenv(env_key) or secrets.get(key) or default).strip()
+    return resolved
+
+
+def _observatorio_config() -> dict:
+    block = _get_secret_block("observatorio")
+    app_mode = str(os.getenv("OBSERVATORIO_APP_MODE") or block.get("app_mode") or "internal").strip().lower()
+    if app_mode not in OBSERVATORIO_APP_MODES:
+        app_mode = "internal"
+
+    public_assistant_enabled = _coerce_bool(
+        os.getenv("OBSERVATORIO_PUBLIC_ASSISTANT_ENABLED"),
+        default=_coerce_bool(block.get("public_assistant_enabled", True), default=True),
+    )
+
+    if app_mode == "public":
+        visible_sections = list(DEFAULT_PUBLIC_SECTIONS)
+        portal_badge = "Portal público"
+        portal_title = "Observatorio Tecnológico CCHEN"
+        portal_message = (
+            "Versión pública del observatorio 3 en 1. Expone sólo vistas, datasets y activos "
+            "institucionales publicables."
+        )
+    else:
+        visible_sections = list(DEFAULT_INTERNAL_SECTIONS)
+        portal_badge = "Beta interna"
+        portal_title = "Observatorio Tecnológico CCHEN"
+        portal_message = (
+            "Acceso privado para revisión funcional, validación de datos y despliegue progresivo del observatorio."
+        )
+
+    if app_mode == "public" and not public_assistant_enabled:
+        visible_sections = [section for section in visible_sections if section != "Asistente I+D"]
+
+    return {
+        "app_mode": app_mode,
+        "public_assistant_enabled": public_assistant_enabled,
+        "visible_sections": visible_sections,
+        "portal_badge": portal_badge,
+        "portal_title": portal_title,
+        "portal_message": portal_message,
+    }
+
+
+def _observatorio_app_mode() -> str:
+    return str(_observatorio_config().get("app_mode", "internal"))
+
+
+def _is_public_app() -> bool:
+    return _observatorio_app_mode() == "public"
+
+
+def _section_visibility(section_name: str) -> str:
+    return str(SECTION_VISIBILITY.get(str(section_name), "interna"))
+
+
+def _available_sections(app_mode: str | None = None) -> list[str]:
+    mode = str(app_mode or _observatorio_app_mode()).strip().lower()
+    return list(DEFAULT_PUBLIC_SECTIONS if mode == "public" else DEFAULT_INTERNAL_SECTIONS)
+
+
 def _internal_auth_config() -> dict:
     block = _get_secret_block("internal_auth")
     raw_users = block.get("users", [])
@@ -779,6 +916,29 @@ def _auth_enabled() -> bool:
 
 
 def _access_context() -> dict:
+    observatorio_cfg = _observatorio_config()
+    app_mode = observatorio_cfg["app_mode"]
+    if app_mode == "public":
+        return {
+            "app_mode": "public",
+            "auth_enabled": False,
+            "auth_supported": _streamlit_auth_supported(),
+            "auth_mode": "public",
+            "is_logged_in": False,
+            "email": "",
+            "name": "visitante",
+            "username": "",
+            "role": "public",
+            "allowlist": [],
+            "is_allowlisted": False,
+            "can_view_sensitive": False,
+            "beta_badge": observatorio_cfg["portal_badge"],
+            "beta_title": observatorio_cfg["portal_title"],
+            "beta_message": observatorio_cfg["portal_message"],
+            "visible_sections": observatorio_cfg["visible_sections"],
+            "public_assistant_enabled": observatorio_cfg["public_assistant_enabled"],
+        }
+
     internal_cfg = _internal_auth_config()
     if internal_cfg.get("enabled"):
         username = _normalize_username(st.session_state.get("observatorio_internal_auth_username", ""))
@@ -788,6 +948,7 @@ def _access_context() -> dict:
         email = _normalize_username(user_cfg.get("email", "")) if user_cfg else ""
         can_view_sensitive = bool(user_cfg.get("can_view_sensitive", False)) if user_cfg else False
         return {
+            "app_mode": "internal",
             "auth_enabled": True,
             "auth_supported": True,
             "auth_mode": "internal",
@@ -802,6 +963,8 @@ def _access_context() -> dict:
             "beta_badge": internal_cfg.get("beta_badge", "Beta interna"),
             "beta_title": internal_cfg.get("beta_title", "Observatorio Tecnológico CCHEN"),
             "beta_message": internal_cfg.get("beta_message", ""),
+            "visible_sections": observatorio_cfg["visible_sections"],
+            "public_assistant_enabled": observatorio_cfg["public_assistant_enabled"],
         }
 
     user = getattr(st, "user", None) if _streamlit_auth_supported() else None
@@ -820,6 +983,7 @@ def _access_context() -> dict:
     can_view_sensitive = (is_logged_in and is_allowlisted) if auth_enabled else True
 
     return {
+        "app_mode": "internal",
         "auth_enabled": auth_enabled,
         "auth_supported": _streamlit_auth_supported(),
         "auth_mode": "oidc" if auth_enabled else "open",
@@ -834,6 +998,8 @@ def _access_context() -> dict:
         "beta_badge": "Beta interna",
         "beta_title": "Observatorio Tecnológico CCHEN",
         "beta_message": "",
+        "visible_sections": _observatorio_config()["visible_sections"],
+        "public_assistant_enabled": _observatorio_config()["public_assistant_enabled"],
     }
 
 

@@ -1,6 +1,7 @@
 # Credenciales — NUNCA subir al repositorio
 Database/.env
 .env.prod
+.env.public
 .streamlit/secrets.toml
 Dashboard/.streamlit/secrets.toml
 credentials.json

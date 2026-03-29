@@ -4,9 +4,10 @@
 **Fecha:** 2026-03-28  
 **Propietario:** Bastián Ayala I.  
 **Repositorio:** https://github.com/Bastian963/cchen-observatorio  
+**Portal público dashboard:** https://observatorio.cchen.cl  
 **Dashboard interno:** https://obs-int.cchen.cl  
-**DSpace interno:** https://repo-int.cchen.cl  
-**CKAN interno:** https://datos-int.cchen.cl  
+**DSpace público:** https://repo.cchen.cl  
+**CKAN público:** https://datos.cchen.cl  
 
 ---
 
@@ -39,10 +40,10 @@
 | Servicio | Criticidad | SLA externo | Verificación | Fallback |
 |----------|-----------|-------------|--------------|---------|
 | **Supabase (PostgreSQL 15)** | 🔴 Crítica | 99.9% uptime (Supabase SLA) | `python3 Scripts/check_supabase_runtime.py` | CSV local vía `data_loader.py` |
-| **Reverse proxy 3 en 1** | 🔴 Crítica | Infra interna / VM | `bash Scripts/check_observatorio_public_url.sh` | Sandbox local con `prepare_local_public_demo.sh` |
-| **Dashboard Streamlit** | 🔴 Crítica | Servicio interno detrás del proxy | `bash Scripts/check_observatorio_stack.sh` | Streamlit Cloud sólo como contingencia temporal |
-| **DSpace UI + REST** | 🔴 Crítica | Servicio interno detrás del proxy | `bash Scripts/check_observatorio_stack.sh` | N/A |
-| **CKAN UI + Action API** | 🔴 Crítica | Servicio interno detrás del proxy | `bash Scripts/check_observatorio_stack.sh` | N/A |
+| **Reverse proxy 3 en 1** | 🔴 Crítica | VM pública / interna | `bash Scripts/check_observatorio_public_portal.sh` | Sandbox local o staging |
+| **Dashboard Streamlit** | 🔴 Crítica | Público + interno | `bash Scripts/check_observatorio_stack.sh` / `bash Scripts/check_observatorio_public_portal.sh` | Streamlit Cloud sólo como contingencia temporal |
+| **DSpace UI + REST** | 🔴 Crítica | Público | `bash Scripts/check_observatorio_public_portal.sh` | N/A |
+| **CKAN UI + Action API** | 🔴 Crítica | Público | `bash Scripts/check_observatorio_public_portal.sh` | N/A |
 | **GitHub Actions** | 🟡 Importante | 99.9% uptime (GitHub SLA) | `gh run list --workflow arxiv_monitor.yml` | Trigger manual |
 | **Groq LLM API** | 🟡 Importante | Best-effort (free tier) | Log del dashboard en runtime | Asistente responde con mensaje de error controlado |
 

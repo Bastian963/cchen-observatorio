@@ -1,5 +1,5 @@
 """
-CCHEN Observatorio Tecnológico — Beta interna v0.2
+CCHEN Observatorio Tecnológico — Plataforma 3 en 1
 Vigilancia e Inteligencia I+D+i+Tt · Comisión Chilena de Energía Nuclear
 """
 import json
@@ -19,6 +19,7 @@ import plotly.graph_objects as go
 import math
 import data_loader as _data_loader
 from sections.shared import (
+    _available_sections,
     _get_secret_block,
     _streamlit_auth_supported,
     _auth_enabled,
@@ -26,6 +27,8 @@ from sections.shared import (
     _internal_auth_config,
     _internal_auth_login,
     _internal_auth_logout,
+    _observatorio_app_mode,
+    _section_visibility,
 )
 
 
@@ -529,6 +532,9 @@ _LOGO_PATH = Path(__file__).parent / "assets" / "logo_cchen360.png"
 
 
 def _render_beta_access_gate() -> None:
+    if _observatorio_app_mode() != "internal":
+        return
+
     auth_cfg = _internal_auth_config()
     if not auth_cfg.get("enabled"):
         return
@@ -600,6 +606,7 @@ _render_beta_access_gate()
 
 
 _APP_ACCESS = _access_context()
+_APP_MODE = _APP_ACCESS.get("app_mode", "internal")
 _CAPITAL_HUMANO_COLUMNS = getattr(_data_loader, "CAPITAL_HUMANO_COLUMNS", [
     "id", "anio_hoja", "nombre", "inicio", "termino", "duracion_dias", "tutor",
     "centro_norm", "tipo_norm", "universidad", "carrera", "monto_contrato_num",
@@ -933,6 +940,16 @@ _DATASET_METADATA = {
 _ACTIVE_SECTION_CTX = None
 
 
+def _dataset_keys_for_section(section_name: str, *, app_mode: str, can_view_sensitive: bool) -> tuple[str, ...]:
+    dataset_keys = list(_SECTION_DATASETS.get(section_name, ()))
+    if app_mode == "public" or not can_view_sensitive:
+        dataset_keys = [
+            key for key in dataset_keys
+            if not _DATASET_METADATA.get(key, {}).get("sensitive", False)
+        ]
+    return tuple(dataset_keys)
+
+
 @st.cache_data(show_spinner=False, ttl=900, max_entries=256)
 def _load_dataset_cached(dataset_key: str, can_view_sensitive: bool):
     loader = _DATASET_LOADERS.get(dataset_key)
@@ -942,8 +959,12 @@ def _load_dataset_cached(dataset_key: str, can_view_sensitive: bool):
 
 
 @st.cache_data(show_spinner=False, ttl=900, max_entries=64)
-def _load_section_datasets_cached(section_name: str, can_view_sensitive: bool) -> dict:
-    dataset_keys = _SECTION_DATASETS.get(section_name, ())
+def _load_section_datasets_cached(section_name: str, can_view_sensitive: bool, app_mode: str) -> dict:
+    dataset_keys = _dataset_keys_for_section(
+        section_name,
+        app_mode=app_mode,
+        can_view_sensitive=can_view_sensitive,
+    )
     return {
         key: _load_dataset_cached(key, can_view_sensitive)
         for key in dataset_keys
@@ -955,9 +976,13 @@ def _current_section_name() -> str:
 
 
 def _build_section_ctx(section_name: str, can_view_sensitive: bool) -> dict:
-    ctx = dict(_load_section_datasets_cached(section_name, can_view_sensitive))
+    app_mode = _access_context().get("app_mode", "internal")
+    ctx = dict(_load_section_datasets_cached(section_name, can_view_sensitive, app_mode))
     ctx["render_operational_strip"] = render_operational_strip
     ctx["open_dataset_inspector"] = open_dataset_inspector
+    ctx["app_mode"] = app_mode
+    ctx["is_public_app"] = app_mode == "public"
+    ctx["section_visibility"] = _section_visibility(section_name)
     return ctx
 
 
@@ -2054,6 +2079,7 @@ def semaforo_badge(valor):
 
 with st.sidebar:
     access = _access_context()
+    available_sections = access.get("visible_sections") or _available_sections(access.get("app_mode"))
     if _LOGO_PATH.exists():
         st.image(str(_LOGO_PATH), width=160)
     else:
@@ -2067,20 +2093,11 @@ with st.sidebar:
             unsafe_allow_html=True
         )
     st.markdown("---")
-    seccion = st.radio("Sección del observatorio", [
-        "Plataforma Institucional",
-        "Panel de Indicadores",
-        "Producción Científica",
-        "Redes y Colaboración",
-        "Vigilancia Tecnológica",
-        "Financiamiento I+D",
-        "Convocatorias y Matching",
-        "Transferencia y Portafolio",
-        "Modelo y Gobernanza",
-        "Formación de Capacidades",
-        "Asistente I+D",
-        "Grafo de Citas",
-    ], label_visibility="collapsed")
+    seccion = st.radio(
+        "Sección del observatorio",
+        available_sections,
+        label_visibility="collapsed",
+    )
     st.markdown("---")
     with st.expander("Fuentes y actualización", expanded=False):
         if _backend.get("source_mode") != "local":
@@ -2095,7 +2112,11 @@ with st.sidebar:
         if st.button("Inspector datasets", key="sidebar_open_dataset_inspector", width="stretch"):
             open_dataset_inspector()
     with st.expander("Acceso y permisos", expanded=False):
-        if access.get("auth_mode") == "internal":
+        if access.get("app_mode") == "public":
+            st.caption("Portal público del observatorio 3 en 1.")
+            st.caption("Esta superficie no carga datasets sensibles ni requiere autenticación para navegar.")
+            st.caption("Las vistas internas y operativas permanecen en la superficie `obs-int`.")
+        elif access.get("auth_mode") == "internal":
             if access["is_logged_in"]:
                 st.success(f"Sesión activa: {access['name']}")
                 if access.get("username"):
@@ -2132,7 +2153,10 @@ with st.sidebar:
                 if st.button("Iniciar sesión", key="sidebar_login", width="stretch"):
                     st.login()
     st.markdown("---")
-    st.caption("Beta v0.2  ·  CORFO CCHEN 360")
+    if access.get("app_mode") == "public":
+        st.caption("Portal público v0.3  ·  Observatorio CCHEN 3 en 1")
+    else:
+        st.caption("Beta interna v0.2  ·  CORFO CCHEN 360")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
