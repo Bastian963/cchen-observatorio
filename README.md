@@ -1,6 +1,5 @@
 # CCHEN — Observatorio Tecnológico I+D+i+Tt
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://cchen-observatorio.streamlit.app)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)](https://www.python.org)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase)](https://supabase.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -31,7 +30,7 @@ Regla operativa del sistema:
 
 | Superficie | Rol | Estado actual | URL / entrada |
 | --- | --- | --- | --- |
-| `Observatorio Analítico` | Indicadores, vigilancia, asistente y narrativa ejecutiva | Operativo | `https://cchen-observatorio.streamlit.app` o `http://localhost:8501` |
+| `Observatorio Analítico` | Indicadores, vigilancia, asistente y narrativa ejecutiva | Operativo | `http://localhost:8501` |
 | `Repositorio Institucional DSpace` | Publicaciones, informes, policy briefs y documentos | Operación local reproducible | `http://localhost:4000` |
 | `Portal de Datos CKAN` | Datasets, series, recursos y metadatos descargables | Operación local reproducible | `http://localhost:5001` |
 
@@ -42,6 +41,36 @@ Documentación base:
 - [Docs/PLAN_TRABAJO_2026.md](Docs/PLAN_TRABAJO_2026.md)
 - [Docs/matriz_publicacion_3_en_1.md](Docs/matriz_publicacion_3_en_1.md)
 - [Docs/operations/runbook_plataforma_3_en_1.md](Docs/operations/runbook_plataforma_3_en_1.md)
+- [Docs/operations/runbook_publicacion_vm_observatorio_3en1.md](Docs/operations/runbook_publicacion_vm_observatorio_3en1.md)
+- [Docs/operations/runbook_backup_restore_observatorio_3en_1.md](Docs/operations/runbook_backup_restore_observatorio_3en_1.md)
+- [Docs/operations/acceso_interno_observatorio_3en1.md](Docs/operations/acceso_interno_observatorio_3en1.md)
+
+---
+
+## Publicación interna por URL
+
+La vía canónica para compartir el Observatorio 3 en 1 dentro de CCHEN es una VM Linux con Docker Compose, `Nginx` reverse proxy, TLS institucional y subdominios separados:
+
+- `https://obs-int.cchen.cl` → dashboard
+- `https://repo-int.cchen.cl` → DSpace UI y `/server`
+- `https://datos-int.cchen.cl` → CKAN
+
+Piezas versionadas para este despliegue:
+
+- `docker-compose.observatorio.prod.yml`
+- `.env.prod.example`
+- `deploy/nginx/templates/observatorio-public.conf.template`
+- `Scripts/check_observatorio_prod_overlay.sh`
+- `Scripts/check_observatorio_public_url.sh`
+- `Scripts/wait_and_check_observatorio_public_url.sh`
+- `Scripts/backup_observatorio_prod.sh`
+- `Scripts/prepare_local_public_demo.sh`
+
+Runbooks asociados:
+
+- `Docs/operations/runbook_publicacion_vm_observatorio_3en1.md`
+- `Docs/operations/runbook_backup_restore_observatorio_3en_1.md`
+- `Docs/operations/acceso_interno_observatorio_3en1.md`
 
 ---
 
@@ -80,6 +109,7 @@ Consulta el flujo detallado de actualización, registro de logs y monitoreo en:
 
 Y para la operación del stack 3 en 1:
 - [Docs/operations/runbook_plataforma_3_en_1.md](Docs/operations/runbook_plataforma_3_en_1.md)
+- [Docs/operations/runbook_publicacion_vm_observatorio_3en1.md](Docs/operations/runbook_publicacion_vm_observatorio_3en1.md)
 
 ---
 
@@ -400,7 +430,9 @@ El dashboard soporta tres modos configurables via `data_source` en secrets.toml:
 - La navegación entre secciones reutiliza `st.cache_data`, de modo que los datasets ya consultados se reaprovechan sin volver a leerlos en cada cambio.
 - La franja operativa y el inspector reflejan el estado de la sección actual, no un preload global de todo el observatorio.
 
-### Despliegue en Streamlit Cloud
+### Contingencia en Streamlit Cloud
+
+Streamlit Cloud queda como vía secundaria o de contingencia para mostrar sólo el dashboard. Ya no es la ruta principal para compartir la plataforma 3 en 1 completa.
 
 1. Fork o push del repositorio a GitHub
 2. Ir a [share.streamlit.io](https://share.streamlit.io) → New app
@@ -478,7 +510,7 @@ uv run --python 3.11 --with-requirements requirements.txt python Scripts/check_d
 | `supabase.url` | URL del proyecto Supabase | Para modo remoto | Dashboard Supabase |
 | `supabase.anon_key` | Anon key pública de Supabase | Para lectura pública remota | Dashboard Supabase → API |
 | `supabase.service_role_key` | Service role key para datasets sensibles en el dashboard beta | Solo si quieres capital humano y vistas sensibles en cloud | Dashboard Supabase → API |
-| `internal_auth.*` | Usuarios, claves y roles de ingreso beta | Recomendada en Streamlit Cloud | Secrets del dashboard |
+| `internal_auth.*` | Usuarios, claves y roles de ingreso beta | Recomendada en el dashboard desplegado | Secrets del dashboard |
 | `SUPABASE_KEY` | Service role key para scripts de migración Database/ | Solo scripts Database/ | Dashboard Supabase → API |
 
 ### Activación final de Supabase
@@ -512,7 +544,7 @@ uv run --python 3.11 --with-requirements requirements.txt python Scripts/check_d
 python3 Scripts/check_supabase_runtime.py
 ```
 
-6. En `Dashboard/.streamlit/secrets.toml` o en Streamlit Cloud → **Secrets**, configurar:
+6. En `Dashboard/.streamlit/secrets.toml` o en los secrets del dashboard desplegado, configurar:
 
 ```toml
 GROQ_API_KEY = "gsk_..."
@@ -536,7 +568,7 @@ role = "admin"
 can_view_sensitive = true
 ```
 
-7. Levantar localmente o redeployar Streamlit Cloud.
+7. Levantar localmente, desplegar el dashboard en la VM 3 en 1 o usar Streamlit Cloud sólo como contingencia.
 
 ### Cómo verificar desde la app
 
@@ -555,7 +587,7 @@ can_view_sensitive = true
 CCHEN/
 ├── README.md                         ← Este archivo
 ├── ARCHITECTURE.md                   ← Diseño técnico completo
-├── requirements.txt                  ← Dependencias raíz para Streamlit Cloud
+├── requirements.txt                  ← Dependencias raíz del dashboard y contingencia Streamlit Cloud
 ├── runtime.txt                       ← Versión de Python usada en deploy
 │
 ├── Dashboard/                        ← Aplicación web Streamlit

@@ -587,7 +587,10 @@ def render(ctx: dict) -> None:
     # ── API Key (Groq) ──
     api_key = os.environ.get("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY", "")
     if not api_key:
-        st.warning("⚠️ Configura tu `GROQ_API_KEY` en los secrets de Streamlit Cloud para activar el asistente.")
+        st.warning(
+            "⚠️ Configura tu `GROQ_API_KEY` en los secrets del dashboard o en la "
+            "configuración de despliegue para activar el asistente."
+        )
         st.code('GROQ_API_KEY = "gsk_..."', language="toml")
         st.stop()
 

@@ -104,6 +104,31 @@ Despues de cada carga manual, escribe `public_url` e `identificador` de vuelta e
 - CKAN UI: `http://localhost:5001`
 - CKAN Action API: `http://localhost:5001/api/3/action/status_show`
 
+## 8.b Publicación interna por URL
+
+La publicación interna controlada en VM se monta con un overlay adicional y no reemplaza este runbook local:
+
+```bash
+OBSERVATORIO_BASIC_AUTH_PASSWORD='CAMBIAR-CLAVE' \
+bash Scripts/bootstrap_observatorio_vm.sh
+
+bash Scripts/deploy_observatorio_prod.sh
+```
+
+Documentación específica:
+
+- `Docs/operations/checklist_despliegue_vm_staging_3en1.md`
+- `Docs/operations/runbook_publicacion_vm_observatorio_3en1.md`
+- `Docs/operations/runbook_backup_restore_observatorio_3en_1.md`
+- `Docs/operations/acceso_interno_observatorio_3en1.md`
+
+Smoke por dominios publicados:
+
+```bash
+bash Scripts/check_observatorio_published_ports.sh
+bash Scripts/wait_and_check_observatorio_public_url.sh
+```
+
 ## 9. Bootstrap administrativo
 
 ### DSpace

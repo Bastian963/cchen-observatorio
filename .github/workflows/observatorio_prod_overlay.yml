@@ -1,0 +1,67 @@
+name: Observatorio Prod Overlay
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+on:
+  push:
+    paths:
+      - ".github/workflows/observatorio_prod_overlay.yml"
+      - ".env.prod.example"
+      - ".gitignore"
+      - "docker-compose.observatorio.yml"
+      - "docker-compose.observatorio.prod.yml"
+      - "deploy/nginx/**"
+      - "dspace-frontend/**"
+      - "Scripts/check_observatorio_prod_overlay.sh"
+      - "Scripts/check_observatorio_public_url.sh"
+      - "Scripts/wait_and_check_observatorio_public_url.sh"
+      - "Scripts/backup_observatorio_prod.sh"
+      - "Scripts/prepare_local_public_demo.sh"
+      - "Docs/operations/runbook_publicacion_vm_observatorio_3en1.md"
+      - "Docs/operations/runbook_backup_restore_observatorio_3en_1.md"
+      - "Docs/operations/acceso_interno_observatorio_3en1.md"
+      - "README.md"
+      - "INTEGRACION_OBSERVATORIO.md"
+  pull_request:
+    paths:
+      - ".github/workflows/observatorio_prod_overlay.yml"
+      - ".env.prod.example"
+      - ".gitignore"
+      - "docker-compose.observatorio.yml"
+      - "docker-compose.observatorio.prod.yml"
+      - "deploy/nginx/**"
+      - "dspace-frontend/**"
+      - "Scripts/check_observatorio_prod_overlay.sh"
+      - "Scripts/check_observatorio_public_url.sh"
+      - "Scripts/wait_and_check_observatorio_public_url.sh"
+      - "Scripts/backup_observatorio_prod.sh"
+      - "Scripts/prepare_local_public_demo.sh"
+      - "Docs/operations/runbook_publicacion_vm_observatorio_3en1.md"
+      - "Docs/operations/runbook_backup_restore_observatorio_3en_1.md"
+      - "Docs/operations/acceso_interno_observatorio_3en1.md"
+      - "README.md"
+      - "INTEGRACION_OBSERVATORIO.md"
+  workflow_dispatch:
+
+jobs:
+  validate-prod-overlay:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validar scripts y compose productivo
+        run: bash Scripts/check_observatorio_prod_overlay.sh
+
+      - name: Construir imagen del frontend DSpace parametrizable
+        run: docker build -t dspace-frontend-ci -f dspace-frontend/Dockerfile dspace-frontend
+
+      - name: Construir imagen del reverse proxy
+        run: docker build -t observatorio-reverse-proxy-ci -f deploy/nginx/Dockerfile .

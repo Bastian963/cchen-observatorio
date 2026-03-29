@@ -1,10 +1,12 @@
-# Playbook de Operaciones — Observatorio CCHEN 360°
+# Playbook de Operaciones — Observatorio CCHEN 360° 3 en 1
 
 **Versión:** 1.0  
-**Fecha:** 2026-03-23  
+**Fecha:** 2026-03-28  
 **Propietario:** Bastián Ayala I.  
 **Repositorio:** https://github.com/Bastian963/cchen-observatorio  
-**Dashboard:** https://cchen-observatorio.streamlit.app  
+**Dashboard interno:** https://obs-int.cchen.cl  
+**DSpace interno:** https://repo-int.cchen.cl  
+**CKAN interno:** https://datos-int.cchen.cl  
 
 ---
 
@@ -37,7 +39,10 @@
 | Servicio | Criticidad | SLA externo | Verificación | Fallback |
 |----------|-----------|-------------|--------------|---------|
 | **Supabase (PostgreSQL 15)** | 🔴 Crítica | 99.9% uptime (Supabase SLA) | `python3 Scripts/check_supabase_runtime.py` | CSV local vía `data_loader.py` |
-| **Streamlit Cloud** | 🔴 Crítica | ~99.5% uptime | `python3 Scripts/check_dashboard_smoke.py` | N/A (no hay mirror) |
+| **Reverse proxy 3 en 1** | 🔴 Crítica | Infra interna / VM | `bash Scripts/check_observatorio_public_url.sh` | Sandbox local con `prepare_local_public_demo.sh` |
+| **Dashboard Streamlit** | 🔴 Crítica | Servicio interno detrás del proxy | `bash Scripts/check_observatorio_stack.sh` | Streamlit Cloud sólo como contingencia temporal |
+| **DSpace UI + REST** | 🔴 Crítica | Servicio interno detrás del proxy | `bash Scripts/check_observatorio_stack.sh` | N/A |
+| **CKAN UI + Action API** | 🔴 Crítica | Servicio interno detrás del proxy | `bash Scripts/check_observatorio_stack.sh` | N/A |
 | **GitHub Actions** | 🟡 Importante | 99.9% uptime (GitHub SLA) | `gh run list --workflow arxiv_monitor.yml` | Trigger manual |
 | **Groq LLM API** | 🟡 Importante | Best-effort (free tier) | Log del dashboard en runtime | Asistente responde con mensaje de error controlado |
 
@@ -81,6 +86,9 @@
 | `Scripts/check_supabase_runtime.py` | Conectividad + lectura 35 tablas | Tras deploy o ante dudas de conexión |
 | `Scripts/check_dashboard_smoke.py` | Imports, secciones, data_loader | Tras cambios en Dashboard/ |
 | `Scripts/check_database_contract.py` | Schema + row counts vs. esperados | Tras migración o cambios de schema |
+| `Scripts/check_observatorio_stack.sh` | Salud local end-to-end del stack 3 en 1 | Tras reinicios o reconstrucción local |
+| `Scripts/check_observatorio_prod_overlay.sh` | Contrato del overlay productivo por URL | Antes de merge o despliegue |
+| `Scripts/check_observatorio_public_url.sh` | Salud por dominios publicados | Tras deploy en VM |
 | `Database/data_quality.py` | Calidad e integridad CSVs locales | Mensual o antes de migración masiva |
 
 ---
@@ -89,9 +97,9 @@
 
 | Prioridad | Definición | Tiempo de respuesta | Tiempo de resolución |
 |-----------|-----------|--------------------|--------------------|
-| **P1 — Crítico** | arXiv=0 o News=0, dashboard caído, Supabase inaccesible, migración falla total | Inmediata (mismo día) | ≤24 horas |
-| **P2 — Alto** | IAEA SKIP ≥2 semanas, convocatorias SKIP ≥2 semanas, dashboard smoke falla, database contract falla | ≤2 días hábiles | ≤5 días hábiles |
-| **P3 — Medio** | arXiv 1-9 filas, News 1-19 filas, duración job >4 min, boletín sin generar | ≤1 semana | Próxima corrida |
+| **P1 — Crítico** | arXiv=0 o News=0, `obs-int`/`repo-int`/`datos-int` caídos, Supabase inaccesible, migración falla total | Inmediata (mismo día) | ≤24 horas |
+| **P2 — Alto** | IAEA SKIP ≥2 semanas, convocatorias SKIP ≥2 semanas, smoke del observatorio falla, database contract falla | ≤2 días hábiles | ≤5 días hábiles |
+| **P3 — Medio** | una superficie responde degradada, arXiv 1-9 filas, News 1-19 filas, duración job >4 min o boletín sin generar | ≤1 semana | Próxima corrida |
 | **P4 — Bajo** | Warnings en log, campos vacíos < umbral, documentación desactualizada | ≤1 mes | Backlog |
 
 ---
@@ -204,33 +212,44 @@ grep -E "ERROR|error|failed|SKIP" /tmp/migrate_vigilancia.log
 
 ---
 
-### PB-05: Dashboard caído o sección no carga (P1)
+### PB-05: Una superficie 3 en 1 cae o responde degradada (P1)
 
-**Síntoma:** https://cchen-observatorio.streamlit.app no responde o sección da error
+**Síntoma:** `obs-int`, `repo-int` o `datos-int` no responden, o una sección del dashboard falla por dependencias del stack
 
 ```bash
-# 1. Smoke test local
+# 1. Estado general local del stack
+bash Scripts/check_observatorio_stack.sh
+bash Scripts/wait_and_check_observatorio_stack.sh
+
+# 2. Smoke del dashboard
 python3 Scripts/check_dashboard_smoke.py
 
-# 2. E2E check completo
+# 3. E2E check completo
 python3 Scripts/check_dashboard_e2e.py
 
-# 3. Verificar que data_loader funciona
+# 4. Verificar que data_loader funciona
 cd Dashboard
 python3 -c "import data_loader; print(data_loader.TABLE_LOAD_STATUS)"
 
-# 4. Si falla import de sección específica
+# 5. Si falla import de sección específica
 python3 -c "import sections.{nombre_seccion}"
 
-# 5. Verificar Supabase accesible (el dashboard usa fallback a CSV si falla)
+# 6. Verificar Supabase accesible (el dashboard usa fallback a CSV si falla)
 python3 Scripts/check_supabase_runtime.py
 
-# 6. Forzar redeploy en Streamlit Cloud
-# → ir a https://share.streamlit.io → app → Reboot app
-# O hacer un commit vacío para trigger CI:
-git commit --allow-empty -m "chore: redeploy dashboard"
-git push origin main
+# 7. Si el problema parece del overlay productivo
+bash Scripts/check_observatorio_prod_overlay.sh
+
+# 8. Si el problema aparece sólo en la VM publicada
+bash Scripts/check_observatorio_public_url.sh
 ```
+
+Escalamiento:
+
+- si falla sólo `obs-int`, revisar `dashboard` + `reverse-proxy`
+- si falla `repo-int`, revisar `dspace-backend`, `dspace-frontend` y la ruta `/server`
+- si falla `datos-int`, revisar `ckan`, `ckan-solr` y `ckan-db`
+- usar Streamlit Cloud sólo como contingencia temporal para demo del dashboard, no como resolución principal
 
 ---
 
@@ -284,6 +303,7 @@ gh run view "$RUN_ID" --json jobs -q '.jobs[].steps[] | "\(.number) \(.name) \(.
 - [ ] Completar checklist en [sla_semanal.md](sla_semanal.md)
 - [ ] Actualizar KPIs de comité en [comite_kpis.md](comite_kpis.md)
 - [ ] Ejecutar batería QA del asistente en [qa_asistente_id.md](qa_asistente_id.md)
+- [ ] Ejecutar `bash Scripts/check_observatorio_stack.sh`
 - [ ] Actualizar historial IAEA/Convocatorias si hay SKIP
 - [ ] Si nivel = 🔴: abrir issue antes del martes
 
@@ -298,7 +318,8 @@ gh run view "$RUN_ID" --json jobs -q '.jobs[].steps[] | "\(.number) \(.name) \(.
 - [ ] Actualizar `ARCHITECTURE.md` con cambios de TRL y hitos
 - [ ] Revisar y actualizar este playbook
 - [ ] Ejecutar `build_operational_core.py` si hay nuevas publicaciones masivas
-- [ ] Evaluar costos Supabase y Streamlit Cloud (free tier limits)
+- [ ] Probar `bash Scripts/check_observatorio_prod_overlay.sh`
+- [ ] Validar backup + restore mínimo del stack 3 en 1
 
 ---
 
@@ -329,6 +350,15 @@ python3 Scripts/check_database_contract.py
 
 # Smoke test (imports, secciones, data_loader)
 python3 Scripts/check_dashboard_smoke.py
+
+# Estado local end-to-end
+bash Scripts/check_observatorio_stack.sh
+
+# Contrato del overlay productivo
+bash Scripts/check_observatorio_prod_overlay.sh
+
+# Sandbox local de publicación por URL
+bash Scripts/prepare_local_public_demo.sh
 
 # ── Data quality ──────────────────────────────────────────────────────────────
 

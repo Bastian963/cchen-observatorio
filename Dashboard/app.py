@@ -574,8 +574,8 @@ def _render_beta_access_gate() -> None:
             "que no deben quedar expuestas en una URL pública abierta."
         )
         st.caption(
-            "Los usuarios se definen en `Dashboard/.streamlit/secrets.toml` o en los secrets de "
-            "Streamlit Cloud. Las credenciales no quedan hardcodeadas en el repositorio."
+            "Los usuarios se definen en `Dashboard/.streamlit/secrets.toml` o en los secrets del "
+            "dashboard desplegado. Las credenciales no quedan hardcodeadas en el repositorio."
         )
 
     with login_col:

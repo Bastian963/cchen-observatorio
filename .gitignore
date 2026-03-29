@@ -1,5 +1,6 @@
 # Credenciales — NUNCA subir al repositorio
 Database/.env
+.env.prod
 .streamlit/secrets.toml
 Dashboard/.streamlit/secrets.toml
 credentials.json
@@ -21,6 +22,7 @@ Codes/
 
 # Claude Code internal
 .claude/
+.obsidian/
 
 # Archivos privados / bitácora personal
 Bitacora/
@@ -101,3 +103,4 @@ Icon
 /dspace-angular/
 /dspace-local-dev/
 /package-lock.json
+/deploy/local-prod-demo/runtime/

@@ -137,3 +137,35 @@ Incluye:
 - Este flujo está pensado para Docker local en esta máquina.
 - No incluye hardening productivo, TLS ni exposición pública definitiva.
 - El objetivo inmediato es operación reproducible y coherencia entre las tres superficies de producto.
+
+## 10. Publicación interna por URL
+
+La publicación por dominio institucional se hace con un overlay adicional:
+
+```bash
+OBSERVATORIO_BASIC_AUTH_PASSWORD='CAMBIAR-CLAVE' \
+bash Scripts/bootstrap_observatorio_vm.sh
+
+bash Scripts/deploy_observatorio_prod.sh
+```
+
+Piezas relevantes:
+
+- `docker-compose.observatorio.prod.yml`
+- `deploy/nginx/templates/observatorio-public.conf.template`
+- `Scripts/bootstrap_observatorio_vm.sh`
+- `Scripts/deploy_observatorio_prod.sh`
+- `Scripts/check_observatorio_prod_overlay.sh`
+- `Scripts/check_observatorio_published_ports.sh`
+- `Scripts/check_observatorio_public_url.sh`
+- `Scripts/wait_and_check_observatorio_public_url.sh`
+- `Scripts/backup_observatorio_prod.sh`
+- `Scripts/check_observatorio_backup_artifacts.sh`
+- `Scripts/prepare_local_public_demo.sh`
+
+Runbooks:
+
+- `Docs/operations/checklist_despliegue_vm_staging_3en1.md`
+- `Docs/operations/runbook_publicacion_vm_observatorio_3en1.md`
+- `Docs/operations/runbook_backup_restore_observatorio_3en_1.md`
+- `Docs/operations/acceso_interno_observatorio_3en1.md`
