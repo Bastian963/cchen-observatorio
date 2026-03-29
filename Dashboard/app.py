@@ -1228,8 +1228,9 @@ def _build_source_refresh_status() -> tuple[pd.DataFrame, pd.DataFrame]:
             status_df[column] = pd.to_datetime(status_df[column], errors="coerce")
     status_df["enabled"] = status_df.get("enabled", False).fillna(False).astype(bool)
     status_df["blocking"] = status_df.get("blocking", False).fillna(False).astype(bool)
+    today_ts = pd.Timestamp(dt.date.today())
     status_df["is_overdue"] = status_df["enabled"] & status_df["next_update_due"].notna() & (
-        status_df["next_update_due"].dt.date <= dt.date.today()
+        status_df["next_update_due"].dt.normalize() <= today_ts
     )
     status_df["last_updated_label"] = status_df["last_updated"].dt.strftime("%d/%m/%Y").fillna("—")
     status_df["next_update_due_label"] = status_df["next_update_due"].dt.strftime("%d/%m/%Y").fillna("—")
