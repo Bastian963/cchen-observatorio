@@ -927,6 +927,7 @@ COMMENT ON TABLE citing_papers IS
 
 CREATE TABLE IF NOT EXISTS data_sources (
     source_name         TEXT PRIMARY KEY,
+    source_key          TEXT UNIQUE,
     description         TEXT,
     url                 TEXT,
     table_name          TEXT,                       -- tabla Supabase asociada
@@ -939,13 +940,23 @@ CREATE TABLE IF NOT EXISTS data_sources (
     requires_token      BOOLEAN DEFAULT FALSE,
     token_source        TEXT,
     notes               TEXT,
+    enabled             BOOLEAN DEFAULT FALSE,
+    runner_command      TEXT,
+    output_targets      JSONB DEFAULT '[]'::jsonb,
+    owner               TEXT,
+    visibility          TEXT DEFAULT 'publico',
+    blocking            BOOLEAN DEFAULT FALSE,
+    freshness_sla_days  INTEGER,
+    last_run_status     TEXT,
+    last_run_id         TEXT,
     created_at          TIMESTAMP DEFAULT NOW(),
     updated_at          TIMESTAMP DEFAULT NOW()
 );
 
 COMMENT ON TABLE data_sources IS
     'Catálogo de fuentes de datos del observatorio. '
-    'Actualizado automáticamente por Database/data_quality.py.';
+    'Actualizado por el runner canónico Scripts/run_source_refresh.py '
+    'y complementado por Database/data_quality.py.';
 
 -- Poblar con las fuentes conocidas
 INSERT INTO data_sources (source_name, description, url, table_name, notebook_path, update_frequency, requires_token) VALUES
@@ -979,8 +990,404 @@ INSERT INTO data_sources (source_name, description, url, table_name, notebook_pa
     ('Entity registry proyectos','Registro canónico de proyectos adjudicados y asociados',          NULL,                       'entity_registry_proyectos','Scripts/build_operational_core.py',          'semanal',    FALSE),
     ('Entity registry convocatorias','Registro canónico de convocatorias curadas',                  NULL,                       'entity_registry_convocatorias','Scripts/build_operational_core.py',       'semanal',    FALSE),
     ('Entity links',            'Relaciones operativas entre entidades canónicas del observatorio', NULL,                       'entity_links',            'Scripts/build_operational_core.py',          'semanal',    FALSE),
-    ('Capital humano',          'Registro interno consolidado de formación de capital humano CCHEN', NULL,                      'capital_humano',          'Data/Capital humano CCHEN/salida_dataset_maestro/dataset_maestro_limpio.csv', 'semestral', FALSE)
+    ('Capital humano',          'Registro interno consolidado de formación de capital humano CCHEN', NULL,                      'capital_humano',          'Data/Capital humano CCHEN/salida_dataset_maestro/dataset_maestro_limpio.csv', 'semestral', FALSE),
+    ('Zenodo outputs',          'Outputs institucionales CCHEN publicados en Zenodo',              'https://zenodo.org/api',   NULL,                      'Scripts/download_zenodo_cchen_combined.py', 'semestral', FALSE)
 ON CONFLICT (source_name) DO NOTHING;
+
+UPDATE data_sources
+SET source_key = 'openalex_publicaciones',
+    enabled = FALSE,
+    runner_command = NULL,
+    output_targets = '["Data/Publications/cchen_openalex_works.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 90,
+    notes = COALESCE(notes, 'Fuente registrada; refresh aún manual vía notebook.')
+WHERE source_name = 'OpenAlex publicaciones';
+
+UPDATE data_sources
+SET source_key = 'crossref',
+    enabled = FALSE,
+    runner_command = NULL,
+    output_targets = '["Data/Publications/cchen_crossref_enriched.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 90,
+    notes = COALESCE(notes, 'Fuente registrada; refresh aún manual vía notebook.')
+WHERE source_name = 'CrossRef';
+
+UPDATE data_sources
+SET source_key = 'openalex_conceptos',
+    enabled = FALSE,
+    runner_command = NULL,
+    output_targets = '["Data/Publications/cchen_openalex_concepts.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 90,
+    notes = COALESCE(notes, 'Fuente registrada; refresh aún manual vía notebook.')
+WHERE source_name = 'OpenAlex Conceptos';
+
+UPDATE data_sources
+SET source_key = 'orcid',
+    enabled = FALSE,
+    runner_command = NULL,
+    output_targets = '["Data/Researchers/cchen_researchers_orcid.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 180,
+    notes = COALESCE(notes, 'Formalmente trazada; automatización pendiente.')
+WHERE source_name = 'ORCID';
+
+UPDATE data_sources
+SET source_key = 'patentsview_uspto',
+    enabled = FALSE,
+    runner_command = NULL,
+    output_targets = '["Data/Patents/cchen_patents_uspto.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 180,
+    notes = COALESCE(notes, 'Registrada pero no habilitada por dependencia de token.')
+WHERE source_name = 'PatentsView / USPTO';
+
+UPDATE data_sources
+SET source_key = 'anid_repositorio',
+    enabled = FALSE,
+    runner_command = NULL,
+    output_targets = '["Data/ANID/RepositorioAnid_con_monto.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 365,
+    notes = COALESCE(notes, 'Registrada; refresh aún manual vía notebook.')
+WHERE source_name = 'ANID Repositorio';
+
+UPDATE data_sources
+SET source_key = 'datos_gob_convenios',
+    enabled = FALSE,
+    runner_command = NULL,
+    output_targets = '["Data/Institutional/clean_Convenios_suscritos_por_la_Com.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 180,
+    notes = COALESCE(notes, 'Registrada; carga sigue manual en esta fase.')
+WHERE source_name = 'datos.gob.cl convenios';
+
+UPDATE data_sources
+SET source_key = 'datos_gob_acuerdos',
+    enabled = FALSE,
+    runner_command = NULL,
+    output_targets = '["Data/Institutional/clean_Acuerdos_e_instrumentos_intern.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 180,
+    notes = COALESCE(notes, 'Registrada; carga sigue manual en esta fase.')
+WHERE source_name = 'datos.gob.cl acuerdos';
+
+UPDATE data_sources
+SET source_key = 'ror_registry',
+    enabled = TRUE,
+    runner_command = 'python Scripts/build_ror_registry.py',
+    output_targets = '["Data/Institutional/cchen_institution_registry.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 180,
+    notes = COALESCE(notes, 'Comparte job con ROR pending review.')
+WHERE source_name = 'ROR registry';
+
+UPDATE data_sources
+SET source_key = 'ror_pending_review',
+    enabled = TRUE,
+    runner_command = 'python Scripts/build_ror_registry.py',
+    output_targets = '["Data/Institutional/ror_pending_review.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'operador',
+    blocking = FALSE,
+    freshness_sla_days = 180,
+    notes = COALESCE(notes, 'Comparte job con ROR registry.')
+WHERE source_name = 'ROR pending review';
+
+UPDATE data_sources
+SET source_key = 'datacite_outputs',
+    enabled = TRUE,
+    runner_command = 'python Scripts/fetch_datacite_outputs.py',
+    output_targets = '["Data/ResearchOutputs/cchen_datacite_outputs.csv","Data/ResearchOutputs/datacite_state.json"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 180
+WHERE source_name = 'DataCite outputs';
+
+UPDATE data_sources
+SET source_key = 'openaire_outputs',
+    enabled = TRUE,
+    runner_command = 'python Scripts/fetch_openaire_outputs.py',
+    output_targets = '["Data/ResearchOutputs/cchen_openaire_outputs.csv","Data/ResearchOutputs/openaire_state.json"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 180
+WHERE source_name = 'OpenAIRE outputs';
+
+UPDATE data_sources
+SET source_key = 'zenodo_outputs',
+    enabled = FALSE,
+    runner_command = NULL,
+    output_targets = '["zenodo_cchen_combined_downloads"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 180,
+    notes = COALESCE(notes, 'Queda formalmente en catálogo operativo; automatización diferida por tamaño de descarga.')
+WHERE source_name = 'Zenodo outputs';
+
+UPDATE data_sources
+SET source_key = 'sjr_scimago',
+    enabled = FALSE,
+    runner_command = NULL,
+    output_targets = '["Data/Publications/cchen_publications_with_quartile_sjr.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 365,
+    notes = COALESCE(notes, 'Derivado externo aún manual.')
+WHERE source_name = 'SJR Scimago';
+
+UPDATE data_sources
+SET source_key = 'perfiles_institucionales',
+    enabled = FALSE,
+    runner_command = NULL,
+    output_targets = '["Data/Vigilancia/perfiles_institucionales_cchen.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'operador',
+    blocking = FALSE,
+    freshness_sla_days = 8,
+    notes = COALESCE(notes, 'Semilla curada; se mantiene manual en esta fase.')
+WHERE source_name = 'Perfiles institucionales';
+
+UPDATE data_sources
+SET source_key = 'convocatorias_curadas',
+    enabled = TRUE,
+    runner_command = 'python Scripts/convocatorias_monitor.py && python Database/migrate_convocatorias.py',
+    output_targets = '["Data/Vigilancia/convocatorias_curadas.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = TRUE,
+    freshness_sla_days = 14,
+    notes = COALESCE(notes, 'Fuente crítica para la mesa DGIn.')
+WHERE source_name = 'Convocatorias curadas';
+
+UPDATE data_sources
+SET source_key = 'matching_rules',
+    enabled = FALSE,
+    runner_command = NULL,
+    output_targets = '["Data/Vigilancia/convocatorias_matching_rules.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'operador',
+    blocking = FALSE,
+    freshness_sla_days = 14,
+    notes = COALESCE(notes, 'Semilla manual; no entra al scheduler por ahora.')
+WHERE source_name = 'Reglas de matching';
+
+UPDATE data_sources
+SET source_key = 'matching_institucional',
+    enabled = TRUE,
+    runner_command = 'python Scripts/build_operational_core.py',
+    output_targets = '["Data/Vigilancia/convocatorias_matching_institucional.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = TRUE,
+    freshness_sla_days = 8,
+    notes = COALESCE(notes, 'Comparte job con entity registry y entity links.')
+WHERE source_name = 'Matching institucional';
+
+UPDATE data_sources
+SET source_key = 'iaea_inis_monitor',
+    enabled = TRUE,
+    runner_command = 'python Scripts/iaea_inis_monitor.py && python Database/migrate_vigilancia.py',
+    output_targets = '["Data/Vigilancia/iaea_inis_monitor.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 30,
+    notes = COALESCE(notes, 'Fuente best-effort por estabilidad externa.')
+WHERE source_name = 'IAEA INIS monitor';
+
+UPDATE data_sources
+SET source_key = 'arxiv_monitor',
+    enabled = TRUE,
+    runner_command = 'python Scripts/arxiv_monitor.py && python Database/migrate_vigilancia.py',
+    output_targets = '["Data/Vigilancia/arxiv_monitor.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = TRUE,
+    freshness_sla_days = 8
+WHERE source_name = 'arXiv monitor';
+
+UPDATE data_sources
+SET source_key = 'news_monitor',
+    enabled = TRUE,
+    runner_command = 'python Scripts/news_monitor.py && python Database/migrate_vigilancia.py',
+    output_targets = '["Data/Vigilancia/news_monitor.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = TRUE,
+    freshness_sla_days = 8
+WHERE source_name = 'News monitor';
+
+UPDATE data_sources
+SET source_key = 'citation_graph',
+    enabled = TRUE,
+    runner_command = 'python Scripts/fetch_openalex_citations.py && python Database/migrate_vigilancia.py && python Database/migrate_citing_papers.py',
+    output_targets = '["Data/Publications/cchen_citation_graph.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 90,
+    notes = COALESCE(notes, 'Comparte job con OpenAlex Citations.')
+WHERE source_name = 'Citation graph';
+
+UPDATE data_sources
+SET source_key = 'europmc_works',
+    enabled = TRUE,
+    runner_command = 'python Scripts/fetch_europmc.py && python Database/migrate_europmc.py',
+    output_targets = '["Data/Publications/cchen_europmc_works.csv","Data/Publications/europmc_state.json"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 180
+WHERE source_name = 'EuroPMC works';
+
+UPDATE data_sources
+SET source_key = 'bertopic_topics',
+    enabled = FALSE,
+    runner_command = NULL,
+    output_targets = '["Data/Publications/cchen_bertopic_topics.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 90,
+    notes = COALESCE(notes, 'Derivado analítico; se mantiene manual para no cargar el scheduler.')
+WHERE source_name = 'BERTopic topics';
+
+UPDATE data_sources
+SET source_key = 'bertopic_topic_info',
+    enabled = FALSE,
+    runner_command = NULL,
+    output_targets = '["Data/Publications/cchen_bertopic_topic_info.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 90,
+    notes = COALESCE(notes, 'Derivado analítico; se mantiene manual para no cargar el scheduler.')
+WHERE source_name = 'BERTopic topic info';
+
+UPDATE data_sources
+SET source_key = 'openalex_citations',
+    enabled = TRUE,
+    runner_command = 'python Scripts/fetch_openalex_citations.py && python Database/migrate_vigilancia.py && python Database/migrate_citing_papers.py',
+    output_targets = '["Data/Publications/cchen_citing_papers.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = FALSE,
+    freshness_sla_days = 90,
+    notes = COALESCE(notes, 'Comparte job con Citation graph.')
+WHERE source_name = 'OpenAlex Citations';
+
+UPDATE data_sources
+SET source_key = 'funding_complementario',
+    enabled = TRUE,
+    runner_command = 'python Scripts/fetch_funding_plus.py',
+    output_targets = '["Data/Funding/cchen_funding_complementario.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'interno',
+    blocking = FALSE,
+    freshness_sla_days = 180
+WHERE source_name = 'Financiamiento complementario';
+
+UPDATE data_sources
+SET source_key = 'entity_registry_personas',
+    enabled = TRUE,
+    runner_command = 'python Scripts/build_operational_core.py',
+    output_targets = '["Data/Gobernanza/entity_registry_personas.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'interno',
+    blocking = TRUE,
+    freshness_sla_days = 14,
+    notes = COALESCE(notes, 'Comparte job con matching institucional y demás registros operativos.')
+WHERE source_name = 'Entity registry personas';
+
+UPDATE data_sources
+SET source_key = 'entity_registry_proyectos',
+    enabled = TRUE,
+    runner_command = 'python Scripts/build_operational_core.py',
+    output_targets = '["Data/Gobernanza/entity_registry_proyectos.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = TRUE,
+    freshness_sla_days = 14,
+    notes = COALESCE(notes, 'Comparte job con matching institucional y demás registros operativos.')
+WHERE source_name = 'Entity registry proyectos';
+
+UPDATE data_sources
+SET source_key = 'entity_registry_convocatorias',
+    enabled = TRUE,
+    runner_command = 'python Scripts/build_operational_core.py',
+    output_targets = '["Data/Gobernanza/entity_registry_convocatorias.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'publico',
+    blocking = TRUE,
+    freshness_sla_days = 14,
+    notes = COALESCE(notes, 'Comparte job con matching institucional y demás registros operativos.')
+WHERE source_name = 'Entity registry convocatorias';
+
+UPDATE data_sources
+SET source_key = 'entity_links',
+    enabled = TRUE,
+    runner_command = 'python Scripts/build_operational_core.py',
+    output_targets = '["Data/Gobernanza/entity_links.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'interno',
+    blocking = TRUE,
+    freshness_sla_days = 14,
+    notes = COALESCE(notes, 'Comparte job con matching institucional y demás registros operativos.')
+WHERE source_name = 'Entity links';
+
+UPDATE data_sources
+SET source_key = 'capital_humano',
+    enabled = FALSE,
+    runner_command = NULL,
+    output_targets = '["Data/Capital humano CCHEN/salida_dataset_maestro/dataset_maestro_limpio.csv"]'::jsonb,
+    owner = 'observatorio-cchen',
+    visibility = 'interno',
+    blocking = FALSE,
+    freshness_sla_days = 180,
+    notes = COALESCE(notes, 'Dato interno y sensible; sigue manual en esta fase.')
+WHERE source_name = 'Capital humano';
+
+CREATE TABLE IF NOT EXISTS data_source_runs (
+    run_id            TEXT NOT NULL,
+    source_key        TEXT NOT NULL REFERENCES data_sources(source_key),
+    trigger_kind      TEXT,
+    started_at        TIMESTAMP NOT NULL,
+    finished_at       TIMESTAMP NOT NULL,
+    status            TEXT NOT NULL,
+    records_written   INTEGER DEFAULT 0,
+    artifacts_json    JSONB DEFAULT '[]'::jsonb,
+    error_summary     TEXT,
+    created_at        TIMESTAMP DEFAULT NOW(),
+    PRIMARY KEY (run_id, source_key)
+);
+
+COMMENT ON TABLE data_source_runs IS
+    'Historial operativo de corridas del runner canónico de refresh de fuentes.';
 
 -- ============================================================
 -- VISTAS ÚTILES
@@ -1086,6 +1493,7 @@ ALTER TABLE bertopic_topics          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bertopic_topic_info      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE citing_papers           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE data_sources             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE data_source_runs         ENABLE ROW LEVEL SECURITY;
 
 -- Lectura pública para tablas no sensibles
 DROP POLICY IF EXISTS "public_read_publications" ON publications;
@@ -1117,6 +1525,7 @@ DROP POLICY IF EXISTS "public_read_bertopic_topics" ON bertopic_topics;
 DROP POLICY IF EXISTS "public_read_bertopic_info" ON bertopic_topic_info;
 DROP POLICY IF EXISTS "public_read_citing_papers" ON citing_papers;
 DROP POLICY IF EXISTS "public_read_data_sources" ON data_sources;
+DROP POLICY IF EXISTS "public_read_data_source_runs" ON data_source_runs;
 
 CREATE POLICY "public_read_publications"    ON publications             FOR SELECT USING (TRUE);
 CREATE POLICY "public_read_pub_enriched"    ON publications_enriched    FOR SELECT USING (TRUE);
@@ -1147,6 +1556,7 @@ CREATE POLICY "public_read_bertopic_topics" ON bertopic_topics          FOR SELE
 CREATE POLICY "public_read_bertopic_info"   ON bertopic_topic_info      FOR SELECT USING (TRUE);
 CREATE POLICY "public_read_citing_papers"   ON citing_papers            FOR SELECT USING (TRUE);
 CREATE POLICY "public_read_data_sources"    ON data_sources             FOR SELECT USING (TRUE);
+CREATE POLICY "public_read_data_source_runs" ON data_source_runs        FOR SELECT USING (TRUE);
 
 -- Capital humano: solo lectura autenticada (datos personales)
 DROP POLICY IF EXISTS "auth_read_capital_humano" ON capital_humano;

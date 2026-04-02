@@ -7,8 +7,7 @@ on:
       - "Scripts/run_publication_rag_sanity.sh"
       - "Scripts/assistant_eval_batch.py"
       - "Scripts/semantic_search.py"
-      - "Docs/reports/assistant_eval_template_pending_q03_q10.csv"
-      - "Data/**"
+      - "Tests/fixtures/publication_rag/**"
       - "requirements.txt"
       - "runtime.txt"
   pull_request:
@@ -17,8 +16,7 @@ on:
       - "Scripts/run_publication_rag_sanity.sh"
       - "Scripts/assistant_eval_batch.py"
       - "Scripts/semantic_search.py"
-      - "Docs/reports/assistant_eval_template_pending_q03_q10.csv"
-      - "Data/**"
+      - "Tests/fixtures/publication_rag/**"
       - "requirements.txt"
       - "runtime.txt"
   workflow_dispatch:
@@ -52,7 +50,7 @@ jobs:
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
-          python-version-file: "runtime.txt"
+          python-version: "3.11"
 
       - name: Instalar dependencias
         run: pip install --quiet -r requirements.txt
@@ -67,9 +65,10 @@ jobs:
         id: sanity
         env:
           OBSERVATORIO_DATA_SOURCE: local
+          SEMANTIC_SEARCH_FIXTURE_META_FILE: Tests/fixtures/publication_rag/semantic_search_fixture_meta.csv
         run: |
           JSON_OUT="$(bash Scripts/run_publication_rag_sanity.sh \
-            --input Docs/reports/assistant_eval_template_pending_q03_q10.csv \
+            --input Tests/fixtures/publication_rag/assistant_eval_template_public_ci.csv \
             --run-label ci_publication_rag_sanity \
             --json)"
           echo "json_out=$JSON_OUT" >> "$GITHUB_OUTPUT"

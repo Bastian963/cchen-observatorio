@@ -17,6 +17,13 @@ Instalar uso semanal real del módulo `Convocatorias y Matching CCHEN` para toma
 - Analista Observatorio: prepara panel, exportables y registro de KPIs.
 - Apoyo temático: valida elegibilidad cuando se requiera.
 
+### Asignación vigente del piloto
+
+- Owner DGIn titular (provisorio piloto): Bastián Ayala Inostroza
+- Owner DGIn respaldo (provisorio piloto): Bastián Ayala Inostroza
+- Horario fijo semanal: lunes 09:00-09:30 (America/Santiago)
+- Canal operativo vigente: correo `b.ayalainostroza@gmail.com`
+
 ## Ritual semanal (30 min)
 
 1. Revisar tablero operativo DGIn y priorizar top oportunidades (10 min).
@@ -76,6 +83,7 @@ Salida esperada:
 - Consolidar KPIs de 4 semanas.
 - Identificar mejoras de bajo costo para fase 2.
 - Emitir recomendación: continuar, ajustar o escalar.
+- Completar `Docs/reports/evaluacion_cierre_piloto_dgin_semana_04_template_2026-03-28.md`.
 
 Salida esperada:
 
@@ -91,7 +99,7 @@ Salida esperada:
   - Mitigación: no cerrar sesión sin acta y cola actualizada.
 
 - Riesgo: falta de responsables DGIn nominales (titular/respaldo).
-  - Mitigación: cerrar ficha de pendientes en `Docs/reports/pendientes_informacion_dgin_2026-03-24.md` antes de semana 3.
+  - Mitigación: mantener asignación provisoria activa y cerrar formalización antes de la decisión de semana 4.
 
 ## Artefactos del piloto
 
@@ -100,6 +108,7 @@ Salida esperada:
 - `Docs/reports/acta_dgin_semana_01_2026-03-30.md`
 - `Docs/reports/dgin_piloto_kpi_tracking_2026-03-24.csv`
 - `Docs/reports/pendientes_informacion_dgin_2026-03-24.md`
+- `Docs/reports/evaluacion_cierre_piloto_dgin_semana_04_template_2026-03-28.md`
 
 ---
 
@@ -108,5 +117,5 @@ Fecha de emisión: 2026-03-24
 
 ## Punto de revisión de planes
 
-- Revisar cierre de pendientes DGIn en la sesión de semana 3.
-- Si no hay cierre nominal, escalar a jefatura DGIn en acta de seguimiento.
+- Revisar formalización DGIn en la sesión de semana 4.
+- Si no hay cierre nominal, documentar decisión del ciclo como `ajustar` y escalar a jefatura DGIn en acta de seguimiento.

@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import datetime
+import sys
 import pandas as pd
 from pathlib import Path
 from functools import lru_cache
@@ -23,6 +24,9 @@ except ImportError:  # pragma: no cover - fallback esperado en entornos sin supa
     create_client = None
 
 _HERE     = Path(__file__).resolve().parent          # Dashboard/
+_ROOT     = _HERE.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 _DEFAULT  = _HERE.parent / "Data"                    # CCHEN/Data
 BASE      = Path(os.getenv("CCHEN_DATA_ROOT", str(_DEFAULT)))
 BASE_CH   = BASE / "Capital humano CCHEN"
@@ -32,6 +36,35 @@ BASE_PAT  = BASE / "Patents"
 SALIDA    = BASE_CH / "salida_dataset_maestro"
 AVANZADO  = SALIDA / "analisis_avanzado"
 CAPITAL   = SALIDA / "analisis_capital_humano"
+
+try:
+    from Scripts.source_refresh_registry import (
+        REGISTRY_COLUMNS as SOURCE_REGISTRY_COLUMNS,
+        RUN_COLUMNS as SOURCE_RUN_COLUMNS,
+        build_registry_frame,
+        load_registry_snapshot,
+        load_runs_snapshot,
+    )
+except Exception:  # pragma: no cover - fallback esperado en entornos sin módulo de registry
+    SOURCE_REGISTRY_COLUMNS = [
+        "source_key", "source_name", "update_frequency", "freshness_sla_days",
+        "enabled", "owner", "visibility", "blocking", "last_updated",
+        "next_update_due", "record_count", "quality_score", "last_run_status",
+        "last_run_id", "updated_at", "output_targets", "runner_command",
+    ]
+    SOURCE_RUN_COLUMNS = [
+        "run_id", "source_key", "trigger_kind", "started_at", "finished_at",
+        "status", "records_written", "artifacts_json", "error_summary",
+    ]
+
+    def build_registry_frame(existing_df=None):
+        return pd.DataFrame(columns=SOURCE_REGISTRY_COLUMNS)
+
+    def load_registry_snapshot(path=None):
+        return pd.DataFrame(columns=SOURCE_REGISTRY_COLUMNS)
+
+    def load_runs_snapshot(path=None):
+        return pd.DataFrame(columns=SOURCE_RUN_COLUMNS)
 
 SUPABASE_PAGE_SIZE = 1000
 TABLE_LOAD_STATUS: dict[str, dict] = {}
@@ -56,6 +89,23 @@ CAPITAL_HUMANO_COLUMNS = [
     "flag_tipo_fuera_catalogo",
     "created_at",
 ]
+ASSET_CATALOG_COLUMNS = [
+    "asset_id",
+    "surface",
+    "title",
+    "local_path",
+    "area_unidad",
+    "tema",
+    "anio",
+    "responsables",
+    "palabras_clave",
+    "visibilidad",
+    "identificador",
+    "public_url",
+    "vinculo_cruzado",
+    "dashboard_section",
+    "publication_status",
+]
 
 PUBLIC_TABLE_CONFIG = {
     "publications": {"order_by": "openalex_id"},
@@ -63,10 +113,12 @@ PUBLIC_TABLE_CONFIG = {
     "authorships": {"order_by": "id"},
     "crossref_data": {"order_by": "doi"},
     "concepts": {"order_by": "id"},
+    "paper_embeddings": {"order_by": "openalex_id"},
     "patents": {"order_by": "patent_uid"},
     "datacite_outputs": {"order_by": "doi"},
     "openaire_outputs": {"order_by": "openaire_id"},
     "anid_projects": {"order_by": "proyecto"},
+    "dian_publications": {"order_by": "dian_id"},
     "researchers_orcid": {"order_by": "orcid_id"},
     "institution_registry": {"order_by": "normalized_key"},
     "institution_registry_pending_review": {"order_by": "canonical_name"},
@@ -87,6 +139,7 @@ PUBLIC_TABLE_CONFIG = {
     "bertopic_topic_info": {"order_by": "topic"},
     "citing_papers": {"order_by": "citing_id"},
     "data_sources": {"order_by": "source_name"},
+    "data_source_runs": {"order_by": "finished_at"},
 }
 
 SENSITIVE_TABLE_CONFIG = {
@@ -330,6 +383,7 @@ def get_source_timestamps() -> dict:
         "Entidades proyecto": _mtime(BASE / "Gobernanza" / "entity_registry_proyectos.csv"),
         "Entidades convocatoria": _mtime(BASE / "Gobernanza" / "entity_registry_convocatorias.csv"),
         "Enlaces entre entidades": _mtime(BASE / "Gobernanza" / "entity_links.csv"),
+        "Catalogo activos 3 en 1": _mtime(BASE / "Gobernanza" / "catalogo_activos_3_en_1.csv"),
         "Convenios nacionales":     _mtime(BASE / "Institutional" / "clean_Convenios_suscritos_por_la_Com.csv"),
         "Acuerdos internacionales": _mtime(BASE / "Institutional" / "clean_Acuerdos_e_instrumentos_intern.csv"),
         "Altmetric": _mtime(BASE_PUB / "cchen_altmetric.csv"),
@@ -898,6 +952,99 @@ def _load_governance_csv(filename: str) -> pd.DataFrame:
         return _read_csv_fast(p)
     except Exception:
         return pd.DataFrame()
+
+
+def load_asset_catalog() -> pd.DataFrame:
+    """Catálogo maestro de activos institucionales del observatorio 3 en 1."""
+    df = _load_governance_csv("catalogo_activos_3_en_1.csv")
+    if df.empty:
+        return pd.DataFrame(columns=ASSET_CATALOG_COLUMNS)
+
+    df = df.copy()
+    for col in ASSET_CATALOG_COLUMNS:
+        if col not in df.columns:
+            df[col] = pd.Series(dtype="object")
+
+    for col in ASSET_CATALOG_COLUMNS:
+        if col == "anio":
+            continue
+        df[col] = df[col].fillna("").astype(str).str.strip()
+
+    df["surface"] = df["surface"].str.lower()
+    df["publication_status"] = df["publication_status"].str.lower()
+    df["anio"] = pd.to_numeric(df["anio"], errors="coerce").astype("Int64")
+    return df[ASSET_CATALOG_COLUMNS].copy()
+
+
+def _normalize_source_registry(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty:
+        return pd.DataFrame(columns=SOURCE_REGISTRY_COLUMNS)
+    out = df.copy()
+    for column in SOURCE_REGISTRY_COLUMNS:
+        if column not in out.columns:
+            out[column] = pd.Series(dtype="object")
+    for column in ("enabled", "blocking", "requires_token"):
+        if column in out.columns:
+            out[column] = (
+                out[column]
+                .fillna(False)
+                .astype(str)
+                .str.strip()
+                .str.lower()
+                .isin(["true", "1", "yes", "si", "sí"])
+            )
+    for column in ("record_count", "freshness_sla_days"):
+        if column in out.columns:
+            out[column] = pd.to_numeric(out[column], errors="coerce").astype("Int64")
+    if "quality_score" in out.columns:
+        out["quality_score"] = pd.to_numeric(out["quality_score"], errors="coerce")
+    return out[SOURCE_REGISTRY_COLUMNS].copy()
+
+
+def load_data_sources_runtime() -> pd.DataFrame:
+    """Snapshot operativo de fuentes con estado de frescura y última corrida."""
+    local_path = BASE / "Gobernanza" / "data_sources_runtime.csv"
+    mode = _get_data_source_mode()
+
+    if mode != "local":
+        try:
+            df = _fetch_supabase_table("data_sources")
+            _record_table_load_status("data_sources", "supabase_public", "data_sources")
+            if not df.empty or mode == "supabase_public":
+                return _normalize_source_registry(df)
+        except Exception:
+            if mode == "supabase_public":
+                raise
+
+    if local_path.exists():
+        _record_table_load_status("data_sources", "local_runtime_snapshot", str(local_path))
+        return _normalize_source_registry(_read_csv_fast(local_path))
+
+    _record_table_load_status("data_sources", "registry_seed_fallback", "Scripts/source_refresh_registry.py")
+    return _normalize_source_registry(load_registry_snapshot())
+
+
+def load_data_source_runs() -> pd.DataFrame:
+    """Historial operativo de corridas del runner canónico."""
+    local_path = BASE / "Gobernanza" / "data_source_runs.csv"
+    mode = _get_data_source_mode()
+
+    if mode != "local":
+        try:
+            df = _fetch_supabase_table("data_source_runs")
+            _record_table_load_status("data_source_runs", "supabase_public", "data_source_runs")
+            if not df.empty or mode == "supabase_public":
+                return df
+        except Exception:
+            if mode == "supabase_public":
+                raise
+
+    if local_path.exists():
+        _record_table_load_status("data_source_runs", "local_runtime_snapshot", str(local_path))
+        return load_runs_snapshot(local_path)
+
+    _record_table_load_status("data_source_runs", "local_runtime_snapshot_missing", str(local_path))
+    return load_runs_snapshot(local_path)
 
 
 def load_entity_registry_personas():

@@ -23,13 +23,14 @@ from dotenv import load_dotenv
 
 ROOT    = Path(__file__).resolve().parents[1]
 PUB_DIR = ROOT / "Data" / "Publications"
-EMB_FILE  = PUB_DIR / "cchen_embeddings.npy"
-META_FILE = PUB_DIR / "cchen_embeddings_meta.csv"
 load_dotenv(ROOT / "Database" / ".env")
 
 _MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 _embeddings: np.ndarray | None = None
 _meta: pd.DataFrame | None = None
+_artifact_source: tuple[str, str] | None = None
+_fixture_meta: pd.DataFrame | None = None
+_fixture_source: str | None = None
 _model = None
 _PROFILE_QUERY_TERMS = (
     "medicina nuclear",
@@ -62,6 +63,7 @@ _PROFILE_NEGATIVE_TERMS = (
     "intervencionismo",
     "cardiologia intervencion",
 )
+_FIXTURE_TOKEN_PATTERN = re.compile(r"[a-z0-9]{2,}")
 
 
 def _result_columns() -> list[str]:
@@ -72,22 +74,67 @@ def _empty_result() -> pd.DataFrame:
     return pd.DataFrame(columns=_result_columns())
 
 
+def _resolve_path_env(name: str, default: Path | None = None) -> Path | None:
+    raw_value = str(os.getenv(name, "")).strip()
+    if raw_value:
+        path = Path(raw_value)
+        return path if path.is_absolute() else ROOT / path
+    return default
+
+
+def _emb_file() -> Path:
+    return _resolve_path_env("SEMANTIC_SEARCH_EMB_FILE", PUB_DIR / "cchen_embeddings.npy")
+
+
+def _meta_file() -> Path:
+    return _resolve_path_env("SEMANTIC_SEARCH_META_FILE", PUB_DIR / "cchen_embeddings_meta.csv")
+
+
+def _fixture_meta_file() -> Path | None:
+    return _resolve_path_env("SEMANTIC_SEARCH_FIXTURE_META_FILE", None)
+
+
 def _load_artifacts() -> tuple[np.ndarray, pd.DataFrame] | tuple[None, None]:
-    global _embeddings, _meta
-    if _embeddings is None:
-        if not EMB_FILE.exists() or not META_FILE.exists():
+    global _embeddings, _meta, _artifact_source
+    emb_file = _emb_file()
+    meta_file = _meta_file()
+    current_source = (str(emb_file), str(meta_file))
+    if _embeddings is None or _meta is None or _artifact_source != current_source:
+        if not emb_file.exists() or not meta_file.exists():
             return None, None
         try:
-            emb = np.load(EMB_FILE)
-            meta = pd.read_csv(META_FILE).fillna("")
+            emb = np.load(emb_file)
+            meta = pd.read_csv(meta_file).fillna("")
             if "abstract" not in meta.columns:
                 meta["abstract"] = ""
             # Only assign globals once both files loaded successfully
             _embeddings, _meta = emb, meta
+            _artifact_source = current_source
         except Exception as exc:
             print(f"[semantic_search] Failed to load artifacts: {exc}")
             return None, None
     return _embeddings, _meta
+
+
+def _load_fixture_meta() -> pd.DataFrame | None:
+    global _fixture_meta, _fixture_source
+    fixture_file = _fixture_meta_file()
+    if fixture_file is None or not fixture_file.exists():
+        return None
+
+    current_source = str(fixture_file)
+    if _fixture_meta is None or _fixture_source != current_source:
+        try:
+            meta = pd.read_csv(fixture_file).fillna("")
+            for column in ("openalex_id", "doi", "title", "year", "abstract"):
+                if column not in meta.columns:
+                    meta[column] = ""
+            _fixture_meta = meta
+            _fixture_source = current_source
+        except Exception as exc:
+            print(f"[semantic_search] Failed to load fixture corpus: {exc}")
+            return None
+    return _fixture_meta
 
 
 def _get_model():
@@ -111,6 +158,11 @@ def _normalize_match_text(value: object) -> str:
     text = unicodedata.normalize("NFKD", str(value or ""))
     text = "".join(char for char in text if not unicodedata.combining(char))
     return re.sub(r"\s+", " ", text).strip().lower()
+
+
+def _tokenize_fixture_text(value: object) -> set[str]:
+    normalized = _normalize_match_text(value)
+    return set(_FIXTURE_TOKEN_PATTERN.findall(normalized))
 
 
 def _uses_nuclear_medicine_profile(query: str) -> bool:
@@ -210,6 +262,35 @@ def _search_supabase(query: str, top_k: int) -> pd.DataFrame:
         return _empty_result()
 
 
+def _search_fixture(query: str, top_k: int) -> pd.DataFrame:
+    """Versioned mini-corpus for reproducible CI sanity checks."""
+    meta = _load_fixture_meta()
+    if meta is None or meta.empty:
+        return _empty_result()
+
+    query_tokens = _tokenize_fixture_text(query)
+    if not query_tokens:
+        return _empty_result()
+
+    fixture = meta.copy()
+    combined_text = fixture["title"].astype(str) + " " + fixture["abstract"].astype(str)
+    fixture["score"] = combined_text.map(
+        lambda text: float(len(query_tokens & _tokenize_fixture_text(text)))
+    )
+    fixture = fixture[fixture["score"] > 0].copy()
+    if fixture.empty:
+        return _empty_result()
+
+    fixture["_year_sort"] = pd.to_numeric(fixture["year"], errors="coerce").fillna(0)
+    fixture = fixture.sort_values(
+        by=["score", "_year_sort", "title"],
+        ascending=[False, False, True],
+    )
+    fixture = fixture.head(top_k)
+    fixture = fixture[[c for c in _result_columns() if c in fixture.columns]].reset_index(drop=True)
+    return _rerank_profile_results(fixture, query=query, top_k=top_k)
+
+
 def search(query: str, top_k: int = 10) -> pd.DataFrame:
     """
     Busca los top_k papers más similares al query.
@@ -230,13 +311,21 @@ def search(query: str, top_k: int = 10) -> pd.DataFrame:
         result = result[[c for c in _result_columns() if c in result.columns]].reset_index(drop=True)
         return _rerank_profile_results(result, query=query, top_k=top_k)
 
+    if _fixture_meta_file() is not None:
+        return _search_fixture(query, top_k)
+
     # Ruta Supabase: cuando los archivos locales no existen (Streamlit Cloud)
     return _search_supabase(query, top_k)
 
 
 def is_available() -> bool:
     """True si la búsqueda semántica está disponible (local o Supabase)."""
-    if EMB_FILE.exists() and META_FILE.exists():
+    emb_file = _emb_file()
+    meta_file = _meta_file()
+    fixture_file = _fixture_meta_file()
+    if emb_file.exists() and meta_file.exists():
+        return True
+    if fixture_file is not None and fixture_file.exists():
         return True
     url, key = _resolve_supabase_credentials()
     return bool(url and key)

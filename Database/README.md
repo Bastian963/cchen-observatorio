@@ -9,6 +9,9 @@ Este directorio contiene el esquema de base de datos, scripts de migración y go
 | `schema.sql` | DDL completo para Supabase/PostgreSQL — ejecutar una vez para crear todas las tablas |
 | `migrate_to_supabase.py` | Script de migración CSV → Supabase (upsert idempotente) |
 | `data_quality.py` | Verificación de calidad e integridad de los CSVs locales |
+| `data_sources` | Catálogo operativo de fuentes, frecuencia, comandos y estado de frescura |
+| `data_source_runs` | Historial operativo por corrida del refresh canónico |
+| `migrations/2026-03-29_source_refresh_runtime.sql` | Migración incremental para proyectos Supabase ya existentes |
 | `.env.example` | Plantilla de credenciales (copiar como `.env`) |
 | `.env` | Credenciales reales — **NO subir a GitHub** |
 
@@ -47,6 +50,42 @@ python Database/data_quality.py --output Docs/reports/calidad_datos.csv
 
 ```bash
 python Database/migrate_to_supabase.py
+```
+
+### 6. Orquestación canónica de fuentes
+
+```bash
+# Enumerar fuentes vencidas sin ejecutar
+python Scripts/run_source_refresh.py --all-due --dry-run
+
+# Ejecutar una fuente específica
+python Scripts/run_source_refresh.py --source-key arxiv_monitor --force
+
+# Ejecutar todas las fuentes vencidas
+python Scripts/run_source_refresh.py --all-due
+```
+
+El runner:
+- lee `data_sources` como contrato operativo
+- registra historial en `data_source_runs`
+- recalcula `last_updated`, `next_update_due`, `record_count`, `quality_score`
+- escribe reportes JSON por corrida en `Docs/reports/source_runs/`
+
+### 7. Migración incremental para entornos existentes
+
+Si tu proyecto Supabase ya existía antes de esta capa de refresh:
+
+```sql
+-- SQL Editor de Supabase
+\i Database/migrations/2026-03-29_source_refresh_runtime.sql
+```
+
+Si el editor no soporta `\i`, copia y pega el archivo completo en una nueva query.
+
+Luego verifica el contrato remoto:
+
+```bash
+python Scripts/check_source_refresh_remote_schema.py
 ```
 
 El script migra en orden correcto (respetando foreign keys):

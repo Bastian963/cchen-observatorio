@@ -6,7 +6,8 @@ import plotly.graph_objects as go
 
 from .shared import (
     BLUE, RED, GREEN, AMBER, PURPLE, PALETTE,
-    kpi, kpi_row, sec, make_csv,
+    asset_catalog_frame, filter_asset_catalog, kpi, kpi_row, make_csv,
+    render_asset_links_table, sec,
 )
 
 
@@ -22,6 +23,7 @@ def render(ctx: dict) -> None:
     patents      = ctx["patents"]
     orcid        = ctx["orcid"]
     padron_acad  = ctx["padron_acad"]
+    asset_catalog = asset_catalog_frame(ctx)
 
     # render_operational_strip is defined in app.py and passed via ctx
     render_operational_strip = ctx.get("render_operational_strip")
@@ -31,6 +33,20 @@ def render(ctx: dict) -> None:
     st.divider()
     if render_operational_strip is not None:
         render_operational_strip()
+    st.divider()
+
+    related_assets = filter_asset_catalog(
+        asset_catalog,
+        section_name="Panel de Indicadores",
+        publication_status="published",
+        require_public_url=True,
+        limit=5,
+    )
+    render_asset_links_table(
+        related_assets,
+        "Fuentes institucionales relacionadas",
+        "Todavía no hay activos institucionales publicados enlazados a este panel.",
+    )
     st.divider()
 
     # KPIs principales

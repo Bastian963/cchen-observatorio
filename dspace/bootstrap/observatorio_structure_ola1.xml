@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<import_structure>
+  <community>
+    <name>Observatorio CCHEN</name>
+    <description>Comunidad institucional para el piloto Observatorio 3 en 1.</description>
+    <intro>Repositorio curado de primera ola para documentos metodologicos, tecnicos y operativos del Observatorio CCHEN.</intro>
+    <copyright>Documentos institucionales del Observatorio CCHEN. Uso interno o mixto segun metadata del item.</copyright>
+    <sidebar>Primera iteracion documental para el piloto DGIn.</sidebar>
+    <collection>
+      <name>Documentos institucionales</name>
+      <description>Coleccion inicial de documentos curados del Observatorio CCHEN.</description>
+      <intro>Incluye memoria metodologica, propuesta de implementacion, documentacion tecnica y resumen operativo DGIn.</intro>
+      <copyright>Documentos institucionales del Observatorio CCHEN.</copyright>
+      <sidebar>Coleccion semilla del piloto Observatorio 3 en 1.</sidebar>
+      <license>Distribucion institucional controlada por metadata y permisos del item.</license>
+      <provenance>Creada para la ola documental 1 del piloto DGIn 2026-03-28.</provenance>
+    </collection>
+  </community>
+</import_structure>

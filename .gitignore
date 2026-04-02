@@ -1,13 +1,19 @@
 # Credenciales — NUNCA subir al repositorio
 Database/.env
+.env.prod
+.env.public
 .streamlit/secrets.toml
 Dashboard/.streamlit/secrets.toml
+Dashboard/.streamlit/secrets.public.toml
 credentials.json
 token_forms.json
 Scripts/intake_form_id.txt
 
 # Datos locales — demasiado grandes / sensibles para GitHub
-Data/
+Data/*
+!Data/Gobernanza/
+Data/Gobernanza/*
+!Data/Gobernanza/catalogo_activos_3_en_1.csv
 Codes/
 *.npy
 *.xlsx
@@ -18,6 +24,7 @@ Codes/
 
 # Claude Code internal
 .claude/
+.obsidian/
 
 # Archivos privados / bitácora personal
 Bitacora/
@@ -92,3 +99,10 @@ Icon
 /lib/
 /Dashboard/lib/
 /output/playwright/
+
+# Repos locales pesados / dev mirrors no publicables en esta pasada
+/dspace-src/
+/dspace-angular/
+/dspace-local-dev/
+/package-lock.json
+/deploy/local-prod-demo/runtime/

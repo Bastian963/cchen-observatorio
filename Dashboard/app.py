@@ -1,5 +1,5 @@
 """
-CCHEN Observatorio Tecnológico — Beta interna v0.2
+CCHEN Observatorio Tecnológico — Plataforma 3 en 1
 Vigilancia e Inteligencia I+D+i+Tt · Comisión Chilena de Energía Nuclear
 """
 import json
@@ -19,6 +19,7 @@ import plotly.graph_objects as go
 import math
 import data_loader as _data_loader
 from sections.shared import (
+    _available_sections,
     _get_secret_block,
     _streamlit_auth_supported,
     _auth_enabled,
@@ -26,6 +27,8 @@ from sections.shared import (
     _internal_auth_config,
     _internal_auth_login,
     _internal_auth_logout,
+    _observatorio_app_mode,
+    _section_visibility,
 )
 
 
@@ -113,6 +116,9 @@ load_funding_complementario = _resolve_loader("load_funding_complementario", _cs
 load_iaea_tc = _resolve_loader("load_iaea_tc", _csv_loader("Funding", "cchen_iaea_tc.csv"))
 load_perfiles_institucionales = _resolve_loader("load_perfiles_institucionales", _csv_loader("Vigilancia", "perfiles_institucionales_cchen.csv"))
 load_matching_institucional = _resolve_loader("load_matching_institucional", _csv_loader("Vigilancia", "convocatorias_matching_institucional.csv"))
+load_asset_catalog = _resolve_loader("load_asset_catalog", _empty_loader)
+load_data_sources_runtime = _resolve_loader("load_data_sources_runtime", _empty_loader)
+load_data_source_runs = _resolve_loader("load_data_source_runs", _empty_loader)
 load_entity_registry_personas = _resolve_loader("load_entity_registry_personas", _csv_loader("Gobernanza", "entity_registry_personas.csv"))
 load_entity_registry_proyectos = _resolve_loader("load_entity_registry_proyectos", _csv_loader("Gobernanza", "entity_registry_proyectos.csv"))
 load_entity_registry_convocatorias = _resolve_loader("load_entity_registry_convocatorias", _csv_loader("Gobernanza", "entity_registry_convocatorias.csv"))
@@ -528,6 +534,9 @@ _LOGO_PATH = Path(__file__).parent / "assets" / "logo_cchen360.png"
 
 
 def _render_beta_access_gate() -> None:
+    if _observatorio_app_mode() != "internal":
+        return
+
     auth_cfg = _internal_auth_config()
     if not auth_cfg.get("enabled"):
         return
@@ -573,8 +582,8 @@ def _render_beta_access_gate() -> None:
             "que no deben quedar expuestas en una URL pública abierta."
         )
         st.caption(
-            "Los usuarios se definen en `Dashboard/.streamlit/secrets.toml` o en los secrets de "
-            "Streamlit Cloud. Las credenciales no quedan hardcodeadas en el repositorio."
+            "Los usuarios se definen en `Dashboard/.streamlit/secrets.toml` o en los secrets del "
+            "dashboard desplegado. Las credenciales no quedan hardcodeadas en el repositorio."
         )
 
     with login_col:
@@ -599,6 +608,7 @@ _render_beta_access_gate()
 
 
 _APP_ACCESS = _access_context()
+_APP_MODE = _APP_ACCESS.get("app_mode", "internal")
 _CAPITAL_HUMANO_COLUMNS = getattr(_data_loader, "CAPITAL_HUMANO_COLUMNS", [
     "id", "anio_hoja", "nombre", "inicio", "termino", "duracion_dias", "tutor",
     "centro_norm", "tipo_norm", "universidad", "carrera", "monto_contrato_num",
@@ -647,6 +657,7 @@ _DATASET_LOADERS = {
     "iaea_tc": lambda can_view_sensitive: load_iaea_tc(),
     "perfiles_inst": lambda can_view_sensitive: load_perfiles_institucionales(),
     "matching_inst": lambda can_view_sensitive: load_matching_institucional(),
+    "asset_catalog": lambda can_view_sensitive: load_asset_catalog(),
     "entity_personas": lambda can_view_sensitive: _maybe_sensitive(
         load_entity_registry_personas,
         can_view_sensitive,
@@ -674,9 +685,12 @@ _DATASET_LOADERS = {
 }
 
 _SECTION_DATASETS = {
+    "Plataforma Institucional": (
+        "pub", "anid", "datacite", "openaire", "patents", "asset_catalog",
+    ),
     "Panel de Indicadores": (
         "pub", "pub_enr", "anid", "ch", "ch_ej", "ch_adv",
-        "ror_pending_review", "patents", "orcid", "padron_acad",
+        "ror_pending_review", "patents", "orcid", "padron_acad", "asset_catalog",
     ),
     "Producción Científica": (
         "pub", "pub_enr", "auth", "dian", "concepts", "orcid", "unpaywall", "europmc",
@@ -692,7 +706,7 @@ _SECTION_DATASETS = {
         "anid", "crossref", "funding_plus", "iaea_tc", "acuerdos", "convenios",
     ),
     "Convocatorias y Matching": (
-        "matching_inst", "perfiles_inst",
+        "matching_inst", "perfiles_inst", "asset_catalog",
     ),
     "Transferencia y Portafolio": (
         "datacite", "openaire", "orcid", "patents", "pub_enr",
@@ -711,7 +725,7 @@ _SECTION_DATASETS = {
         "ror_registry", "ror_pending_review", "funding_plus", "iaea_tc",
         "matching_inst", "entity_personas", "entity_projects",
         "entity_convocatorias", "entity_links", "acuerdos", "convenios",
-        "patents", "datacite", "openaire",
+        "patents", "datacite", "openaire", "asset_catalog",
     ),
     "Grafo de Citas": (
         "pub", "pub_enr", "citation_graph", "citing_papers",
@@ -821,6 +835,12 @@ _DATASET_METADATA = {
         "table_name": "convocatorias_matching_institucional",
         "sensitive": False,
     },
+    "asset_catalog": {
+        "label": "Catálogo activos 3 en 1",
+        "source": "Data/Gobernanza/catalogo_activos_3_en_1.csv",
+        "table_name": "catalogo_activos_3_en_1",
+        "sensitive": False,
+    },
     "entity_personas": {
         "label": "Entidades persona",
         "source": "Data/Gobernanza/entity_registry_personas.csv",
@@ -922,6 +942,16 @@ _DATASET_METADATA = {
 _ACTIVE_SECTION_CTX = None
 
 
+def _dataset_keys_for_section(section_name: str, *, app_mode: str, can_view_sensitive: bool) -> tuple[str, ...]:
+    dataset_keys = list(_SECTION_DATASETS.get(section_name, ()))
+    if app_mode == "public" or not can_view_sensitive:
+        dataset_keys = [
+            key for key in dataset_keys
+            if not _DATASET_METADATA.get(key, {}).get("sensitive", False)
+        ]
+    return tuple(dataset_keys)
+
+
 @st.cache_data(show_spinner=False, ttl=900, max_entries=256)
 def _load_dataset_cached(dataset_key: str, can_view_sensitive: bool):
     loader = _DATASET_LOADERS.get(dataset_key)
@@ -931,8 +961,12 @@ def _load_dataset_cached(dataset_key: str, can_view_sensitive: bool):
 
 
 @st.cache_data(show_spinner=False, ttl=900, max_entries=64)
-def _load_section_datasets_cached(section_name: str, can_view_sensitive: bool) -> dict:
-    dataset_keys = _SECTION_DATASETS.get(section_name, ())
+def _load_section_datasets_cached(section_name: str, can_view_sensitive: bool, app_mode: str) -> dict:
+    dataset_keys = _dataset_keys_for_section(
+        section_name,
+        app_mode=app_mode,
+        can_view_sensitive=can_view_sensitive,
+    )
     return {
         key: _load_dataset_cached(key, can_view_sensitive)
         for key in dataset_keys
@@ -940,13 +974,17 @@ def _load_section_datasets_cached(section_name: str, can_view_sensitive: bool) -
 
 
 def _current_section_name() -> str:
-    return str(globals().get("seccion") or "Panel de Indicadores")
+    return str(globals().get("seccion") or "Plataforma Institucional")
 
 
 def _build_section_ctx(section_name: str, can_view_sensitive: bool) -> dict:
-    ctx = dict(_load_section_datasets_cached(section_name, can_view_sensitive))
+    app_mode = _access_context().get("app_mode", "internal")
+    ctx = dict(_load_section_datasets_cached(section_name, can_view_sensitive, app_mode))
     ctx["render_operational_strip"] = render_operational_strip
     ctx["open_dataset_inspector"] = open_dataset_inspector
+    ctx["app_mode"] = app_mode
+    ctx["is_public_app"] = app_mode == "public"
+    ctx["section_visibility"] = _section_visibility(section_name)
     return ctx
 
 
@@ -983,6 +1021,7 @@ from sections.shared import (
 )
 
 from sections import (
+    plataforma_institucional,
     panel_indicadores,
     produccion_cientifica,
     redes_colaboracion,
@@ -1175,6 +1214,45 @@ def _summarize_runtime_dataset_status(status_df: pd.DataFrame) -> dict:
         "freshest_snapshot": freshest_snapshot,
         "freshest_snapshot_age_days": freshest_snapshot_age_days,
     }
+
+
+def _build_source_refresh_status() -> tuple[pd.DataFrame, pd.DataFrame]:
+    registry_df = load_data_sources_runtime()
+    runs_df = load_data_source_runs()
+    if registry_df.empty:
+        return pd.DataFrame(), pd.DataFrame()
+
+    status_df = registry_df.copy()
+    for column in ("last_updated", "next_update_due"):
+        if column in status_df.columns:
+            status_df[column] = pd.to_datetime(status_df[column], errors="coerce")
+    status_df["enabled"] = status_df.get("enabled", False).fillna(False).astype(bool)
+    status_df["blocking"] = status_df.get("blocking", False).fillna(False).astype(bool)
+    today_ts = pd.Timestamp(dt.date.today())
+    status_df["is_overdue"] = status_df["enabled"] & status_df["next_update_due"].notna() & (
+        status_df["next_update_due"].dt.normalize() <= today_ts
+    )
+    status_df["last_updated_label"] = status_df["last_updated"].dt.strftime("%d/%m/%Y").fillna("—")
+    status_df["next_update_due_label"] = status_df["next_update_due"].dt.strftime("%d/%m/%Y").fillna("—")
+    status_df["last_run_status"] = status_df.get("last_run_status", "").fillna("").replace("", "sin registro")
+    status_df["freshness_sla_days"] = pd.to_numeric(
+        status_df.get("freshness_sla_days"), errors="coerce"
+    ).astype("Int64")
+
+    if not runs_df.empty:
+        runs_df = runs_df.copy()
+        for column in ("started_at", "finished_at"):
+            if column in runs_df.columns:
+                runs_df[column] = pd.to_datetime(runs_df[column], errors="coerce")
+        runs_df["finished_at_label"] = runs_df["finished_at"].dt.strftime("%d/%m/%Y %H:%M").fillna("—")
+        runs_df["records_written"] = pd.to_numeric(runs_df.get("records_written"), errors="coerce").fillna(0).astype(int)
+        runs_df = runs_df.sort_values(["finished_at", "source_key"], ascending=[False, True]).reset_index(drop=True)
+
+    status_df = status_df.sort_values(
+        ["is_overdue", "blocking", "enabled", "source_name"],
+        ascending=[False, False, False, True],
+    ).reset_index(drop=True)
+    return status_df, runs_df
 
 
 @_dialog("Inspector de datasets", width="large")
@@ -2042,6 +2120,7 @@ def semaforo_badge(valor):
 
 with st.sidebar:
     access = _access_context()
+    available_sections = access.get("visible_sections") or _available_sections(access.get("app_mode"))
     if _LOGO_PATH.exists():
         st.image(str(_LOGO_PATH), width=160)
     else:
@@ -2055,21 +2134,70 @@ with st.sidebar:
             unsafe_allow_html=True
         )
     st.markdown("---")
-    seccion = st.radio("Sección del observatorio", [
-        "Panel de Indicadores",
-        "Producción Científica",
-        "Redes y Colaboración",
-        "Vigilancia Tecnológica",
-        "Financiamiento I+D",
-        "Convocatorias y Matching",
-        "Transferencia y Portafolio",
-        "Modelo y Gobernanza",
-        "Formación de Capacidades",
-        "Asistente I+D",
-        "Grafo de Citas",
-    ], label_visibility="collapsed")
+    seccion = st.radio(
+        "Sección del observatorio",
+        available_sections,
+        label_visibility="collapsed",
+    )
     st.markdown("---")
     with st.expander("Fuentes y actualización", expanded=False):
+        if access.get("app_mode") != "public":
+            source_status_df, source_runs_df = _build_source_refresh_status()
+            if not source_status_df.empty:
+                enabled_df = source_status_df[source_status_df["enabled"]]
+                overdue_count = int(enabled_df["is_overdue"].sum()) if not enabled_df.empty else 0
+                failed_count = int(enabled_df["last_run_status"].astype(str).str.lower().eq("failed").sum()) if not enabled_df.empty else 0
+                c_status_1, c_status_2, c_status_3 = st.columns(3)
+                c_status_1.metric("Fuentes habilitadas", f"{len(enabled_df):,}")
+                c_status_2.metric("Vencidas", f"{overdue_count:,}")
+                c_status_3.metric("Últ. fallo", f"{failed_count:,}")
+                st.caption(
+                    "Estado operativo del runner canónico de refresh. "
+                    "Las fuentes manuales siguen registradas pero fuera del scheduler."
+                )
+                st.dataframe(
+                    source_status_df[
+                        [
+                            "source_name",
+                            "update_frequency",
+                            "last_updated_label",
+                            "next_update_due_label",
+                            "last_run_status",
+                        ]
+                    ].rename(
+                        columns={
+                            "source_name": "Fuente",
+                            "update_frequency": "Frecuencia",
+                            "last_updated_label": "Última actualización",
+                            "next_update_due_label": "Próxima esperada",
+                            "last_run_status": "Estado",
+                        }
+                    ),
+                    width="stretch",
+                    height=260,
+                    hide_index=True,
+                )
+                if not source_runs_df.empty:
+                    st.caption("Últimas corridas registradas")
+                    st.dataframe(
+                        source_runs_df[
+                            ["source_key", "status", "records_written", "finished_at_label", "trigger_kind"]
+                        ]
+                        .head(6)
+                        .rename(
+                            columns={
+                                "source_key": "Source key",
+                                "status": "Estado",
+                                "records_written": "Registros",
+                                "finished_at_label": "Finalizó",
+                                "trigger_kind": "Trigger",
+                            }
+                        ),
+                        width="stretch",
+                        height=220,
+                        hide_index=True,
+                    )
+                st.divider()
         if _backend.get("source_mode") != "local":
             st.caption(
                 "Modo de datos no-local activo: estas fechas corresponden a snapshots/archivos locales "
@@ -2082,7 +2210,11 @@ with st.sidebar:
         if st.button("Inspector datasets", key="sidebar_open_dataset_inspector", width="stretch"):
             open_dataset_inspector()
     with st.expander("Acceso y permisos", expanded=False):
-        if access.get("auth_mode") == "internal":
+        if access.get("app_mode") == "public":
+            st.caption("Portal público del observatorio 3 en 1.")
+            st.caption("Esta superficie no carga datasets sensibles ni requiere autenticación para navegar.")
+            st.caption("Las vistas internas y operativas permanecen en la superficie `obs-int`.")
+        elif access.get("auth_mode") == "internal":
             if access["is_logged_in"]:
                 st.success(f"Sesión activa: {access['name']}")
                 if access.get("username"):
@@ -2119,7 +2251,10 @@ with st.sidebar:
                 if st.button("Iniciar sesión", key="sidebar_login", width="stretch"):
                     st.login()
     st.markdown("---")
-    st.caption("Beta v0.2  ·  CORFO CCHEN 360")
+    if access.get("app_mode") == "public":
+        st.caption("Portal público v0.3  ·  Observatorio CCHEN 3 en 1")
+    else:
+        st.caption("Beta interna v0.2  ·  CORFO CCHEN 360")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -2133,6 +2268,7 @@ _ctx["_section_name"] = seccion
 _ACTIVE_SECTION_CTX = _ctx
 
 _SECTION_MAP = {
+    "Plataforma Institucional":  plataforma_institucional.render,
     "Panel de Indicadores":       panel_indicadores.render,
     "Producción Científica":      produccion_cientifica.render,
     "Redes y Colaboración":       redes_colaboracion.render,
@@ -2151,4 +2287,3 @@ if _render_fn is not None:
     _render_fn(_ctx)
 else:
     st.error(f"Sección desconocida: {seccion!r}")
-

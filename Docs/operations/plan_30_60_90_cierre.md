@@ -50,7 +50,7 @@
 
 - [ ] Completar fila en `sla_semanal.md` y `comite_kpis.md` (K1–K8)
 - [ ] Si K4 (IAEA/Convocatorias) ≥ 2 semanas SKIP → abrir issue técnico en GitHub
-- [ ] Revisar `arxiv_monitor.yml`: éxito 100% sin intervención manual (K1)
+- [ ] Revisar `actualizacion_datos.yml`: éxito 100% sin intervención manual (K1)
 
 **Greenlight H1 (Sem 17):**
 - [ ] D1–D4 completados o justificados

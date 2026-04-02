@@ -14,12 +14,12 @@ from .shared import (
 
 def render(ctx: dict) -> None:
     """Render the Financiamiento I+D section."""
-    anid         = ctx["anid"]
-    crossref     = ctx["crossref"]
-    iaea_tc      = ctx["iaea_tc"]
-    funding_plus = ctx["funding_plus"]
-    convenios    = ctx["convenios"]
-    acuerdos     = ctx["acuerdos"]
+    anid         = ctx.get("anid", pd.DataFrame())
+    crossref     = ctx.get("crossref", pd.DataFrame())
+    iaea_tc      = ctx.get("iaea_tc", pd.DataFrame())
+    funding_plus = ctx.get("funding_plus", pd.DataFrame())
+    convenios    = ctx.get("convenios", pd.DataFrame())
+    acuerdos     = ctx.get("acuerdos", pd.DataFrame())
 
     st.title("Financiamiento I+D — Fondos ANID")
     st.caption("Fuente: Repositorio ANID · 30 proyectos adjudicados · 2000–2025")

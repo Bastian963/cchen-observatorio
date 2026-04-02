@@ -1,0 +1,162 @@
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    '' close;
+}
+
+resolver 127.0.0.11 ipv6=off valid=30s;
+
+server {
+    listen 80 default_server;
+    server_name ${OBSERVATORIO_DASHBOARD_HOST} ${OBSERVATORIO_DSPACE_HOST} ${OBSERVATORIO_CKAN_HOST};
+
+    location = /nginx-health {
+        access_log off;
+        add_header Content-Type text/plain;
+        return 200 'ok';
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ${OBSERVATORIO_DASHBOARD_HOST};
+
+    ssl_certificate /etc/nginx/certs/${OBSERVATORIO_DASHBOARD_HOST}.crt;
+    ssl_certificate_key /etc/nginx/certs/${OBSERVATORIO_DASHBOARD_HOST}.key;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    access_log /var/log/nginx/dashboard.access.log;
+    error_log /var/log/nginx/dashboard.error.log warn;
+
+    auth_basic "${OBSERVATORIO_BASIC_AUTH_REALM}";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+
+    location = /nginx-health {
+        auth_basic off;
+        access_log off;
+        add_header Content-Type text/plain;
+        return 200 'ok';
+    }
+
+    location / {
+        set $dashboard_upstream http://dashboard:8501;
+        proxy_pass $dashboard_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Port 443;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+        proxy_buffering off;
+        proxy_redirect off;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ${OBSERVATORIO_DSPACE_HOST};
+
+    ssl_certificate /etc/nginx/certs/${OBSERVATORIO_DSPACE_HOST}.crt;
+    ssl_certificate_key /etc/nginx/certs/${OBSERVATORIO_DSPACE_HOST}.key;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    access_log /var/log/nginx/dspace.access.log;
+    error_log /var/log/nginx/dspace.error.log warn;
+
+    auth_basic "${OBSERVATORIO_BASIC_AUTH_REALM}";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+    client_max_body_size 512m;
+
+    location = /nginx-health {
+        auth_basic off;
+        access_log off;
+        add_header Content-Type text/plain;
+        return 200 'ok';
+    }
+
+    location = /server {
+        return 301 https://$host/server/;
+    }
+
+    location /server/ {
+        set $dspace_backend_upstream http://dspace-backend:8080;
+        proxy_pass $dspace_backend_upstream/server/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Port 443;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_redirect off;
+    }
+
+    location / {
+        set $dspace_frontend_upstream http://dspace-frontend:80;
+        proxy_pass $dspace_frontend_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Port 443;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_redirect off;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name ${OBSERVATORIO_CKAN_HOST};
+
+    ssl_certificate /etc/nginx/certs/${OBSERVATORIO_CKAN_HOST}.crt;
+    ssl_certificate_key /etc/nginx/certs/${OBSERVATORIO_CKAN_HOST}.key;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    access_log /var/log/nginx/ckan.access.log;
+    error_log /var/log/nginx/ckan.error.log warn;
+
+    auth_basic "${OBSERVATORIO_BASIC_AUTH_REALM}";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+    client_max_body_size 512m;
+
+    location = /nginx-health {
+        auth_basic off;
+        access_log off;
+        add_header Content-Type text/plain;
+        return 200 'ok';
+    }
+
+    location / {
+        set $ckan_upstream http://ckan:5000;
+        proxy_pass $ckan_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Port 443;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+        proxy_redirect off;
+    }
+}

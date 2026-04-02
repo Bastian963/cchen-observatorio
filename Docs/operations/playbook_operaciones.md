@@ -1,10 +1,19 @@
-# Playbook de Operaciones — Observatorio CCHEN 360°
+# Playbook de Operaciones — Observatorio CCHEN 360° 3 en 1
 
-**Versión:** 1.0  
-**Fecha:** 2026-03-23  
+**Versión:** 1.1  
+**Fecha:** 2026-04-02  
 **Propietario:** Bastián Ayala I.  
 **Repositorio:** https://github.com/Bastian963/cchen-observatorio  
-**Dashboard:** https://cchen-observatorio.streamlit.app  
+**Rama baseline público actual:** `feat/observatorio-3en1-public-portal`  
+**Portal público dashboard:** https://observatorio.cchen.cl  
+**Dashboard interno:** https://obs-int.cchen.cl  
+**DSpace público:** https://repo.cchen.cl  
+**CKAN público:** https://datos.cchen.cl  
+
+Estado maestro de beta pública:
+
+- `Docs/operations/estado_beta_publica_3en1.md`
+- `Docs/operations/runbook_oracle_piloto_publico_3en1.md`
 
 ---
 
@@ -17,35 +26,49 @@
 5. [Mantenimiento preventivo](#5-mantenimiento-preventivo)
 6. [Comandos de diagnóstico rápido](#6-comandos-de-diagnóstico-rápido)
 
+Gate recomendado antes de preparar una VM pública:
+
+```bash
+bash Scripts/check_public_beta_release.sh
+```
+
+Regla de infraestructura para el primer piloto Oracle:
+
+- preferir `x86` si todavía hay `trial credits`
+- usar `A1` sólo cuando se quiera validar el camino `Always Free`
+
 ---
 
 ## 1. SLA Matrix v1
 
-### 1.1 Fuentes de datos (pipeline `arxiv_monitor.yml`)
+### 1.1 Fuentes de datos (scheduler `actualizacion_datos.yml`)
 
 | Fuente | Criticidad | Frecuencia | Propietario dato | Disponibilidad objetivo | Frescura máxima | En caso de fallo |
 |--------|-----------|------------|-----------------|------------------------|-----------------|-----------------|
-| **arXiv** | 🔴 Crítica | Semanal (lunes 08:00 UTC) | arXiv.org API (pública) | ≥95% de corridas | 8 días | Incidente P1 — escalar inmediatamente |
-| **News** | 🔴 Crítica | Semanal (lunes 08:00 UTC) | RSS / NewsAPI | ≥95% de corridas | 8 días | Incidente P1 — escalar inmediatamente |
-| **IAEA INIS** | 🟡 Best-effort | Semanal (lunes 08:00 UTC) | IAEA API (pública, TLS inestable) | ≥50% de corridas (best-effort) | 30 días | Alerta si SKIP ≥2 semanas consecutivas → P2 |
-| **Convocatorias ANID** | 🟡 Best-effort | Semanal (lunes 08:00 UTC) | Web scraping anid.cl | ≥60% de corridas (best-effort) | 14 días | Alerta si SKIP ≥2 semanas → P2; ejecutar manualmente |
-| **Citation graph** | ⚪ Manual | A demanda | CSV local (`Data/Vigilancia/`) | N/A (no corre en CI) | 60 días | Manual: regenerar con `fetch_openalex_citations.py` |
-| **Boletín semanal** | 🟡 Importante | Semanal (tras pipeline) | Generado internamente | ≥95% de corridas | 8 días | Revisar log de `generar_boletin.py` |
+| **arXiv** | 🔴 Crítica | Semanal | arXiv.org API (pública) | ≥95% de corridas debidas | 8 días | Incidente P1 — escalar inmediatamente |
+| **News** | 🔴 Crítica | Semanal | RSS / NewsAPI | ≥95% de corridas debidas | 8 días | Incidente P1 — escalar inmediatamente |
+| **IAEA INIS** | 🟡 Best-effort | Semanal | IAEA API (pública, TLS inestable) | ≥50% de corridas debidas | 30 días | Alerta si SKIP ≥2 semanas consecutivas → P2 |
+| **Convocatorias ANID** | 🟡 Best-effort | Semanal | Web scraping anid.cl | ≥60% de corridas debidas | 14 días | Alerta si SKIP ≥2 semanas → P2; ejecutar manualmente |
+| **Citation graph** | ⚪ Programada | Trimestral | OpenAlex API | ≥95% de corridas debidas | 60 días | Reejecutar `fetch_openalex_citations.py` |
+| **Boletín semanal** | 🟡 Importante | Manual / comité | Generado internamente | ≥95% de semanas requeridas | 8 días | Revisar log de `generar_boletin.py` |
 
 ### 1.2 Servicios de infraestructura
 
 | Servicio | Criticidad | SLA externo | Verificación | Fallback |
 |----------|-----------|-------------|--------------|---------|
 | **Supabase (PostgreSQL 15)** | 🔴 Crítica | 99.9% uptime (Supabase SLA) | `python3 Scripts/check_supabase_runtime.py` | CSV local vía `data_loader.py` |
-| **Streamlit Cloud** | 🔴 Crítica | ~99.5% uptime | `python3 Scripts/check_dashboard_smoke.py` | N/A (no hay mirror) |
-| **GitHub Actions** | 🟡 Importante | 99.9% uptime (GitHub SLA) | `gh run list --workflow arxiv_monitor.yml` | Trigger manual |
+| **Reverse proxy 3 en 1** | 🔴 Crítica | VM pública / interna | `bash Scripts/check_observatorio_public_portal.sh` | Sandbox local o staging |
+| **Dashboard Streamlit** | 🔴 Crítica | Público + interno | `bash Scripts/check_observatorio_stack.sh` / `bash Scripts/check_observatorio_public_portal.sh` | Streamlit Cloud sólo como contingencia temporal |
+| **DSpace UI + REST** | 🔴 Crítica | Público | `bash Scripts/check_observatorio_public_portal.sh` | N/A |
+| **CKAN UI + Action API** | 🔴 Crítica | Público | `bash Scripts/check_observatorio_public_portal.sh` | N/A |
+| **GitHub Actions** | 🟡 Importante | 99.9% uptime (GitHub SLA) | `gh run list --workflow actualizacion_datos.yml` | Trigger manual |
 | **Groq LLM API** | 🟡 Importante | Best-effort (free tier) | Log del dashboard en runtime | Asistente responde con mensaje de error controlado |
 
 ### 1.3 Workflows CI/CD
 
 | Workflow | Disparador | Timeout | SLA objetivo | Alerta si |
 |----------|-----------|---------|--------------|-----------|
-| `arxiv_monitor.yml` | Lunes 08:00 UTC + manual | 15 min | ≤4 min duración | >4 min o conclusion ≠ success |
+| `actualizacion_datos.yml` | Diario + manual | 30 min | ≤10 min duración | >10 min o conclusion ≠ success |
 | `dashboard_smoke.yml` | Push a `main` | 5 min | ≤2 min | Falla en imports o section load |
 | `database_contract.yml` | Push a `main` | 5 min | ≤2 min | Falla en schema o row counts |
 
@@ -53,13 +76,14 @@
 
 ## 2. Inventario de componentes
 
-### Scripts de ingesta (ejecutables manualmente o vía CI)
+### Scripts de ingesta y refresh
 
 | Script | Función | Datos entrada | Datos salida |
 |--------|---------|---------------|--------------|
-| `Scripts/arxiv_monitor.py` | Fetch semanal arXiv | arXiv API | `Data/Vigilancia/arxiv_monitor_YYYY-MM-DD.csv` |
-| `Scripts/news_monitor.py` | Fetch semanal noticias | RSS/NewsAPI | `Data/Vigilancia/news_monitor_YYYY-MM-DD.csv` |
-| `Scripts/iaea_inis_monitor.py` | Fetch INIS nuclear | IAEA API | `Data/Vigilancia/iaea_inis_YYYY-MM-DD.csv` |
+| `Scripts/run_source_refresh.py` | Runner canónico y agenda local/manual | `data_sources` + scripts fuente | snapshots runtime + JSONs en `Docs/reports/source_runs/` |
+| `Scripts/arxiv_monitor.py` | Fetch semanal arXiv | arXiv API | `Data/Vigilancia/arxiv_monitor.csv` |
+| `Scripts/news_monitor.py` | Fetch semanal noticias | RSS/NewsAPI | `Data/Vigilancia/news_monitor.csv` |
+| `Scripts/iaea_inis_monitor.py` | Fetch INIS nuclear | IAEA API | `Data/Vigilancia/iaea_inis_monitor.csv` |
 | `Scripts/convocatorias_monitor.py` | Scraping ANID | anid.cl HTML | `Data/Vigilancia/convocatorias_YYYY-MM-DD.csv` |
 | `Scripts/generar_boletin.py` | Boletín HTML semanal | CSVs Vigilancia | `Data/Boletines/boletin_YYYY-SXX.html` |
 | `Scripts/fetch_openalex_citations.py` | Citation graph | OpenAlex API | `Data/Vigilancia/citation_graph_YYYY-MM-DD.csv` |
@@ -81,7 +105,10 @@
 | `Scripts/check_supabase_runtime.py` | Conectividad + lectura 35 tablas | Tras deploy o ante dudas de conexión |
 | `Scripts/check_dashboard_smoke.py` | Imports, secciones, data_loader | Tras cambios en Dashboard/ |
 | `Scripts/check_database_contract.py` | Schema + row counts vs. esperados | Tras migración o cambios de schema |
-| `Database/data_quality.py` | Calidad e integridad CSVs locales | Mensual o antes de migración masiva |
+| `Scripts/check_observatorio_stack.sh` | Salud local end-to-end del stack 3 en 1 | Tras reinicios o reconstrucción local |
+| `Scripts/check_observatorio_prod_overlay.sh` | Contrato del overlay productivo por URL | Antes de merge o despliegue |
+| `Scripts/check_observatorio_public_url.sh` | Salud por dominios publicados | Tras deploy en VM |
+| `Database/data_quality.py` | Calidad e integridad CSVs locales | Mensual o como post-check del runner |
 
 ---
 
@@ -89,9 +116,9 @@
 
 | Prioridad | Definición | Tiempo de respuesta | Tiempo de resolución |
 |-----------|-----------|--------------------|--------------------|
-| **P1 — Crítico** | arXiv=0 o News=0, dashboard caído, Supabase inaccesible, migración falla total | Inmediata (mismo día) | ≤24 horas |
-| **P2 — Alto** | IAEA SKIP ≥2 semanas, convocatorias SKIP ≥2 semanas, dashboard smoke falla, database contract falla | ≤2 días hábiles | ≤5 días hábiles |
-| **P3 — Medio** | arXiv 1-9 filas, News 1-19 filas, duración job >4 min, boletín sin generar | ≤1 semana | Próxima corrida |
+| **P1 — Crítico** | arXiv=0 o News=0, `obs-int`/`repo-int`/`datos-int` caídos, Supabase inaccesible, migración falla total | Inmediata (mismo día) | ≤24 horas |
+| **P2 — Alto** | IAEA SKIP ≥2 semanas, convocatorias SKIP ≥2 semanas, smoke del observatorio falla, database contract falla | ≤2 días hábiles | ≤5 días hábiles |
+| **P3 — Medio** | una superficie responde degradada, arXiv 1-9 filas, News 1-19 filas, duración job >4 min o boletín sin generar | ≤1 semana | Próxima corrida |
 | **P4 — Bajo** | Warnings en log, campos vacíos < umbral, documentación desactualizada | ≤1 mes | Backlog |
 
 ---
@@ -106,8 +133,8 @@
 
 ```bash
 # 1. Diagnóstico: ver log completo del run fallido
-RUN_ID=$(gh run list --workflow arxiv_monitor.yml --limit 1 --json databaseId -q '.[0].databaseId')
-gh run view "$RUN_ID" --log | grep -A5 -B5 "arXiv\|news_monitor"
+RUN_ID=$(gh run list --workflow actualizacion_datos.yml --limit 1 --json databaseId -q '.[0].databaseId')
+gh run view "$RUN_ID" --log | grep -A5 -B5 "arXiv\|news_monitor\|source-refresh"
 
 # 2. Ejecutar script localmente para aislar el problema
 cd /Users/bastianayalainostroza/Dropbox/CCHEN
@@ -121,8 +148,8 @@ python3 Database/migrate_vigilancia.py
 # arXiv: sin key requerida; verificar conectividad a export.arxiv.org
 # News: revisar variable NEWS_API_KEY en .env
 
-# 5. Trigger manual del workflow tras fix
-gh workflow run arxiv_monitor.yml
+# 5. Trigger manual del refresh canónico tras fix
+gh workflow run actualizacion_datos.yml -f source_key=arxiv_monitor -f force=true
 ```
 
 **Escalar si:** el problema persiste >24h o si la API fuente está caída.
@@ -204,33 +231,44 @@ grep -E "ERROR|error|failed|SKIP" /tmp/migrate_vigilancia.log
 
 ---
 
-### PB-05: Dashboard caído o sección no carga (P1)
+### PB-05: Una superficie 3 en 1 cae o responde degradada (P1)
 
-**Síntoma:** https://cchen-observatorio.streamlit.app no responde o sección da error
+**Síntoma:** `obs-int`, `repo-int` o `datos-int` no responden, o una sección del dashboard falla por dependencias del stack
 
 ```bash
-# 1. Smoke test local
+# 1. Estado general local del stack
+bash Scripts/check_observatorio_stack.sh
+bash Scripts/wait_and_check_observatorio_stack.sh
+
+# 2. Smoke del dashboard
 python3 Scripts/check_dashboard_smoke.py
 
-# 2. E2E check completo
+# 3. E2E check completo
 python3 Scripts/check_dashboard_e2e.py
 
-# 3. Verificar que data_loader funciona
+# 4. Verificar que data_loader funciona
 cd Dashboard
 python3 -c "import data_loader; print(data_loader.TABLE_LOAD_STATUS)"
 
-# 4. Si falla import de sección específica
+# 5. Si falla import de sección específica
 python3 -c "import sections.{nombre_seccion}"
 
-# 5. Verificar Supabase accesible (el dashboard usa fallback a CSV si falla)
+# 6. Verificar Supabase accesible (el dashboard usa fallback a CSV si falla)
 python3 Scripts/check_supabase_runtime.py
 
-# 6. Forzar redeploy en Streamlit Cloud
-# → ir a https://share.streamlit.io → app → Reboot app
-# O hacer un commit vacío para trigger CI:
-git commit --allow-empty -m "chore: redeploy dashboard"
-git push origin main
+# 7. Si el problema parece del overlay productivo
+bash Scripts/check_observatorio_prod_overlay.sh
+
+# 8. Si el problema aparece sólo en la VM publicada
+bash Scripts/check_observatorio_public_url.sh
 ```
+
+Escalamiento:
+
+- si falla sólo `obs-int`, revisar `dashboard` + `reverse-proxy`
+- si falla `repo-int`, revisar `dspace-backend`, `dspace-frontend` y la ruta `/server`
+- si falla `datos-int`, revisar `ckan`, `ckan-solr` y `ckan-db`
+- usar Streamlit Cloud sólo como contingencia temporal para demo del dashboard, no como resolución principal
 
 ---
 
@@ -256,7 +294,7 @@ pip install -r Dashboard/requirements.txt
 
 ---
 
-### PB-07: Job `arxiv_monitor.yml` dura >8 min (P2)
+### PB-07: Job `actualizacion_datos.yml` dura >10 min (P2)
 
 **Síntoma:** Punto 2 del checklist = ⚠️ o ❌ en duración
 
@@ -280,10 +318,11 @@ gh run view "$RUN_ID" --json jobs -q '.jobs[].steps[] | "\(.number) \(.name) \(.
 
 ## 5. Mantenimiento preventivo
 
-### Semanal (cada lunes, tras corrida automática)
+### Semanal (tras revisar corridas vencidas de la semana)
 - [ ] Completar checklist en [sla_semanal.md](sla_semanal.md)
 - [ ] Actualizar KPIs de comité en [comite_kpis.md](comite_kpis.md)
 - [ ] Ejecutar batería QA del asistente en [qa_asistente_id.md](qa_asistente_id.md)
+- [ ] Ejecutar `bash Scripts/check_observatorio_stack.sh`
 - [ ] Actualizar historial IAEA/Convocatorias si hay SKIP
 - [ ] Si nivel = 🔴: abrir issue antes del martes
 
@@ -298,7 +337,8 @@ gh run view "$RUN_ID" --json jobs -q '.jobs[].steps[] | "\(.number) \(.name) \(.
 - [ ] Actualizar `ARCHITECTURE.md` con cambios de TRL y hitos
 - [ ] Revisar y actualizar este playbook
 - [ ] Ejecutar `build_operational_core.py` si hay nuevas publicaciones masivas
-- [ ] Evaluar costos Supabase y Streamlit Cloud (free tier limits)
+- [ ] Probar `bash Scripts/check_observatorio_prod_overlay.sh`
+- [ ] Validar backup + restore mínimo del stack 3 en 1
 
 ---
 
@@ -307,15 +347,15 @@ gh run view "$RUN_ID" --json jobs -q '.jobs[].steps[] | "\(.number) \(.name) \(.
 ```bash
 # ── Estado general del observatorio ──────────────────────────────────────────
 
-# Último run del pipeline semanal
-gh run list --workflow arxiv_monitor.yml --limit 5 \
+# Últimos runs del scheduler canónico
+gh run list --workflow actualizacion_datos.yml --limit 5 \
   --json databaseId,conclusion,createdAt,displayTitle \
   -q '.[] | "\(.databaseId) | \(.conclusion) | \(.createdAt)"'
 
-# Log resumido del último run (checklist 10 puntos)
-RUN_ID=$(gh run list --workflow arxiv_monitor.yml --limit 1 --json databaseId -q '.[0].databaseId')
+# Log resumido del último run
+RUN_ID=$(gh run list --workflow actualizacion_datos.yml --limit 1 --json databaseId -q '.[0].databaseId')
 gh run view "$RUN_ID" --log | grep -E \
-  "Estado operativo|arXiv|News.*fila|IAEA|SKIP|convocatorias|Boletín guardado|filas migradas|Leídas:|TLS"
+  "source-refresh|arXiv|News|IAEA|convocatorias|Citation|quality|failed|success"
 
 # ── Supabase ──────────────────────────────────────────────────────────────────
 
@@ -330,6 +370,15 @@ python3 Scripts/check_database_contract.py
 # Smoke test (imports, secciones, data_loader)
 python3 Scripts/check_dashboard_smoke.py
 
+# Estado local end-to-end
+bash Scripts/check_observatorio_stack.sh
+
+# Contrato del overlay productivo
+bash Scripts/check_observatorio_prod_overlay.sh
+
+# Sandbox local de publicación por URL
+bash Scripts/prepare_local_public_demo.sh
+
 # ── Data quality ──────────────────────────────────────────────────────────────
 
 # Reporte calidad CSVs locales (consola)
@@ -342,22 +391,23 @@ python3 Database/data_quality.py --output Docs/reports/calidad_$(date +%Y-%m).cs
 
 cd /Users/bastianayalainostroza/Dropbox/CCHEN
 
-# Ingesta individual
+# Agenda canónica
+python3 Scripts/run_source_refresh.py --all-due --dry-run
+python3 Scripts/run_source_refresh.py --source-key arxiv_monitor --force
+
+# Scripts individuales si necesitas aislar una fuente
 python3 Scripts/arxiv_monitor.py
 python3 Scripts/news_monitor.py
 python3 Scripts/iaea_inis_monitor.py
 python3 Scripts/convocatorias_monitor.py
 
-# Migración a Supabase
-python3 Database/migrate_vigilancia.py
-
-# Boletín semanal
+# Boletín / legado manual
 python3 Scripts/generar_boletin.py
 
-# Trigger manual del workflow completo
-gh workflow run arxiv_monitor.yml
+# Trigger manual del workflow canónico
+gh workflow run actualizacion_datos.yml
 ```
 
 ---
 
-*Última actualización: 2026-03-23 | Próxima revisión: 2026-06-23*
+*Última actualización: 2026-03-29 | Próxima revisión: 2026-06-29*

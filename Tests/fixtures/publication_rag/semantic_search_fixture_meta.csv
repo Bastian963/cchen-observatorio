@@ -1,0 +1,3 @@
+openalex_id,doi,title,year,abstract
+fixture:dosimetria,10.0000/cchen.fixture.1,"Dosimetria y radiodiagnosis para seguridad radiologica en ciclotron CCHEN",2024,"Estudio de dosimetria operacional y radiodiagnosis aplicada a seguridad radiologica en un cyclotron institucional, con foco en radiological protection y trazabilidad."
+fixture:nuclear-medicine,10.0000/cchen.fixture.2,"Tendencias en medicina nuclear e imagenologia PET con 177Lu y 166Ho",2025,"Revision breve sobre medicina nuclear, imagenologia y PET en CCHEN, con aplicaciones de 177Lu y 166Ho dentro de programas de nuclear medicine."

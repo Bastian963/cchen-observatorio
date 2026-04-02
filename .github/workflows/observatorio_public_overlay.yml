@@ -1,0 +1,82 @@
+name: Observatorio Public Overlay
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+on:
+  push:
+    paths:
+      - ".github/workflows/observatorio_public_overlay.yml"
+      - ".env.public.example"
+      - ".gitignore"
+      - "docker-compose.observatorio.yml"
+      - "docker-compose.observatorio.public.yml"
+      - "deploy/nginx/**"
+      - "Dashboard/**"
+      - "dspace-frontend/**"
+      - "Data/Gobernanza/catalogo_activos_3_en_1.csv"
+      - "Scripts/check_observatorio_public_overlay.sh"
+      - "Scripts/check_public_beta_release.sh"
+      - "Scripts/check_observatorio_public_portal.sh"
+      - "Scripts/wait_and_check_observatorio_public_portal.sh"
+      - "Scripts/deploy_observatorio_public.sh"
+      - "Scripts/check_dashboard_public_mode.py"
+      - "Scripts/check_public_beta_readiness.py"
+      - "Scripts/check_assistant_asset_links.py"
+      - "Scripts/validate_asset_catalog.py"
+      - "Docs/matriz_visibilidad_publico_interno_3en1.md"
+      - "Docs/operations/runbook_publicacion_portal_publico_3en1.md"
+      - "Docs/operations/playbook_operaciones.md"
+      - "Docs/index.html"
+      - "README.md"
+  pull_request:
+    paths:
+      - ".github/workflows/observatorio_public_overlay.yml"
+      - ".env.public.example"
+      - ".gitignore"
+      - "docker-compose.observatorio.yml"
+      - "docker-compose.observatorio.public.yml"
+      - "deploy/nginx/**"
+      - "Dashboard/**"
+      - "dspace-frontend/**"
+      - "Data/Gobernanza/catalogo_activos_3_en_1.csv"
+      - "Scripts/check_observatorio_public_overlay.sh"
+      - "Scripts/check_public_beta_release.sh"
+      - "Scripts/check_observatorio_public_portal.sh"
+      - "Scripts/wait_and_check_observatorio_public_portal.sh"
+      - "Scripts/deploy_observatorio_public.sh"
+      - "Scripts/check_dashboard_public_mode.py"
+      - "Scripts/check_public_beta_readiness.py"
+      - "Scripts/check_assistant_asset_links.py"
+      - "Scripts/validate_asset_catalog.py"
+      - "Docs/matriz_visibilidad_publico_interno_3en1.md"
+      - "Docs/operations/runbook_publicacion_portal_publico_3en1.md"
+      - "Docs/operations/playbook_operaciones.md"
+      - "Docs/index.html"
+      - "README.md"
+  workflow_dispatch:
+
+jobs:
+  validate-public-overlay:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias del dashboard
+        run: pip install -r requirements.txt
+
+      - name: Gate de beta publica del portal
+        run: bash Scripts/check_public_beta_release.sh
+
+      - name: Construir imagen del frontend DSpace parametrizable
+        run: docker build -t dspace-frontend-ci -f dspace-frontend/Dockerfile dspace-frontend
+
+      - name: Construir imagen del reverse proxy
+        run: docker build -t observatorio-public-reverse-proxy-ci -f deploy/nginx/Dockerfile .

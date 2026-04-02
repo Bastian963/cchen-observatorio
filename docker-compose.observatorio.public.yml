@@ -1,0 +1,135 @@
+services:
+  reverse-proxy:
+    build:
+      context: .
+      dockerfile: deploy/nginx/Dockerfile
+    container_name: observatorio-public-reverse-proxy
+    depends_on:
+      dashboard:
+        condition: service_healthy
+      dashboard-internal:
+        condition: service_healthy
+      dspace-backend:
+        condition: service_healthy
+      dspace-frontend:
+        condition: service_healthy
+      ckan:
+        condition: service_healthy
+    environment:
+      OBSERVATORIO_PUBLIC_DASHBOARD_HOST: "${OBSERVATORIO_PUBLIC_DASHBOARD_HOST:-observatorio.cchen.cl}"
+      OBSERVATORIO_INTERNAL_DASHBOARD_HOST: "${OBSERVATORIO_INTERNAL_DASHBOARD_HOST:-obs-int.cchen.cl}"
+      OBSERVATORIO_DSPACE_HOST: "${OBSERVATORIO_DSPACE_HOST:-repo.cchen.cl}"
+      OBSERVATORIO_CKAN_HOST: "${OBSERVATORIO_CKAN_HOST:-datos.cchen.cl}"
+      OBSERVATORIO_BASIC_AUTH_REALM: "${OBSERVATORIO_BASIC_AUTH_REALM:-Observatorio CCHEN Interno}"
+    ports:
+      - "${OBSERVATORIO_HTTP_PORT:-80}:80"
+      - "${OBSERVATORIO_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./deploy/nginx/templates/observatorio-public-portal.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ${OBSERVATORIO_TLS_DIR:-/srv/observatorio/tls}:/etc/nginx/certs:ro
+      - ${OBSERVATORIO_BASIC_AUTH_FILE:-/srv/observatorio/nginx/.htpasswd}:/etc/nginx/.htpasswd:ro
+      - ${OBSERVATORIO_NGINX_LOG_DIR:-/srv/observatorio/logs/nginx}:/var/log/nginx
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/nginx-health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    networks:
+      - observatorio
+    restart: unless-stopped
+
+  dashboard:
+    environment:
+      OBSERVATORIO_APP_MODE: "public"
+      OBSERVATORIO_PUBLIC_ASSISTANT_ENABLED: "${OBSERVATORIO_PUBLIC_ASSISTANT_ENABLED:-true}"
+      OBSERVATORIO_DASHBOARD_URL: "${OBSERVATORIO_DASHBOARD_URL:-https://observatorio.cchen.cl}"
+      OBSERVATORIO_DSPACE_UI_URL: "${OBSERVATORIO_DSPACE_UI_URL:-https://repo.cchen.cl}"
+      OBSERVATORIO_DSPACE_API_URL: "${OBSERVATORIO_DSPACE_API_URL:-https://repo.cchen.cl/server/api}"
+      OBSERVATORIO_CKAN_URL: "${OBSERVATORIO_CKAN_URL:-https://datos.cchen.cl}"
+      OBSERVATORIO_CKAN_API_URL: "${OBSERVATORIO_CKAN_API_URL:-https://datos.cchen.cl/api/3/action/status_show}"
+    volumes:
+      - ${OBSERVATORIO_PUBLIC_SECRETS_FILE:-./Dashboard/.streamlit/secrets.public.toml}:/app/Dashboard/.streamlit/secrets.toml:ro
+    ports: !reset []
+    expose:
+      - "8501"
+
+  dashboard-internal:
+    build:
+      context: .
+      dockerfile: Dashboard/Dockerfile
+      args:
+        INSTALL_AI: "false"
+    container_name: cchen-dashboard-internal
+    environment:
+      CCHEN_DATA_ROOT: /app/Data
+      OBSERVATORIO_APP_MODE: "internal"
+      OBSERVATORIO_DASHBOARD_URL: "${OBSERVATORIO_INTERNAL_DASHBOARD_URL:-https://obs-int.cchen.cl}"
+      OBSERVATORIO_DSPACE_UI_URL: "${OBSERVATORIO_DSPACE_UI_URL:-https://repo.cchen.cl}"
+      OBSERVATORIO_DSPACE_API_URL: "${OBSERVATORIO_DSPACE_API_URL:-https://repo.cchen.cl/server/api}"
+      OBSERVATORIO_CKAN_URL: "${OBSERVATORIO_CKAN_URL:-https://datos.cchen.cl}"
+      OBSERVATORIO_CKAN_API_URL: "${OBSERVATORIO_CKAN_API_URL:-https://datos.cchen.cl/api/3/action/status_show}"
+    volumes:
+      - ./Data:/app/Data:ro
+      - ./Database:/app/Database:ro
+      - ${OBSERVATORIO_INTERNAL_SECRETS_FILE:-./Dashboard/.streamlit/secrets.toml}:/app/Dashboard/.streamlit/secrets.toml:ro
+    depends_on:
+      dspace-frontend:
+        condition: service_healthy
+      ckan:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8501/_stcore/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - observatorio
+    expose:
+      - "8501"
+    restart: on-failure
+
+  dspace-backend:
+    environment:
+      dspace__P__server__P__url: "${OBSERVATORIO_DSPACE_SERVER_URL:-https://repo.cchen.cl/server}"
+      dspace__P__server__P__ssr__P__url: "http://dspace-backend:8080/server"
+      dspace__P__ui__P__url: "${OBSERVATORIO_DSPACE_UI_URL:-https://repo.cchen.cl}"
+    ports: !reset []
+    expose:
+      - "8080"
+
+  dspace-frontend:
+    environment:
+      DSPACE_REST_SSL: "${DSPACE_FRONTEND_REST_SSL:-true}"
+      DSPACE_REST_HOST: "${OBSERVATORIO_DSPACE_HOST:-repo.cchen.cl}"
+      DSPACE_REST_PORT: "${DSPACE_FRONTEND_REST_PORT:-443}"
+      DSPACE_REST_NAMESPACE: "${DSPACE_FRONTEND_REST_NAMESPACE:-/server}"
+      DSPACE_REST_BASE_URL: "${OBSERVATORIO_DSPACE_SERVER_URL:-https://repo.cchen.cl/server}"
+      DSPACE_UI_SSL: "${DSPACE_FRONTEND_UI_SSL:-true}"
+      DSPACE_UI_HOST: "${OBSERVATORIO_DSPACE_HOST:-repo.cchen.cl}"
+      DSPACE_UI_PORT: "${DSPACE_FRONTEND_UI_PORT:-443}"
+      DSPACE_UI_NAMESPACE: "${DSPACE_FRONTEND_UI_NAMESPACE:-/}"
+      DSPACE_UI_BASE_URL: "${OBSERVATORIO_DSPACE_UI_URL:-https://repo.cchen.cl}"
+    ports: !reset []
+    expose:
+      - "80"
+
+  dspace-cli:
+    environment:
+      dspace__P__server__P__url: "${OBSERVATORIO_DSPACE_SERVER_URL:-https://repo.cchen.cl/server}"
+      dspace__P__server__P__ssr__P__url: "http://dspace-backend:8080/server"
+      dspace__P__ui__P__url: "${OBSERVATORIO_DSPACE_UI_URL:-https://repo.cchen.cl}"
+
+  dspace-solr:
+    ports: !reset []
+
+  ckan:
+    environment:
+      CKAN_SITE_URL: "${OBSERVATORIO_CKAN_URL:-https://datos.cchen.cl}"
+    ports: !reset []
+    expose:
+      - "5000"
+
+  ckan-solr:
+    ports: !reset []

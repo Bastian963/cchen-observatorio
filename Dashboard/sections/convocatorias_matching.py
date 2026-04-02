@@ -6,7 +6,10 @@ import pandas as pd
 import streamlit as st
 
 from .shared import (
+    asset_catalog_frame,
+    filter_asset_catalog,
     kpi, kpi_row, sec, make_csv,
+    render_asset_links_table,
     _text_or_empty,
     _load_convocatorias_data,
     _build_matching_profiles_summary,
@@ -22,11 +25,25 @@ def render(ctx: dict) -> None:
 
     matching_inst = ctx["matching_inst"]
     perfiles_inst = ctx["perfiles_inst"]
+    asset_catalog = asset_catalog_frame(ctx)
 
     st.title("Convocatorias y Matching CCHEN")
     st.caption(
         "Cruza el radar curado de oportunidades con perfiles institucionales, reglas explícitas "
         "de elegibilidad y un scoring formal para apoyar una mesa de pre-postulación seria."
+    )
+    st.divider()
+
+    related_assets = filter_asset_catalog(
+        asset_catalog,
+        section_name="Convocatorias y Matching",
+        require_public_url=True,
+        limit=6,
+    )
+    render_asset_links_table(
+        related_assets,
+        "Activos institucionales vinculados",
+        "Aún no hay activos publicados enlazados a esta sección; usa la cola editorial para completar DSpace.",
     )
     st.divider()
 

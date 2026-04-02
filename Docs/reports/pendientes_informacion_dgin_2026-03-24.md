@@ -6,8 +6,8 @@ Registrar la información mínima faltante para consolidar continuidad operativa
 
 ## Estado
 
-- Estado general: En piloto (provisorio).
-- Prioridad: Alta (bloquea formalización del flujo semanal).
+- Estado general: En piloto (provisorio operativo resuelto).
+- Prioridad: Media (ya no bloquea continuidad semanal, pero sí formalización institucional).
 - Fecha de registro: 2026-03-24.
 
 ## Información requerida (mínima)
@@ -33,7 +33,7 @@ Registrar la información mínima faltante para consolidar continuidad operativa
 
 ## Fecha objetivo sugerida
 
-- Cierre recomendado: antes de la sesión semana 3 (2026-04-13).
+- Cierre recomendado: antes de la decisión de semana 4 (2026-04-20).
 
 ## Checklist de cierre
 
@@ -41,12 +41,12 @@ Registrar la información mínima faltante para consolidar continuidad operativa
 - [x] Respaldo DGIn confirmado por nombre y correo (piloto provisorio).
 - [x] Regla de reemplazo documentada (piloto provisorio).
 - [x] Canal oficial semanal confirmado (piloto provisorio).
-- [ ] Acta semana 2 actualizada con nombres reales.
-- [ ] Tracker KPI actualizado con responsables reales.
+- [x] Acta semana 2 actualizada con nombres provisorios del piloto.
+- [x] Tracker KPI actualizado con responsables provisorios del piloto.
 
 ## Nota de control
 
-Hasta que esta ficha esté cerrada, la operación semanal puede continuar técnicamente, pero con riesgo de continuidad institucional por falta de asignación nominal.
+La continuidad semanal ya quedó cubierta con asignación provisoria. El pendiente remanente es formalizar titular y respaldo DGIn nominales antes de cerrar la decisión del ciclo.
 
 ## Plan de cierre inmediato (10 minutos)
 

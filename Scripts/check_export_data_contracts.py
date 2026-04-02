@@ -78,13 +78,19 @@ def _validate_contract(contract: dict[str, Any], base_dir: Path) -> tuple[list[s
     errors: list[str] = []
     name = contract["name"]
     path_glob = contract["path_glob"]
+    optional_if_missing = bool(contract.get("optional_if_missing", False))
     path = _resolve_path(base_dir, path_glob)
     if path is None:
-        return [f"[{name}] No se encontró archivo para patrón: {path_glob}"], {
+        status = "skipped_missing_optional" if optional_if_missing else "missing_file"
+        missing_msg = f"No se encontró archivo para patrón: {path_glob}"
+        return ([] if optional_if_missing else [f"[{name}] {missing_msg}"]), {
             "name": name,
+            "path": path_glob,
             "path_glob": path_glob,
-            "status": "missing_file",
-            "errors": [f"No se encontró archivo para patrón: {path_glob}"],
+            "rows": 0,
+            "columns": 0,
+            "status": status,
+            "errors": ([] if optional_if_missing else [missing_msg]),
         }
 
     try:
@@ -94,6 +100,8 @@ def _validate_contract(contract: dict[str, Any], base_dir: Path) -> tuple[list[s
         return [f"[{name}] {msg}"], {
             "name": name,
             "path": str(path.relative_to(base_dir)),
+            "rows": 0,
+            "columns": 0,
             "status": "read_error",
             "errors": [msg],
         }
@@ -183,7 +191,10 @@ def main() -> int:
 
     print(f"[contracts] contratos evaluados: {len(contracts)}")
     for row in stats_rows:
-        print(f"  - {row['name']}: rows={row['rows']} cols={row['columns']} file={row['path']}")
+        print(
+            f"  - {row['name']}: rows={row.get('rows', 0)} "
+            f"cols={row.get('columns', 0)} file={row.get('path', row.get('path_glob', '-'))}"
+        )
 
     status = "ok"
     exit_code = 0

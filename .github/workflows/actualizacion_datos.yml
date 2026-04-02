@@ -1,19 +1,31 @@
-# Workflow de actualización automática de datos institucionales
-# Ejecuta los scripts principales de descarga y actualización de outputs CCHEN
-# Programado para correr semanalmente (lunes 08:00 UTC)
-# Notificación por email ante fallos: pendiente de implementar (ver README)
-
-name: Actualización automática de datos CCHEN
+name: Orquestación canónica de fuentes CCHEN
 
 on:
   schedule:
-    - cron: '0 8 * * 1'  # Lunes 08:00 UTC
+    - cron: "0 10 * * *"
   workflow_dispatch:
+    inputs:
+      source_key:
+        description: "Ejecuta una fuente específica por source_key"
+        required: false
+        type: string
+      force:
+        description: "Forzar corrida aunque la fuente no esté vencida"
+        required: false
+        default: false
+        type: boolean
+      dry_run:
+        description: "Enumerar fuentes/comandos sin ejecutar cambios"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
-  actualizar-datos:
+  source-refresh:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: read
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -26,30 +38,53 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt || pip install -r Dashboard/requirements.txt
+          pip install -r requirements.txt
+          pip install -r Scripts/requirements.txt || true
 
-      - name: Descargar outputs Zenodo (combinado)
+      - name: Determinar comando del runner
+        id: runner
+        shell: bash
         run: |
-          python Scripts/download_zenodo_cchen_combined.py --estimate-only
-          python Scripts/download_zenodo_cchen_combined.py
+          set -euo pipefail
+          DRY_RUN="${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || 'false' }}"
+          FORCE="${{ github.event_name == 'workflow_dispatch' && inputs.force || 'false' }}"
+          SOURCE_KEY="${{ github.event_name == 'workflow_dispatch' && inputs.source_key || '' }}"
 
-      - name: Descargar outputs Europe PMC
+          CMD="python Scripts/run_source_refresh.py"
+          if [[ -n "$SOURCE_KEY" ]]; then
+            CMD="$CMD --source-key $SOURCE_KEY"
+          else
+            CMD="$CMD --all-due"
+          fi
+
+          if [[ "$FORCE" == "true" ]]; then
+            CMD="$CMD --force"
+          fi
+          if [[ "$DRY_RUN" == "true" ]]; then
+            CMD="$CMD --dry-run"
+          fi
+
+          echo "command=$CMD" >> "$GITHUB_OUTPUT"
+
+      - name: Ejecutar refresh canónico
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
+          PATENTSVIEW_API_KEY: ${{ secrets.PATENTSVIEW_API_KEY }}
+          CCHEN_CONTACT_EMAIL: ${{ secrets.CCHEN_CONTACT_EMAIL }}
         run: |
-          python Scripts/download_europepmc_cchen.py
+          echo "Ejecutando: ${{ steps.runner.outputs.command }}"
+          ${{ steps.runner.outputs.command }}
 
-      - name: Descargar outputs OpenAIRE
-        run: |
-          python Scripts/download_openaire_cchen_full.py
-
-      # Puedes agregar más scripts aquí según evolucione el observatorio
-
-      - name: Commit y push de nuevos datos (si aplica)
-        run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add Data/ || true
-          git commit -m 'Actualización automática de datos institucionales [skip ci]' || echo 'No hay cambios para commitear.'
-          git push || echo 'No se pudo pushear (posible fork o permisos)'
-
-# Notificación por email ante fallos: pendiente de implementar
-# Puedes usar actions como dawidd6/action-send-mail o github-script en el futuro
+      - name: Subir artefactos de observabilidad
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-refresh-artifacts
+          path: |
+            Docs/reports/source_runs/
+            Data/Gobernanza/data_sources_runtime.csv
+            Data/Gobernanza/data_source_runs.csv
+          if-no-files-found: ignore

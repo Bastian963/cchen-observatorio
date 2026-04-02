@@ -3,137 +3,210 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Observatorio Tecnológico I+D+i — CCHEN 360°</title>
+  <title>Observatorio CCHEN — Plataforma Institucional 3 en 1</title>
   <style>
     :root {
-      --blue: #1a4f8a;
-      --red:  #c0392b;
-      --light: #f4f7fb;
-      --border: #dde3ec;
-      --text: #1e2533;
-      --muted: #6b7a99;
+      --blue: #123e72;
+      --teal: #0b7a75;
+      --amber: #c88a12;
+      --red: #b63b2e;
+      --paper: #f4f7fb;
+      --ink: #1d2635;
+      --muted: #63738f;
+      --border: #dde5ef;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--light);
-      color: var(--text);
+      font-family: "Segoe UI", Inter, system-ui, sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(18,62,114,0.12), transparent 30%),
+        linear-gradient(180deg, #f8fbff 0%, var(--paper) 100%);
+      color: var(--ink);
       min-height: 100vh;
     }
     header {
-      background: var(--blue);
+      background: linear-gradient(135deg, #0b2749 0%, var(--blue) 60%, #2467b3 100%);
       color: #fff;
-      padding: 2rem 2.5rem 1.5rem;
+      padding: 2.5rem 2.5rem 2rem;
       border-bottom: 4px solid var(--red);
     }
     header .tag {
       font-size: 0.75rem;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: rgba(255,255,255,0.65);
-      margin-bottom: 0.4rem;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 0.5rem;
     }
-    header h1 { font-size: 1.6rem; font-weight: 700; }
-    header p  { margin-top: 0.4rem; font-size: 0.95rem; color: rgba(255,255,255,0.8); }
-    main { max-width: 780px; margin: 2.5rem auto; padding: 0 1.5rem 4rem; }
+    header h1 {
+      font-size: 1.9rem;
+      font-weight: 800;
+      line-height: 1.15;
+      max-width: 12ch;
+    }
+    header p {
+      margin-top: 0.8rem;
+      max-width: 52rem;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.85);
+    }
+    main {
+      max-width: 1080px;
+      margin: 2.4rem auto 0;
+      padding: 0 1.4rem 4rem;
+    }
     .section-title {
-      font-size: 1rem;
-      font-weight: 600;
+      font-size: 0.92rem;
+      font-weight: 700;
       color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.07em;
+      letter-spacing: 0.12em;
       margin-bottom: 1rem;
-      padding-bottom: 0.5rem;
-      border-bottom: 1px solid var(--border);
     }
-    .card-list { display: flex; flex-direction: column; gap: 0.75rem; }
-    .card {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1rem 1.25rem;
-      display: flex;
-      align-items: center;
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
       gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .card {
+      background: rgba(255,255,255,0.92);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 1.15rem 1.2rem;
+      box-shadow: 0 14px 30px rgba(17,37,66,0.07);
       text-decoration: none;
       color: inherit;
-      transition: box-shadow 0.15s, border-color 0.15s;
+      min-height: 220px;
+      display: block;
     }
-    .card:hover {
-      box-shadow: 0 2px 12px rgba(26,79,138,0.10);
-      border-color: var(--blue);
+    .card:hover { transform: translateY(-1px); }
+    .card h2 {
+      font-size: 1.05rem;
+      margin-bottom: 0.7rem;
+      line-height: 1.25;
     }
-    .card-icon {
-      font-size: 1.6rem;
-      flex-shrink: 0;
-      width: 2.5rem;
-      text-align: center;
+    .card p {
+      font-size: 0.92rem;
+      line-height: 1.6;
+      color: #334155;
     }
-    .card-body { flex: 1; }
-    .card-title { font-weight: 600; font-size: 0.97rem; }
-    .card-desc  { font-size: 0.83rem; color: var(--muted); margin-top: 0.2rem; }
     .badge {
-      font-size: 0.72rem;
-      font-weight: 600;
-      padding: 0.15rem 0.55rem;
+      display: inline-block;
+      margin-bottom: 0.7rem;
+      padding: 0.18rem 0.58rem;
       border-radius: 999px;
-      background: var(--light);
-      color: var(--muted);
-      border: 1px solid var(--border);
-      white-space: nowrap;
+      font-size: 0.72rem;
+      font-weight: 700;
+      border: 1px solid currentColor;
     }
-    .badge.new { background: #e8f3ff; color: var(--blue); border-color: #b8d4f5; }
+    .blue { color: var(--blue); }
+    .teal { color: var(--teal); }
+    .amber { color: var(--amber); }
+    .subtle {
+      margin-top: 0.95rem;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+    .boletin-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+    .boletin {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 0.95rem 1rem;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: center;
+    }
+    .boletin:hover { border-color: var(--blue); }
+    .boletin-title { font-weight: 700; }
+    .boletin-desc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
     footer {
       text-align: center;
       padding: 1.5rem;
       font-size: 0.8rem;
       color: var(--muted);
       border-top: 1px solid var(--border);
+      background: rgba(255,255,255,0.6);
     }
   </style>
 </head>
 <body>
+  <header>
+    <div class="tag">Comisión Chilena de Energía Nuclear · Unidad I+D</div>
+    <h1>Observatorio CCHEN como Plataforma 3 en 1</h1>
+    <p>
+      El observatorio ya no se organiza sólo como un dashboard: articula una capa analítica,
+      un repositorio institucional DSpace y un portal de datos CKAN, cada uno con una función
+      distinta y complementaria.
+    </p>
+  </header>
 
-<header>
-  <div class="tag">Comisión Chilena de Energía Nuclear · Unidad I+D</div>
-  <h1>Observatorio Tecnológico I+D+i CCHEN 360°</h1>
-  <p>Boletines semanales de vigilancia tecnológica, publicaciones y convocatorias</p>
-</header>
+  <main>
+    <div class="section-title">Entradas principales</div>
+    <div class="grid">
+      <a class="card" href="https://observatorio.cchen.cl">
+        <span class="badge blue">Portal público</span>
+        <h2>Observatorio Analítico</h2>
+        <p>Indicadores, vigilancia, asistente y narrativa ejecutiva. Esta es la puerta de entrada para contexto, lectura gerencial y análisis derivados.</p>
+        <div class="subtle">Entrada pública: https://observatorio.cchen.cl</div>
+      </a>
+      <a class="card" href="https://repo.cchen.cl">
+        <span class="badge teal">Público documental</span>
+        <h2>Repositorio Institucional DSpace</h2>
+        <p>Publicaciones, informes, policy briefs y memoria técnica. Debe ser la fuente documental canónica del observatorio institucional.</p>
+        <div class="subtle">Entrada pública: https://repo.cchen.cl</div>
+      </a>
+      <a class="card" href="https://datos.cchen.cl">
+        <span class="badge amber">Público datos</span>
+        <h2>Portal de Datos CKAN</h2>
+        <p>Datasets, series, recursos descargables y metadatos. Esta es la superficie para distribución y reutilización de datos institucionales.</p>
+        <div class="subtle">Entrada pública: https://datos.cchen.cl</div>
+      </a>
+    </div>
 
-<main>
-  <p class="section-title">Boletines disponibles</p>
-  <div class="card-list" id="boletin-list">
-    <!-- generado por el workflow semanal -->
-  </div>
-</main>
+    <div class="section-title">Boletines disponibles</div>
+    <div class="boletin-list" id="boletin-list"></div>
+  </main>
 
-<footer>
-  Observatorio CCHEN 360° · Beta v0.2 · TRL 5 ·
-  <a href="https://github.com/Bastian963/cchen-observatorio" style="color:inherit">GitHub</a>
-</footer>
+  <footer>
+    Observatorio CCHEN · Plataforma Institucional 3 en 1 · Beta 2026 ·
+    <a href="https://github.com/Bastian963/cchen-observatorio" style="color:inherit">GitHub</a>
+  </footer>
 
-<script>
-  // Lista de boletines — actualizada automáticamente por el workflow semanal
-  const boletines = [{"url": "boletines/boletin_2026-S14.html", "label": "Semana 14 · 2026", "semana": "Semana 14 · 2026"}];
+  <script>
+    const boletines = [
+      {"url": "boletines/boletin_2026-S14.html", "label": "Semana 14 · 2026", "semana": "Semana 14 · 2026"},
+      {"url": "boletines/boletin_2026-S13.html", "label": "Semana 13 · 2026", "semana": "Semana 13 · 2026"},
+      {"url": "boletines/boletin_2026-S12.html", "label": "Semana 12 · 2026", "semana": "Semana 12 · 2026"}
+    ];
+    const list = document.getElementById("boletin-list");
 
-  const list = document.getElementById("boletin-list");
-  if (!boletines || boletines.length === 0) {
-    list.innerHTML = '<p style="color:var(--muted);font-size:0.9rem">No hay boletines publicados aún.</p>';
-  } else {
-    boletines.forEach((b, i) => {
-      const isNew = i === 0;
-      list.innerHTML += `
-        <a class="card" href="${b.url}">
-          <div class="card-icon">📋</div>
-          <div class="card-body">
-            <div class="card-title">${b.label}</div>
-            <div class="card-desc">Vigilancia tecnológica · Publicaciones · Convocatorias ANID</div>
-          </div>
-          ${isNew ? '<span class="badge new">Último</span>' : '<span class="badge">' + b.semana + '</span>'}
-        </a>`;
-    });
-  }
-</script>
-
+    if (!boletines || boletines.length === 0) {
+      list.innerHTML = '<p style="color:var(--muted);font-size:0.92rem">No hay boletines publicados aún.</p>';
+    } else {
+      boletines.forEach((b, i) => {
+        const badge = i === 0 ? "Último" : b.semana;
+        list.innerHTML += `
+          <a class="boletin" href="${b.url}">
+            <div>
+              <div class="boletin-title">${b.label}</div>
+              <div class="boletin-desc">Vigilancia tecnológica, publicaciones y convocatorias institucionales</div>
+            </div>
+            <div class="badge blue">${badge}</div>
+          </a>`;
+      });
+    }
+  </script>
 </body>
 </html>

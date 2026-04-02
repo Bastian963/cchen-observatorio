@@ -13,6 +13,12 @@ Levantar el dashboard institucional y un portal CKAN en la misma red de contened
 ## 2. Comandos básicos
 
 ```bash
+git submodule update --init --recursive
+```
+
+- Inicializa `ckan-src`, requerido para los builds locales del overlay CKAN.
+
+```bash
 docker compose up -d --build
 ```
 - Levanta todos los servicios en modo background.
@@ -52,7 +58,7 @@ Si un servicio falla:
 ---
 
 ## 4. Registro de errores y soluciones
-| YYYY-MM-DD  | ckan       | Error: failed to read dockerfile: open docker/Dockerfile: no such file or directory | El contexto remoto de GitHub no expone subdirectorios como contexto de build estándar | Clonar CKAN localmente y usar context: ./ckan-src en docker-compose.yml |
+| 2026-03-28  | ckan       | Build local depende de archivos operativos fuera del upstream limpio | El repositorio principal necesitaba customizaciones de Docker sin vendorear todo CKAN | Mantener `ckan-src` como submódulo limpio y mover el overlay operativo a `ckan/` |
 | YYYY-MM-DD  | ckan       | Error: pull access denied for keitaroinc/ckan, repository does not exist or may require 'docker login' | Imagen retirada de Docker Hub, comunidad migró a build local | Usar build: context: https://github.com/ckan/ckan.git#ckan-2.10.4 y dockerfile oficial |
 | YYYY-MM-DD  | ckan       | Error: pull access denied for ckan/ckan, repository does not exist or may require 'docker login' | Imagen obsoleta/no disponible en Docker Hub | Usar keitaroinc/ckan:2.10 en docker-compose.yml |
 
@@ -64,15 +70,12 @@ Si un servicio falla:
 ---
 
 ## 5. Buenas prácticas
-+ Si usas build desde un repo remoto y falla por contexto/Dockerfile, clona el repo localmente y apunta el contexto de build a la carpeta local.
-- Usar siempre la imagen oficial recomendada de CKAN (keitaroinc/ckan) y revisar la documentación de la comunidad ante errores de pull.
-+ Si la imagen oficial no está disponible en Docker Hub, construir CKAN desde el Dockerfile oficial del repositorio GitHub (rama ckan-2.10.x) usando build: en docker-compose.yml.
+- Mantener `ckan-src` inicializado como submódulo limpio antes de cualquier `docker compose build`.
+- Versionar en el repo principal sólo el overlay operativo (`ckan/Dockerfile`, bootstrap, Solr y SQL init) y no el árbol completo de CKAN.
 - Usar variables de entorno para credenciales en producción.
-+ Usar siempre la imagen oficial recomendada de CKAN (keitaroinc/ckan) y revisar la documentación de la comunidad ante errores de pull.
 - Versionar siempre `docker-compose.yml` y este playbook.
 - Documentar cada cambio relevante y error encontrado.
 - Mantener los volúmenes para persistencia de datos.
-- Usar variables de entorno para credenciales en producción.
 
 ---
 

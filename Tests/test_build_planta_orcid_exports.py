@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -53,7 +54,7 @@ def test_build_planta_orcid_exports_generates_expected_files(tmp_path):
     orcid.to_csv(orcid_path, index=False)
 
     cmd = [
-        "python",
+        sys.executable,
         str(SCRIPT_PATH),
         "--padron-base",
         str(padron_path),

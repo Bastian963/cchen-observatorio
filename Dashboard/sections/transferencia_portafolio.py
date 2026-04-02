@@ -12,15 +12,15 @@ from .shared import (
 
 def render(ctx: dict) -> None:
     """Render the Transferencia y Portafolio section."""
-    anid        = ctx["anid"]
-    pub_enr     = ctx["pub_enr"]
-    funding_plus = ctx["funding_plus"]
-    patents     = ctx["patents"]
-    acuerdos    = ctx["acuerdos"]
-    convenios   = ctx["convenios"]
-    orcid       = ctx["orcid"]
-    datacite    = ctx["datacite"]
-    openaire    = ctx["openaire"]
+    anid        = ctx.get("anid", pd.DataFrame())
+    pub_enr     = ctx.get("pub_enr", pd.DataFrame())
+    funding_plus = ctx.get("funding_plus", pd.DataFrame())
+    patents     = ctx.get("patents", pd.DataFrame())
+    acuerdos    = ctx.get("acuerdos", pd.DataFrame())
+    convenios   = ctx.get("convenios", pd.DataFrame())
+    orcid       = ctx.get("orcid", pd.DataFrame())
+    datacite    = ctx.get("datacite", pd.DataFrame())
+    openaire    = ctx.get("openaire", pd.DataFrame())
 
     st.title("Transferencia y Portafolio Tecnológico")
     st.caption(

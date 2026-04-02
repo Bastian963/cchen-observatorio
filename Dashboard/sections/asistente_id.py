@@ -9,7 +9,10 @@ import streamlit as st
 
 from .shared import (
     PORTALES_CIENTIFICOS,
+    asset_catalog_frame,
+    filter_asset_catalog,
     kpi, kpi_row, sec,
+    match_assets_to_query,
     _access_context,
     _load_convocatorias_data,
     _load_portafolio_seed,
@@ -61,6 +64,9 @@ def _build_assistant_system_prompt(ctx: dict, patents_key: str = "") -> tuple:
     patents          = ctx.get("patents", pd.DataFrame())
     datacite         = ctx.get("datacite", pd.DataFrame())
     openaire         = ctx.get("openaire", pd.DataFrame())
+    asset_catalog    = asset_catalog_frame(ctx)
+    app_mode         = str(ctx.get("app_mode", "internal")).strip().lower()
+    is_public_app    = app_mode == "public"
 
     # ── Contexto de datos para el sistema ──
     _kpis_ch  = ch_ej.get("kpis", {}) if isinstance(ch_ej, dict) else {}
@@ -390,6 +396,49 @@ def _build_assistant_system_prompt(ctx: dict, patents_key: str = "") -> tuple:
         ", ".join(f"{k} ({v})" for k, v in ch["tipo_norm"].value_counts().items())
         if not ch.empty and "tipo_norm" in ch.columns else "Sin modalidades registradas"
     )
+    _published_assets = filter_asset_catalog(
+        asset_catalog,
+        publication_status="published",
+        require_public_url=True,
+        limit=8,
+    )
+    _published_assets_ctx = "\n".join(
+        f"  - {row.title} | {row.surface} | tema: {row.tema or 'sin tema'} | "
+        f"url: {row.public_url} | vínculo cruzado: {row.vinculo_cruzado or 'sin vínculo'}"
+        for _, row in _published_assets.iterrows()
+    ) if not _published_assets.empty else "  - No hay activos institucionales publicados en el catálogo para citar todavía."
+
+    if is_public_app:
+        _capital_humano_block = (
+            "### Capital Humano I+D (superficie interna)\n"
+            "- No disponible en el portal público. Si el usuario consulta por formación, becas, tesistas o datos nominativos, "
+            "explica que ese análisis requiere la superficie interna autorizada.\n"
+            "- No infieras cifras internas a partir de ausencia de datos en esta superficie."
+        )
+        _funding_block = (
+            "### Financiamiento complementario y cooperación técnica\n"
+            "- El portal público puede citar ANID, IAEA TC, convenios y acuerdos publicados.\n"
+            "- No uses financiamiento complementario interno si no está respaldado por un activo público verificable."
+        )
+        _assistant_surface_rules = (
+            "- Operas en la superficie pública del observatorio. Responde sólo con publicaciones, datasets y activos institucionales abiertos.\n"
+            "- Si la consulta requiere capital humano, registros nominativos, relaciones internas u otra capa sensible, dilo explícitamente y deriva a la superficie interna autorizada.\n"
+        )
+    else:
+        _capital_humano_block = f"""### Capital Humano I+D (2022–2025)
+- Registros: {len(ch)} | Personas únicas: {_ch_nombre_nunique} | Universidades: {_ch_universidad_nunique}
+- Modalidades: {_ch_tipo_norm_ctx}
+- Centros receptores: {_centros_ctx}
+- Tutores principales: {_tutores_ctx}
+- Universidades de origen (top 10): {_univs_ctx}
+- % Ad honorem: {_kpis_ch.get('ad_honorem_pct', 57.1)}%
+- Concentración centros HHI: {_cap.get('hhi_centros', 0.17)} — Top 3 (P2MC, PEC, CTNEV) = {_cap.get('top3_centros_share_pct', 63.4)}% de la formación"""
+        _funding_block = f"""### Financiamiento complementario y cooperación técnica
+{_funding_ctx}
+{_iaea_ctx}"""
+        _assistant_surface_rules = (
+            "- Operas en la superficie interna del observatorio. Puedes usar el contexto extendido disponible en esta sesión.\n"
+        )
 
     _system_prompt = f"""Eres el asistente del Observatorio Tecnológico de la Comisión Chilena de Energía Nuclear (CCHEN), Chile. Apoyas al equipo de I+D con análisis de datos, redacción de informes técnicos y vigilancia tecnológica.
 
@@ -416,14 +465,7 @@ def _build_assistant_system_prompt(ctx: dict, patents_key: str = "") -> tuple:
 {_anid_ctx}
 - Monto total: ${_monto_mm:.0f} MM CLP
 
-### Capital Humano I+D (2022–2025)
-- Registros: {len(ch)} | Personas únicas: {_ch_nombre_nunique} | Universidades: {_ch_universidad_nunique}
-- Modalidades: {_ch_tipo_norm_ctx}
-- Centros receptores: {_centros_ctx}
-- Tutores principales: {_tutores_ctx}
-- Universidades de origen (top 10): {_univs_ctx}
-- % Ad honorem: {_kpis_ch.get('ad_honorem_pct', 57.1)}%
-- Concentración centros HHI: {_cap.get('hhi_centros', 0.17)} — Top 3 (P2MC, PEC, CTNEV) = {_cap.get('top3_centros_share_pct', 63.4)}% de la formación
+{_capital_humano_block}
 
 ### Convocatorias curadas y matching (fuente: {getattr(_conv_path_assistant, 'name', 'sin archivo')} | modo: {_conv_mode_assistant})
 - Convocatorias curadas: {len(_conv_calls)} | Abiertas: {len(_conv_open)} | Próximas: {len(_conv_next)}
@@ -468,9 +510,10 @@ def _build_assistant_system_prompt(ctx: dict, patents_key: str = "") -> tuple:
 - Top colaboradoras con ROR: {_ror_top_ctx}
 - Pendientes priorizados destacados: {_ror_pending_top_ctx}
 
-### Financiamiento complementario y cooperación técnica
-{_funding_ctx}
-{_iaea_ctx}
+{_funding_block}
+
+### Activos institucionales publicados del observatorio 3 en 1
+{_published_assets_ctx}
 
 ### Modelo unificado y gobernanza
 - Entidades modeladas: {len(_entity_df)} | Relaciones definidas: {len(_rel_df)}
@@ -480,6 +523,8 @@ def _build_assistant_system_prompt(ctx: dict, patents_key: str = "") -> tuple:
 
 ## Instrucciones
 - Responde en español, con tono técnico-profesional para informes internos CCHEN.
+- Ajusta el nivel de apertura de la respuesta a la superficie activa.
+{_assistant_surface_rules}
 - Al citar cada cifra o dato, indica su fuente entre paréntesis inmediatamente después del valor. Usa etiquetas cortas: (fuente: OpenAlex), (fuente: ANID), (fuente: ORCID), (fuente: WoS/Scopus vía SJR), (fuente: registros internos CCHEN), (fuente: convocatorias curadas), (fuente: matching institucional), (fuente: DataCite), (fuente: OpenAIRE). Si el dato proviene de varios orígenes, menciona el principal.
 - Cuando generes informes usa secciones, bullets y cifras concretas de los datos de arriba.
 - Los investigadores listados tienen afiliación CCHEN verificada por OpenAlex — úsalos cuando pregunten por investigadores de la institución.
@@ -489,6 +534,8 @@ def _build_assistant_system_prompt(ctx: dict, patents_key: str = "") -> tuple:
 - Si preguntan por transferencia o portafolio tecnológico, aclara que el portafolio actual es una semilla analítica y que requiere validación técnica antes de tratarlo como inventario formal.
 - Si usas OpenAIRE, diferencia claramente entre vínculo fuerte (`cchen_ror_org` o `cchen_name_org`) y vínculo débil (`author_orcid_only`).
 - Si preguntan por gobernanza o integración de datos, usa los registros canónicos de personas, proyectos, convocatorias e institution_registry como marco operativo; aclara que no existe aún un grafo persistente separado.
+- Si existe un activo institucional publicado relevante, cita explícitamente la URL pública de DSpace o CKAN en la respuesta.
+- Si no existe un activo institucional publicado para la consulta, dilo de forma explícita y responde desde la capa analítica local.
 - Si una capa no está suficientemente poblada (por ejemplo, patentes o IAEA TC), dilo explícitamente y no extrapoles más allá de la evidencia.
 - Para comparaciones internacionales usa tu conocimiento general aclarando que es referencial.
 - No inventes cifras que no estén arriba. Si algo no está en los datos, dilo explícitamente.
@@ -512,6 +559,7 @@ def _build_assistant_system_prompt(ctx: dict, patents_key: str = "") -> tuple:
         "acuerdos": len(acuerdos),
         "datacite": len(datacite),
         "openaire": len(openaire),
+        "published_assets": len(_published_assets),
     }
 
     return _system_prompt, _context_trace
@@ -519,35 +567,45 @@ def _build_assistant_system_prompt(ctx: dict, patents_key: str = "") -> tuple:
 
 def render(ctx: dict) -> None:
     """Render the Asistente I+D section."""
-    pub              = ctx["pub"]
-    pub_enr          = ctx["pub_enr"]
-    auth             = ctx["auth"]
-    anid             = ctx["anid"]
-    ch               = ctx["ch"]
-    ch_ej            = ctx["ch_ej"]
-    ch_adv           = ctx["ch_adv"]
-    orcid            = ctx["orcid"]
-    ror_registry     = ctx["ror_registry"]
-    ror_pending_review = ctx["ror_pending_review"]
-    funding_plus     = ctx["funding_plus"]
-    iaea_tc          = ctx["iaea_tc"]
-    matching_inst    = ctx["matching_inst"]
-    entity_personas  = ctx["entity_personas"]
-    entity_projects  = ctx["entity_projects"]
-    entity_convocatorias = ctx["entity_convocatorias"]
-    entity_links     = ctx["entity_links"]
-    acuerdos         = ctx["acuerdos"]
-    convenios        = ctx["convenios"]
-    patents          = ctx["patents"]
-    datacite         = ctx["datacite"]
-    openaire         = ctx["openaire"]
+    pub              = ctx.get("pub", pd.DataFrame())
+    pub_enr          = ctx.get("pub_enr", pd.DataFrame())
+    auth             = ctx.get("auth", pd.DataFrame())
+    anid             = ctx.get("anid", pd.DataFrame())
+    ch               = ctx.get("ch", pd.DataFrame())
+    ch_ej            = ctx.get("ch_ej", {})
+    ch_adv           = ctx.get("ch_adv", {})
+    orcid            = ctx.get("orcid", pd.DataFrame())
+    ror_registry     = ctx.get("ror_registry", pd.DataFrame())
+    ror_pending_review = ctx.get("ror_pending_review", pd.DataFrame())
+    funding_plus     = ctx.get("funding_plus", pd.DataFrame())
+    iaea_tc          = ctx.get("iaea_tc", pd.DataFrame())
+    matching_inst    = ctx.get("matching_inst", pd.DataFrame())
+    entity_personas  = ctx.get("entity_personas", pd.DataFrame())
+    entity_projects  = ctx.get("entity_projects", pd.DataFrame())
+    entity_convocatorias = ctx.get("entity_convocatorias", pd.DataFrame())
+    entity_links     = ctx.get("entity_links", pd.DataFrame())
+    acuerdos         = ctx.get("acuerdos", pd.DataFrame())
+    convenios        = ctx.get("convenios", pd.DataFrame())
+    patents          = ctx.get("patents", pd.DataFrame())
+    datacite         = ctx.get("datacite", pd.DataFrame())
+    openaire         = ctx.get("openaire", pd.DataFrame())
+    asset_catalog    = asset_catalog_frame(ctx)
 
     assistant_access = _access_context()
-    st.title("Asistente I+D — CCHEN")
-    st.caption("Analiza las capas integradas del observatorio y genera informes técnicos con IA")
+    is_public_app = assistant_access.get("app_mode") == "public"
+    st.title("Asistente I+D Público — CCHEN" if is_public_app else "Asistente I+D — CCHEN")
+    st.caption(
+        "Responde sobre publicaciones, datos y activos institucionales abiertos."
+        if is_public_app else
+        "Analiza las capas integradas del observatorio y genera informes técnicos con IA"
+    )
     st.divider()
 
-    if assistant_access["auth_enabled"] and not assistant_access["can_view_sensitive"]:
+    if (
+        assistant_access.get("app_mode") != "public"
+        and assistant_access["auth_enabled"]
+        and not assistant_access["can_view_sensitive"]
+    ):
         st.warning(
             "El asistente queda restringido mientras no exista una sesión autorizada, "
             "porque el prompt incorpora contexto de capital humano y otros datos internos."
@@ -565,7 +623,10 @@ def render(ctx: dict) -> None:
     # ── API Key (Groq) ──
     api_key = os.environ.get("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY", "")
     if not api_key:
-        st.warning("⚠️ Configura tu `GROQ_API_KEY` en los secrets de Streamlit Cloud para activar el asistente.")
+        st.warning(
+            "⚠️ Configura tu `GROQ_API_KEY` en los secrets del dashboard o en la "
+            "configuración de despliegue para activar el asistente."
+        )
         st.code('GROQ_API_KEY = "gsk_..."', language="toml")
         st.stop()
 
@@ -587,10 +648,16 @@ def render(ctx: dict) -> None:
         prompt_rapido = "Genera un informe técnico ejecutivo sobre la producción científica de CCHEN. Incluye: evolución temporal, calidad (cuartiles), áreas temáticas, colaboración internacional y comparación con el promedio latinoamericano en nuclear."
     if q2.button("Financiamiento ANID", width="stretch"):
         prompt_rapido = "Analiza el portafolio de financiamiento ANID de CCHEN. ¿Cuál es la estrategia de captación de fondos? ¿Qué oportunidades de mejora identificas para diversificar las fuentes?"
-    if q3.button("Capital humano I+D", width="stretch"):
-        prompt_rapido = "Elabora un diagnóstico del capital humano I+D de CCHEN (2022–2025). Incluye composición por modalidad, concentración operativa (HHI), riesgos identificados y recomendaciones para fortalecer la formación."
-    if q4.button("Resumen ejecutivo", width="stretch"):
-        prompt_rapido = "Redacta un resumen ejecutivo de 1 página del Observatorio Tecnológico Virtual de CCHEN para presentar a directivos. Incluye indicadores clave, estado actual y principales hallazgos."
+    if is_public_app:
+        if q3.button("Publicaciones y datos", width="stretch"):
+            prompt_rapido = "Resume qué publicaciones, datasets y activos institucionales públicos ya están disponibles en el observatorio 3 en 1 y cómo se conectan entre sí."
+        if q4.button("Resumen público", width="stretch"):
+            prompt_rapido = "Redacta un resumen público breve del Observatorio 3 en 1 de CCHEN. Explica qué se analiza en el dashboard, qué se publica en DSpace y qué se descarga en CKAN."
+    else:
+        if q3.button("Capital humano I+D", width="stretch"):
+            prompt_rapido = "Elabora un diagnóstico del capital humano I+D de CCHEN (2022–2025). Incluye composición por modalidad, concentración operativa (HHI), riesgos identificados y recomendaciones para fortalecer la formación."
+        if q4.button("Resumen ejecutivo", width="stretch"):
+            prompt_rapido = "Redacta un resumen ejecutivo de 1 página del Observatorio Tecnológico Virtual de CCHEN para presentar a directivos. Incluye indicadores clave, estado actual y principales hallazgos."
     q5, q6, q7, q8 = st.columns(4)
     if q5.button("Perfil de investigadores", width="stretch"):
         prompt_rapido = "Describe el perfil de los investigadores más productivos de CCHEN según los datos del observatorio. ¿Quiénes son los líderes en producción científica? ¿En qué áreas temáticas se concentran? ¿Qué instituciones colaboran más frecuentemente?"
@@ -666,7 +733,15 @@ def render(ctx: dict) -> None:
             except Exception as e:
                 # Fallback: respuesta basada en el contexto sin LLM
                 _q = user_input.lower()
-                if any(w in _q for w in ["publicacion", "paper", "artículo", "articulo"]):
+                if is_public_app and any(w in _q for w in ["capital humano", "tesista", "tesistas", "beca", "becario", "becarios", "persona", "personas"]):
+                    reply = (
+                        "**Superficie pública del observatorio**\n\n"
+                        "La consulta apunta a una capa interna o sensible del observatorio y no está "
+                        "disponible en el portal público. Usa el dashboard interno autorizado si "
+                        "necesitas ese análisis.\n\n"
+                        f"_(Respuesta simplificada — servicio LLM no disponible: {e})_"
+                    )
+                elif any(w in _q for w in ["publicacion", "paper", "artículo", "articulo"]):
                     reply = (
                         f"**Producción científica CCHEN** (fuente: OpenAlex)\n\n"
                         f"- Total publicaciones indexadas: **{len(pub):,}**\n"
@@ -693,8 +768,29 @@ def render(ctx: dict) -> None:
                         f"Puedes explorar los datos directamente en las secciones del panel lateral."
                     )
                 st.markdown(reply)
-            st.session_state.messages.append({"role": "assistant", "content": reply or ""})
             reply = reply or ""
+
+            _published_assets = filter_asset_catalog(
+                asset_catalog,
+                publication_status="published",
+                require_public_url=True,
+            )
+            _related_assets = match_assets_to_query(_published_assets, user_input, limit=4)
+            if not _related_assets.empty:
+                _asset_lines = [
+                    f"- [{row['title']}]({row['public_url']}) · {row['surface']} · tema: {row['tema'] or 'sin tema'}"
+                    for _, row in _related_assets.iterrows()
+                ]
+                _asset_note = "Activos institucionales relacionados:\n" + "\n".join(_asset_lines)
+            else:
+                _asset_note = (
+                    "Activos institucionales relacionados:\n"
+                    "- No hay un activo institucional publicado y relevante para esta consulta; "
+                    "la respuesta se apoya en la capa analítica local del observatorio."
+                )
+            st.markdown(_asset_note)
+            reply = f"{reply}\n\n{_asset_note}".strip()
+            st.session_state.messages.append({"role": "assistant", "content": reply})
 
             # ── Decisión dinámica de gráfico vía LLM ─────────────────────────
             _chart_decision = {}

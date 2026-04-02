@@ -1,7 +1,7 @@
 # SLA Semanal — Observatorio Tecnológico CCHEN 360°
 
-Registro operacional de cada corrida del workflow `arxiv_monitor.yml`.  
-Actualizar cada lunes tras revisar el log con el [checklist de 10 puntos](#checklist-de-10-puntos).
+Registro operacional de las corridas del workflow canónico `actualizacion_datos.yml`.  
+Actualizar semanalmente tras revisar los runs vencidos y el [checklist de 10 puntos](#checklist-de-10-puntos).
 
 ---
 
@@ -49,13 +49,13 @@ Actualizar cada lunes tras revisar el log con el [checklist de 10 puntos](#check
 ## Comando rápido de revisión
 
 ```bash
-RUN_ID=$(gh run list --workflow arxiv_monitor.yml --limit 1 --json databaseId -q '.[0].databaseId') \
+RUN_ID=$(gh run list --workflow actualizacion_datos.yml --limit 1 --json databaseId -q '.[0].databaseId') \
 && echo "=== RUN ===" \
-&& gh run list --workflow arxiv_monitor.yml --limit 1 --json databaseId,conclusion,createdAt,updatedAt \
+&& gh run list --workflow actualizacion_datos.yml --limit 1 --json databaseId,conclusion,createdAt,updatedAt \
    -q '.[0] | "ID: \(.databaseId) | \(.conclusion) | \(.createdAt) → \(.updatedAt)"' \
 && echo "=== LOG ===" \
 && gh run view "$RUN_ID" --log | grep -E \
-  "Estado operativo|arXiv|News.*fila|IAEA|SKIP|convocatorias|Boletín guardado|filas migradas|Leídas:|TLS"
+  "source-refresh|arXiv|News|IAEA|convocatorias|Citation|quality|failed|success"
 ```
 
 ---
