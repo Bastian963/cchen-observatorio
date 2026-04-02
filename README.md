@@ -44,6 +44,8 @@ Documentación base:
 - [Docs/operations/runbook_publicacion_vm_observatorio_3en1.md](Docs/operations/runbook_publicacion_vm_observatorio_3en1.md)
 - [Docs/operations/runbook_backup_restore_observatorio_3en_1.md](Docs/operations/runbook_backup_restore_observatorio_3en_1.md)
 - [Docs/operations/acceso_interno_observatorio_3en1.md](Docs/operations/acceso_interno_observatorio_3en1.md)
+- [Docs/operations/estado_beta_publica_3en1.md](Docs/operations/estado_beta_publica_3en1.md)
+- [Docs/operations/runbook_oracle_piloto_publico_3en1.md](Docs/operations/runbook_oracle_piloto_publico_3en1.md)
 
 Para desarrollo local y operación sobre `localhost`, usa el runbook:
 
@@ -72,10 +74,13 @@ Documentos recomendados para esta separación:
 
 - [Docs/matriz_visibilidad_publico_interno_3en1.md](Docs/matriz_visibilidad_publico_interno_3en1.md)
 - [Docs/operations/runbook_publicacion_portal_publico_3en1.md](Docs/operations/runbook_publicacion_portal_publico_3en1.md)
+- [Docs/operations/estado_beta_publica_3en1.md](Docs/operations/estado_beta_publica_3en1.md)
+- [Docs/operations/runbook_oracle_piloto_publico_3en1.md](Docs/operations/runbook_oracle_piloto_publico_3en1.md)
 
 Baseline operativo actual:
 
 - rama fuente de verdad: `feat/observatorio-3en1-public-portal`
+- tag técnico de referencia: `observatorio-3en1-public-beta-ready-2026-03-29`
 - gate de repo previo a la VM pública:
 
 ```bash
@@ -629,7 +634,10 @@ Para la ruta pública real del portal 3 en 1 usa:
 - `.env.public.example`
 - `Dashboard/.streamlit/secrets.public.toml.example`
 - `Docs/operations/runbook_publicacion_portal_publico_3en1.md`
+- `Docs/operations/estado_beta_publica_3en1.md`
+- `Docs/operations/runbook_oracle_piloto_publico_3en1.md`
 - `Scripts/deploy_observatorio_public.sh`
+- `Scripts/sync_observatorio_letsencrypt_certs.sh`
 - `Scripts/wait_and_check_observatorio_public_portal.sh`
 
 La política objetivo de acceso es:
@@ -638,6 +646,11 @@ La política objetivo de acceso es:
 - `https://repo.cchen.cl` público
 - `https://datos.cchen.cl` público
 - `https://obs-int.cchen.cl` protegido con `Basic Auth` + `internal_auth`
+
+Recomendación operativa para el primer piloto Oracle:
+
+- si todavía hay `trial credits`, usar una VM `x86` pequeña o mediana para reducir riesgo de compatibilidad con imágenes externas;
+- si el objetivo es `Always Free` estricto, usar `VM.Standard.A1.Flex` y validar explícitamente `dashboard`, `DSpace`, `CKAN` y `reverse-proxy`.
 
 ### Cómo verificar desde la app
 

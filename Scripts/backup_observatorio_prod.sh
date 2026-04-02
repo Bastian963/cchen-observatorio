@@ -2,9 +2,28 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-ENV_FILE="${OBSERVATORIO_ENV_FILE:-$ROOT_DIR/.env.prod}"
 BASE_COMPOSE_FILE="${BASE_COMPOSE_FILE:-$ROOT_DIR/docker-compose.observatorio.yml}"
-PROD_COMPOSE_FILE="${PROD_COMPOSE_FILE:-$ROOT_DIR/docker-compose.observatorio.prod.yml}"
+
+resolve_env_file() {
+  local raw_path="$1"
+  if [[ "$raw_path" = /* ]]; then
+    printf '%s\n' "$raw_path"
+  else
+    printf '%s\n' "$ROOT_DIR/$raw_path"
+  fi
+}
+
+RAW_ENV_FILE="${ENV_FILE:-${OBSERVATORIO_ENV_FILE:-.env.prod}}"
+ENV_FILE="$(resolve_env_file "$RAW_ENV_FILE")"
+
+case "$(basename "$ENV_FILE")" in
+  .env.public)
+    OVERLAY_COMPOSE_FILE="${PUBLIC_COMPOSE_FILE:-$ROOT_DIR/docker-compose.observatorio.public.yml}"
+    ;;
+  *)
+    OVERLAY_COMPOSE_FILE="${PROD_COMPOSE_FILE:-$ROOT_DIR/docker-compose.observatorio.prod.yml}"
+    ;;
+esac
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "[backup] ERROR: no existe el archivo de entorno $ENV_FILE"
@@ -24,7 +43,7 @@ compose() {
   docker compose \
     --env-file "$ENV_FILE" \
     -f "$BASE_COMPOSE_FILE" \
-    -f "$PROD_COMPOSE_FILE" \
+    -f "$OVERLAY_COMPOSE_FILE" \
     "$@"
 }
 

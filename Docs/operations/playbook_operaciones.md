@@ -1,7 +1,7 @@
 # Playbook de Operaciones — Observatorio CCHEN 360° 3 en 1
 
-**Versión:** 1.0  
-**Fecha:** 2026-03-28  
+**Versión:** 1.1  
+**Fecha:** 2026-04-02  
 **Propietario:** Bastián Ayala I.  
 **Repositorio:** https://github.com/Bastian963/cchen-observatorio  
 **Rama baseline público actual:** `feat/observatorio-3en1-public-portal`  
@@ -9,6 +9,11 @@
 **Dashboard interno:** https://obs-int.cchen.cl  
 **DSpace público:** https://repo.cchen.cl  
 **CKAN público:** https://datos.cchen.cl  
+
+Estado maestro de beta pública:
+
+- `Docs/operations/estado_beta_publica_3en1.md`
+- `Docs/operations/runbook_oracle_piloto_publico_3en1.md`
 
 ---
 
@@ -26,6 +31,11 @@ Gate recomendado antes de preparar una VM pública:
 ```bash
 bash Scripts/check_public_beta_release.sh
 ```
+
+Regla de infraestructura para el primer piloto Oracle:
+
+- preferir `x86` si todavía hay `trial credits`
+- usar `A1` sólo cuando se quiera validar el camino `Always Free`
 
 ---
 

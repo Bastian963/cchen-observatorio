@@ -20,11 +20,20 @@ La rama fuente de verdad para este bloque es:
 
 - `feat/observatorio-3en1-public-portal`
 
+Y el baseline técnico congelado es:
+
+- `observatorio-3en1-public-beta-ready-2026-03-29`
+
 Antes de tocar una VM pública, el repo debe quedar en verde con:
 
 ```bash
 bash Scripts/check_public_beta_release.sh
 ```
+
+Estado maestro y siguiente paso:
+
+- `Docs/operations/estado_beta_publica_3en1.md`
+- `Docs/operations/runbook_oracle_piloto_publico_3en1.md`
 
 ## 2. Supuestos de infraestructura
 
@@ -37,6 +46,11 @@ bash Scripts/check_public_beta_release.sh
 - `Basic Auth` sólo para `obs-int.cchen.cl`
 - DSpace y CKAN accesibles públicamente
 
+Decisión sugerida para el primer piloto:
+
+- usar `x86` si Oracle todavía ofrece `trial credits`
+- usar `VM.Standard.A1.Flex` sólo si el piloto debe ser `Always Free` desde el día 1
+
 ## 3. Archivos no versionados en la VM
 
 - `.env.public`
@@ -44,6 +58,13 @@ bash Scripts/check_public_beta_release.sh
 - `Dashboard/.streamlit/secrets.toml`
 - `/srv/observatorio/nginx/.htpasswd`
 - certificados TLS en `/srv/observatorio/tls`
+
+Si se usan certificados `Let's Encrypt`, sincronizarlos al layout esperado con:
+
+```bash
+OBSERVATORIO_ENV_FILE=.env.public \
+bash Scripts/sync_observatorio_letsencrypt_certs.sh
+```
 
 ## 4. Preparación
 

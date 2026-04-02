@@ -2,7 +2,18 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-ENV_FILE="${ENV_FILE:-$ROOT_DIR/.env.prod}"
+
+resolve_env_file() {
+  local raw_path="$1"
+  if [[ "$raw_path" = /* ]]; then
+    printf '%s\n' "$raw_path"
+  else
+    printf '%s\n' "$ROOT_DIR/$raw_path"
+  fi
+}
+
+RAW_ENV_FILE="${ENV_FILE:-${OBSERVATORIO_ENV_FILE:-.env.prod}}"
+ENV_FILE="$(resolve_env_file "$RAW_ENV_FILE")"
 
 if [[ -f "$ENV_FILE" ]]; then
   set -a

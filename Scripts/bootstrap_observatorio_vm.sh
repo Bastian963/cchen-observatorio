@@ -78,4 +78,12 @@ echo "  - Backups: $BACKUP_DIR"
 echo "[bootstrap-vm] siguientes pasos:"
 echo "  1. copiar certificados TLS a $TLS_DIR"
 echo "  2. completar $ENV_FILE"
-echo "  3. crear Dashboard/.streamlit/secrets.toml en la VM"
+case "$(basename "$ENV_FILE")" in
+  .env.public)
+    echo "  3. crear Dashboard/.streamlit/secrets.public.toml en la VM"
+    echo "  4. crear Dashboard/.streamlit/secrets.toml para obs-int"
+    ;;
+  *)
+    echo "  3. crear Dashboard/.streamlit/secrets.toml en la VM"
+    ;;
+esac
