@@ -786,18 +786,4 @@ CCHEN/
 | sentence-transformers | — | — | Pre-cómputo manual | No |
 
 ---
-
-## License & Author
-
-**Autor:** Bastián Ayala Inostroza
-**Institución:** Comisión Chilena de Energía Nuclear (CCHEN)
-**Proyecto:** CORFO CCHEN 360 — Plan de Fortalecimiento de Aplicaciones Nucleares
-**Gestor Tecnológico:** Rodrigo Núñez G.
-
-Este repositorio contiene código fuente bajo licencia MIT. Los datos en `Data/` son propiedad de CCHEN y no se publican en este repositorio (están excluidos por `.gitignore`).
-
-Para contacto técnico o académico: observatory@cchen.cl
-
----
-
 *Observatorio Tecnológico Virtual CCHEN · Beta v0.2 · Marzo 2026*
