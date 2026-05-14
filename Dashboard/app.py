@@ -952,6 +952,12 @@ def _dataset_keys_for_section(section_name: str, *, app_mode: str, can_view_sens
     return tuple(dataset_keys)
 
 
+def _empty_dataset_placeholder(dataset_key: str):
+    if dataset_key == "ch":
+        return _empty_capital_humano_frame()
+    return pd.DataFrame()
+
+
 @st.cache_data(show_spinner=False, ttl=900, max_entries=256)
 def _load_dataset_cached(dataset_key: str, can_view_sensitive: bool):
     loader = _DATASET_LOADERS.get(dataset_key)
@@ -980,6 +986,16 @@ def _current_section_name() -> str:
 def _build_section_ctx(section_name: str, can_view_sensitive: bool) -> dict:
     app_mode = _access_context().get("app_mode", "internal")
     ctx = dict(_load_section_datasets_cached(section_name, can_view_sensitive, app_mode))
+    omitted_sensitive_keys: list[str] = []
+    if app_mode == "public" or not can_view_sensitive:
+        for dataset_key in _SECTION_DATASETS.get(section_name, ()):
+            if dataset_key in ctx:
+                continue
+            if not _DATASET_METADATA.get(dataset_key, {}).get("sensitive", False):
+                continue
+            ctx[dataset_key] = _empty_dataset_placeholder(dataset_key)
+            omitted_sensitive_keys.append(dataset_key)
+    ctx["_omitted_sensitive_dataset_keys"] = tuple(omitted_sensitive_keys)
     ctx["render_operational_strip"] = render_operational_strip
     ctx["open_dataset_inspector"] = open_dataset_inspector
     ctx["app_mode"] = app_mode
@@ -1060,9 +1076,10 @@ else:
 
 def _dataset_catalog(ctx: dict | None = None) -> dict:
     active_ctx = ctx or _active_section_ctx()
+    omitted_sensitive_keys = set(active_ctx.get("_omitted_sensitive_dataset_keys", ()))
     catalog = {}
     for dataset_key, meta in _DATASET_METADATA.items():
-        if dataset_key not in active_ctx:
+        if dataset_key not in active_ctx or dataset_key in omitted_sensitive_keys:
             continue
         catalog[meta["label"]] = {
             "key": dataset_key,
