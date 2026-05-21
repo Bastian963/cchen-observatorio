@@ -1,0 +1,70 @@
+% !TeX program = pdflatex
+\documentclass[10pt,a4paper]{article}
+\usepackage[spanish,es-nodecimaldot,es-noshorthands]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[a4paper,left=1.6cm,right=1.6cm,top=1.35cm,bottom=1.45cm]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{microtype}
+\definecolor{cchenpurple}{HTML}{483888}
+\definecolor{cchenlime}{HTML}{DDDC40}
+\definecolor{textgray}{HTML}{333333}
+\hypersetup{colorlinks=true, linkcolor=cchenpurple, urlcolor=cchenpurple}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\begin{document}
+{\Large\bfseries\color{cchenpurple} Brief de fuente implementada: PatentsView / USPTO}
+
+\vspace{2mm}
+{\bfseries Source key:} \texttt{patentsview\_uspto} \quad
+{\bfseries Categoria:} Patentes \quad
+{\bfseries Madurez:} Bloqueada por token
+
+{\bfseries Tipo:} Bloqueada por token \quad
+{\bfseries Decision operativa:} \texttt{bloqueada\_por\_token}
+
+\vspace{2mm}
+\includegraphics[width=\textwidth]{../assets/patentsview\_uspto\_resumen.png}
+
+\section*{Ficha rapida para Fernanda}
+Tipo de datos descargados: Salida prevista para patentes USPTO CCHEN; actualmente sin registros por falta de API key.. Tipologia de datos: Patentes USPTO, solicitantes e inventores. Uso posible en el observatorio: Serviria para propiedad industrial internacional cuando exista API key; por ahora queda como brecha documentada.. Frecuencia de descarga: semestral. Estado: Registrada, pero bloqueada hasta configurar credencial/API key.. Decision operativa: bloqueada\_por\_token.
+
+\section*{Comentario para Excel}
+Implementada/registrada para CCHEN-only, pero bloqueada hasta configurar PATENTSVIEW\_API\_KEY; no reemplaza INAPI local.
+
+\section*{Que datos ofrece la fuente}
+Análisis patentes USPTO
+
+\section*{Que extraemos para CCHEN}
+Se guardan artefactos locales trazables: Data/Patents/cchen\_patents\_uspto.csv.
+
+\section*{Como se filtra CCHEN-only}
+Aliases de solicitante/inventor CCHEN; requiere PATENTSVIEW\_API\_KEY.
+
+\section*{Potencial para el observatorio}
+Buscar patentes USPTO asociadas a aliases CCHEN; actualmente depende de API key.
+
+\section*{Debilidades y riesgos}
+Registrada, pero la corrida queda bloqueada hasta configurar PATENTSVIEW\_API\_KEY.
+
+\section*{Frecuencia recomendada}
+semestral (SLA: 180 dias).
+
+\section*{Estado operativo}
+Estado catalogo: implementada\_runtime. Ultima corrida: failed; ultima actualizacion: sin fecha.
+
+\section*{Evidencia disponible}
+Conteo registrado: 0. Calidad: 0.0. Outputs: Data/Patents/cchen\_patents\_uspto.csv.
+
+\section*{Decision}
+Mantener registrada, pero no exigir corrida hasta configurar PATENTSVIEW\_API\_KEY; separar de INAPI local.
+
+
+\section*{URLs}
+Sitio: https://patentsview.org; https://uspto.gov\\
+API: https://patentsview.org/apis/purpose; https://developer.uspto.gov/api-catalog
+\end{document}

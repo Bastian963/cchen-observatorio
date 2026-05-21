@@ -12,6 +12,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 SEM_DIR = ROOT / "Data" / "Semantic"
+PUBLICABLE_INDEX_PATH = ROOT / "Data" / "Gobernanza" / "evidence_index_publicable.csv"
 
 REQUIRED_COLUMNS = [
     "id",
@@ -30,6 +31,8 @@ REQUIRED_COLUMNS = [
     "texto_embedding",
 ]
 
+PUBLICABLE_REQUIRED_COLUMNS = [col for col in REQUIRED_COLUMNS if col != "texto_embedding"]
+
 
 def main() -> int:
     parser = argparse.ArgumentParser()
@@ -41,17 +44,28 @@ def main() -> int:
     meta_path = SEM_DIR / "evidence_embeddings_meta.csv"
     emb_path = SEM_DIR / "evidence_embeddings.npy"
     state_path = SEM_DIR / "evidence_index_state.json"
+    required_columns = REQUIRED_COLUMNS
+    using_publicable_fallback = False
 
     errors: list[str] = []
     warnings: list[str] = []
 
     if not index_path.exists():
-        errors.append(f"No existe {index_path}")
-        print("\n".join(errors))
-        return 1
+        if PUBLICABLE_INDEX_PATH.exists():
+            index_path = PUBLICABLE_INDEX_PATH
+            required_columns = PUBLICABLE_REQUIRED_COLUMNS
+            using_publicable_fallback = True
+            args.require_embeddings = False
+            warnings.append(
+                f"No existe indice semantico completo; usando indice publicable {PUBLICABLE_INDEX_PATH}"
+            )
+        else:
+            errors.append(f"No existe {index_path} ni {PUBLICABLE_INDEX_PATH}")
+            print("\n".join(errors))
+            return 1
 
     df = pd.read_csv(index_path, low_memory=False).fillna("")
-    missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+    missing = [col for col in required_columns if col not in df.columns]
     if missing:
         errors.append(f"Columnas faltantes: {missing}")
     if len(df) < args.min_records:
@@ -86,7 +100,7 @@ def main() -> int:
             if len(meta) != len(df):
                 errors.append(f"Metadata de vectores desalineada: {len(meta)} != {len(df)}")
 
-    if state_path.exists():
+    if state_path.exists() and not using_publicable_fallback:
         state = json.loads(state_path.read_text(encoding="utf-8"))
         state_records = int(state.get("records", 0) or 0)
         if state_records != len(df):

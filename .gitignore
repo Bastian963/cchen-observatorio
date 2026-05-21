@@ -14,6 +14,32 @@ Data/*
 !Data/Gobernanza/
 Data/Gobernanza/*
 !Data/Gobernanza/catalogo_activos_3_en_1.csv
+!Data/Gobernanza/fuentes_informacion_fernanda_raw.csv
+!Data/Gobernanza/catalogo_fuentes_pre_adjudicacion.csv
+!Data/Gobernanza/priorizacion_fuentes_api_pre_adjudicacion.csv
+!Data/Gobernanza/brechas_fuentes_pre_adjudicacion.csv
+!Data/Gobernanza/fuentes_fernanda_api_cchen_records.csv
+!Data/Gobernanza/fuentes_fernanda_api_cchen_status.csv
+!Data/Gobernanza/fuentes_fernanda_api_cchen_state.json
+!Data/Gobernanza/curaduria_fuentes_fernanda_api_cchen.csv
+!Data/Gobernanza/revision_fuentes_fernanda_api_cchen.csv
+!Data/Gobernanza/outputs_repositorios_cchen_master.csv
+!Data/Gobernanza/outputs_repositorios_cchen_publicables.csv
+!Data/Gobernanza/outputs_repositorios_cchen_summary.csv
+!Data/Gobernanza/radiofarmacia_cchen_seeds.csv
+!Data/Gobernanza/radiofarmacia_cchen_pubchem_compounds.csv
+!Data/Gobernanza/radiofarmacia_cchen_literature.csv
+!Data/Gobernanza/radiofarmacia_cchen_status.csv
+!Data/Gobernanza/radiofarmacia_cchen_state.json
+!Data/Gobernanza/radiofarmacia_cchen_literature_curated.csv
+!Data/Gobernanza/radiofarmacia_cchen_compounds_curated.csv
+!Data/Gobernanza/radiofarmacia_cchen_curation_summary.csv
+!Data/Gobernanza/radiofarmacia_cchen_literature_reviewed.csv
+!Data/Gobernanza/radiofarmacia_cchen_review_summary.csv
+!Data/Gobernanza/curaduria_zenodo_cchen.csv
+!Data/Gobernanza/comentarios_excel_fernanda_recomendados.csv
+!Data/Gobernanza/evidence_index_publicable.csv
+!Data/Gobernanza/evidence_index_publicable_summary.csv
 Codes/
 *.npy
 *.xlsx
@@ -39,6 +65,7 @@ Docs/reports/*.fls
 # PDFs y ZIPs grandes
 *.zip
 *.pdf
+!Docs/licitacion/*.pdf
 
 # Node / React Email
 emails/node_modules/

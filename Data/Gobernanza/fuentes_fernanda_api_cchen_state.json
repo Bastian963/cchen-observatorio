@@ -1,0 +1,15 @@
+{
+  "updated": "2026-05-19T18:44:21",
+  "records": 52,
+  "sources": 12,
+  "aliases": [
+    "Comisión Chilena de Energía Nuclear",
+    "Comision Chilena de Energia Nuclear",
+    "Chilean Nuclear Energy Commission",
+    "CCHEN"
+  ],
+  "outputs": [
+    "Data/Gobernanza/fuentes_fernanda_api_cchen_records.csv",
+    "Data/Gobernanza/fuentes_fernanda_api_cchen_status.csv"
+  ]
+}

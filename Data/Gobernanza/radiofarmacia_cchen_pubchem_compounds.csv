@@ -1,0 +1,12 @@
+seed_key,seed_label,compound_query,cid,title,molecular_formula,molecular_weight,canonical_smiles,inchi_key,pubchem_url,fetched_at
+f18_fdg,F-18 FDG / Fludeoxyglucose,Fludeoxyglucose F-18,68614,Fludeoxyglucose F-18,C6H11FO5,181.15,,AOYNUTHNTBLRMT-MXWOLSILSA-N,https://pubchem.ncbi.nlm.nih.gov/compound/68614,2026-05-19
+f18_fdg,F-18 FDG / Fludeoxyglucose,Fluorodeoxyglucose F18,68614,Fludeoxyglucose F-18,C6H11FO5,181.15,,AOYNUTHNTBLRMT-MXWOLSILSA-N,https://pubchem.ncbi.nlm.nih.gov/compound/68614,2026-05-19
+ga68_dotatate,Ga-68 DOTATATE,Gallium Ga 68 dotatate,131634491,68Ga-DOTATATE,C65H87GaN14O19S2,1500.5,,XBJPSVQFCQFGDC-WSCOIBMGSA-K,https://pubchem.ncbi.nlm.nih.gov/compound/131634491,2026-05-19
+ga68_dotatate,Ga-68 DOTATATE,68Ga-DOTATATE,131634491,68Ga-DOTATATE,C65H87GaN14O19S2,1500.5,,XBJPSVQFCQFGDC-WSCOIBMGSA-K,https://pubchem.ncbi.nlm.nih.gov/compound/131634491,2026-05-19
+lu177_dotatate,Lu-177 DOTATATE,Lutetium Lu 177 dotatate,76966897,Lutetium Lu 177 Dotatate,C65H87LuN14O19S2,1609.5,,MXDPZUIOZWKRAA-PRDSJKGBSA-K,https://pubchem.ncbi.nlm.nih.gov/compound/76966897,2026-05-19
+lu177_dotatate,Lu-177 DOTATATE,177Lu-DOTATATE,76966897,Lutetium Lu 177 Dotatate,C65H87LuN14O19S2,1609.5,,MXDPZUIOZWKRAA-PRDSJKGBSA-K,https://pubchem.ncbi.nlm.nih.gov/compound/76966897,2026-05-19
+tc99m_sestamibi,Tc-99m sestamibi,Technetium Tc 99m sestamibi,449763,Technetium Tc 99m sestamibi,C36H66N6O6Tc,777.9,,KNMLZCYLMYOYBD-KTTJZPQESA-N,https://pubchem.ncbi.nlm.nih.gov/compound/449763,2026-05-19
+tc99m_sestamibi,Tc-99m sestamibi,Technetium Tc 99m sestamibi,22617237,Technetium (99mTc) sestamibi,C36H66N6O6Tc,775.9,,KNMLZCYLMYOYBD-UHFFFAOYSA-N,https://pubchem.ncbi.nlm.nih.gov/compound/22617237,2026-05-19
+tc99m_sestamibi,Tc-99m sestamibi,Technetium (99mTc) sestamibi,22617237,Technetium (99mTc) sestamibi,C36H66N6O6Tc,775.9,,KNMLZCYLMYOYBD-UHFFFAOYSA-N,https://pubchem.ncbi.nlm.nih.gov/compound/22617237,2026-05-19
+i131,I-131,Iodine I 131,24855,Iodine I-131,I2,261.81225,,PNDPGZBMCMUPRI-HVTJNCQCSA-N,https://pubchem.ncbi.nlm.nih.gov/compound/24855,2026-05-19
+i131,I-131,Iodine-131,5489939,Iodine-131,I,130.906126,,ZCYVEMRRCGMTRW-RNFDNDRNSA-N,https://pubchem.ncbi.nlm.nih.gov/compound/5489939,2026-05-19

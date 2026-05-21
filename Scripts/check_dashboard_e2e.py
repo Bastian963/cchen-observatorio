@@ -199,6 +199,7 @@ def _assert_no_exceptions(app: AppTest, context: str) -> None:
 
 def _bootstrap_app() -> AppTest:
     os.environ.setdefault("OBSERVATORIO_DATA_SOURCE", "local")
+    os.environ.setdefault("EVIDENCE_SEARCH_DISABLE_RUNTIME_EMBEDDINGS", "1")
     dashboard_path = str(DASHBOARD_DIR)
     if dashboard_path not in sys.path:
         sys.path.insert(0, dashboard_path)

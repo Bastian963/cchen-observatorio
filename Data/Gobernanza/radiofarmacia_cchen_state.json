@@ -1,0 +1,12 @@
+{
+  "updated": "2026-05-19T20:52:41",
+  "seeds": 8,
+  "compound_records": 11,
+  "literature_records": 251,
+  "outputs": [
+    "Data/Gobernanza/radiofarmacia_cchen_seeds.csv",
+    "Data/Gobernanza/radiofarmacia_cchen_pubchem_compounds.csv",
+    "Data/Gobernanza/radiofarmacia_cchen_literature.csv",
+    "Data/Gobernanza/radiofarmacia_cchen_status.csv"
+  ]
+}

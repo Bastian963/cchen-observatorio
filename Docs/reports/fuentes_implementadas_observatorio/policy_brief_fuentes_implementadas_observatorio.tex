@@ -1,0 +1,190 @@
+% !TeX program = pdflatex
+\documentclass[9pt,a4paper]{extarticle}
+\usepackage[spanish,es-nodecimaldot,es-noshorthands]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[a4paper,left=0.92cm,right=0.92cm,top=0.72cm,bottom=0.78cm,headheight=9pt]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+\usepackage{multicol}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{microtype}
+
+\definecolor{cchenpurple}{HTML}{483888}
+\definecolor{cchenlime}{HTML}{DDDC40}
+\definecolor{textgray}{HTML}{333333}
+\definecolor{mutedgray}{HTML}{6F6F6F}
+\definecolor{lightgray}{HTML}{F3F3F5}
+\definecolor{linegray}{HTML}{D9D9DF}
+\definecolor{okgreen}{HTML}{2E7D32}
+\definecolor{warnamber}{HTML}{F9A825}
+\definecolor{badred}{HTML}{C62828}
+
+\hypersetup{colorlinks=true, linkcolor=cchenpurple, urlcolor=cchenpurple,
+  pdftitle={Brief ejecutivo - fuentes implementadas para extracción CCHEN-only},
+  pdfauthor={CCHEN 360}}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[L]{\scriptsize\color{mutedgray}Observatorio CCHEN 360 -- extracción CCHEN-only}
+\fancyfoot[R]{\scriptsize\color{mutedgray}\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0.25pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1.3pt}
+\setlength{\columnsep}{0.42cm}
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
+\setlist[itemize]{leftmargin=*,topsep=1pt,itemsep=0.15pt,parsep=0pt}
+\renewcommand{\arraystretch}{1.02}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\sectiontitle}[1]{\vspace{1pt}{\normalsize\bfseries\color{cchenpurple}#1}\par\vspace{0.2pt}{\color{cchenlime}\rule{0.25\linewidth}{1.1pt}}\vspace{0.8pt}}
+\newcommand{\tightsection}[1]{\vspace{2pt}{\normalsize\bfseries\color{cchenpurple}#1}\par}
+\newtcolorbox{keybox}{enhanced,colback=cchenpurple!5,colframe=cchenpurple,boxrule=0.5pt,arc=2pt,left=4pt,right=4pt,top=3pt,bottom=3pt}
+\newtcolorbox{metricbox}[2]{enhanced,colback=#1!8,colframe=#1,boxrule=0.5pt,arc=2pt,left=3pt,right=3pt,top=3pt,bottom=3pt,title={#2},fonttitle=\bfseries\tiny\color{textgray},coltitle=textgray}
+\newtcolorbox{calloutbox}[1]{enhanced,colback=lightgray,colframe=linegray,boxrule=0.4pt,arc=2pt,left=4pt,right=4pt,top=3pt,bottom=3pt,title={#1},fonttitle=\bfseries\scriptsize\color{cchenpurple},attach title to upper={\par\vspace{0.5pt}}}
+\newcommand{\dotpattern}{\begin{tikzpicture}[remember picture,overlay]\foreach \x in {0.2,0.55,...,11.2} {\foreach \y in {-0.1,0.22,0.54,0.86} {\fill[cchenpurple!55] (\x,\y) circle (0.55pt); \fill[cchenlime!85] ({\x+0.16},{\y+0.13}) circle (0.48pt);}}\end{tikzpicture}}
+
+\begin{document}
+\thispagestyle{fancy}
+
+\begin{minipage}[t]{0.34\textwidth}
+  \includegraphics[height=0.92cm]{../../licitacion/assets/ministerio\_energia\_color.png}
+\end{minipage}
+\begin{minipage}[t]{0.36\textwidth}
+  \vspace{0.08cm}\dotpattern
+\end{minipage}
+\begin{minipage}[t]{0.28\textwidth}
+  \raggedleft\includegraphics[height=0.92cm]{../../licitacion/assets/cchen360\_logo\_color.png}
+\end{minipage}
+
+\vspace{0.12cm}
+{\color{cchenpurple}\rule{\textwidth}{1.55pt}}
+\vspace{0.05cm}
+
+\begin{center}
+{\fontsize{17}{18.5}\selectfont\bfseries\color{cchenpurple}Fuentes implementadas para extracción CCHEN-only}\\[-1pt]
+{\fontsize{9.2}{10.6}\selectfont\color{textgray}Qué se descargó, dónde quedó guardado y cómo alimenta el Observatorio CCHEN 360}\\[-1pt]
+{\fontsize{7.8}{9}\selectfont\color{mutedgray}Fecha de corte: 20 de mayo de 2026}
+\end{center}
+\vspace{0.02cm}
+
+\begin{keybox}
+\textbf{\color{cchenpurple}Mensaje central.} Se documentaron \textbf{22 fuentes implementadas}: \textbf{12 directas/API}, \textbf{6 derivadas por semillas}, \textbf{2 runtime/local}, \textbf{1 bloqueada por credencial} y \textbf{1 match a revisar}. No se descarga el universo completo de cada fuente: se extraen registros con señal CCHEN por DOI, autor, afiliación, ROR/ORCID, alias institucional o semillas temáticas justificadas.
+\end{keybox}
+
+\vspace{0.02cm}
+\begin{minipage}{0.24\textwidth}
+\begin{metricbox}{okgreen}{Fuentes documentadas}
+{\LARGE\bfseries 22}\\[-2pt]
+{\tiny implementadas o registradas}
+\end{metricbox}
+\end{minipage}\hfill
+\begin{minipage}{0.24\textwidth}
+\begin{metricbox}{cchenpurple}{Directas/API}
+{\LARGE\bfseries 12}\\[-2pt]
+{\tiny listas para mostrar primero}
+\end{metricbox}
+\end{minipage}\hfill
+\begin{minipage}{0.24\textwidth}
+\begin{metricbox}{warnamber}{Con observación}
+{\LARGE\bfseries 8}\\[-2pt]
+{\tiny semillas, token o match}
+\end{metricbox}
+\end{minipage}\hfill
+\begin{minipage}{0.24\textwidth}
+\begin{metricbox}{badred}{Bloqueo crítico}
+{\LARGE\bfseries 1}\\[-2pt]
+{\tiny PatentsView requiere API key}
+\end{metricbox}
+\end{minipage}
+
+\begin{minipage}[t]{0.48\textwidth}
+
+\sectiontitle{1. Qué se descargó}
+
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.29\linewidth}Y@{}}
+\toprule
+\textbf{Tipología} & \textbf{Datos descargados y uso} \\
+\midrule
+Publicaciones y citas & OpenAlex, CrossRef, Semantic Scholar, PubMed, Europe PMC, INSPIRE y arXiv consolidan DOI, autores, afiliaciones, conceptos, citas, abstracts y preprints CCHEN. \\
+Investigadores y acceso & ORCID mantiene perfiles de investigadores; Unpaywall marca acceso abierto por DOI. \\
+Datasets y outputs & DataCite, OpenAIRE y Zenodo inventarian datasets, presentaciones, archivos y outputs asociados a CCHEN. \\
+Bio/Farma nuclear & PubChem/radiofarmacia descarga semillas, compuestos/radionúclidos y literatura técnica; ClinVar, GenBank, GEO, NIH y SRA quedan como evidencia derivada. \\
+Patentes & INAPI queda como base local; PatentsView/USPTO está registrado como fuente API, pero bloqueado hasta contar con credencial gratuita. \\
+Institucional y vigilancia & Datos.gob.cl, IAEA INIS y noticias CCHEN/nuclear agregan convenios, acuerdos, registros nucleares y señales de vigilancia. \\
+\bottomrule
+\end{tabularx}
+
+\begin{calloutbox}{Volumen de evidencia}
+Conteos principales: OpenAlex (949; 21348; 877; 8499); Crossref (1434); Semantic Scholar (1057); OpenAIRE (878); PubChem (875); Unpaywall (780); arXiv (407; 1); IAEA (INIS) (110); Zenodo (68); ORCID (65). Los valores múltiples son artefactos distintos y no se suman como una sola tabla.
+\end{calloutbox}
+
+\sectiontitle{2. Dónde quedaron guardados}
+
+\begin{itemize}
+  \item \textbf{Publicaciones:} \texttt{Data/Publications/}.
+  \item \textbf{Outputs:} \texttt{Data/ResearchOutputs/}.
+  \item \textbf{Gobernanza/radiofarmacia:} \texttt{Data/Gobernanza/}.
+  \item \textbf{Vigilancia/patentes:} \texttt{Data/Vigilancia/} y \texttt{Data/Patents/}.
+\end{itemize}
+
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}
+
+\sectiontitle{3. Estado y frecuencia de descarga}
+
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.31\linewidth}Y@{}}
+\toprule
+\textbf{Frecuencia} & \textbf{Fuentes} \\
+\midrule
+Semanal & arXiv monitor, IAEA INIS y noticias CCHEN/nuclear. \\
+Trimestral & OpenAlex, CrossRef, Semantic Scholar y radiofarmacia/semillas. \\
+Semestral & ORCID, PubMed, Europe PMC, INSPIRE, DataCite, OpenAIRE, Unpaywall, Zenodo, datos institucionales y patentes. \\
+\bottomrule
+\end{tabularx}
+
+\sectiontitle{4. Uso para el observatorio}
+
+\begin{itemize}
+  \item \textbf{Producción científica:} alimentar indicadores de publicaciones, autores, colaboración, citas, temas y acceso abierto.
+  \item \textbf{Radiofarmacia y medicina nuclear:} vigilar compuestos, radionúclidos, literatura técnica y oportunidades temáticas.
+  \item \textbf{Vigilancia institucional:} monitorear señales nucleares, prensa CCHEN/nuclear y oportunidades de posicionamiento.
+  \item \textbf{Gobernanza de datos:} evidenciar qué fuentes ya existen, qué producen y qué requiere monitoreo.
+\end{itemize}
+
+\begin{calloutbox}{Observaciones críticas}
+\textbf{PatentsView/USPTO} requiere \texttt{PATENTSVIEW\_API\_KEY} y no reemplaza INAPI local. \textbf{Google Finance / News monitor} debe revisarse: el runtime implementado monitorea noticias CCHEN/nuclear, no datos financieros. Las fuentes Life Sciences derivadas deben presentarse como evidencia temática hasta implementar extractores directos.
+\end{calloutbox}
+
+\sectiontitle{5. Entregables}
+\textbf{CSV operativo}, \textbf{briefs PDF} y \textbf{gráficos de estado}. Cada respaldo incluye tipología, uso, frecuencia, estado, comentario y decisión.
+
+\end{minipage}
+
+\vspace{0.08cm}
+\begin{tcolorbox}[enhanced,colback=white,colframe=cchenpurple!55,boxrule=0.45pt,arc=2pt,left=5pt,right=5pt,top=4pt,bottom=4pt]
+{\bfseries\color{cchenpurple}Método replicable de extracción:}\hfill
+\begin{tikzpicture}[baseline=-0.55ex, every node/.style={font=\scriptsize, align=center}]
+\node[draw=cchenpurple,fill=cchenpurple!8,rounded corners=2pt,inner xsep=5pt,inner ysep=3pt] (a) {Fuente API\\o archivo local};
+\node[draw=okgreen,fill=okgreen!8,rounded corners=2pt,inner xsep=5pt,inner ysep=3pt,right=0.32cm of a] (b) {Filtro\\CCHEN-only};
+\node[draw=cchenpurple,fill=cchenpurple!8,rounded corners=2pt,inner xsep=5pt,inner ysep=3pt,right=0.32cm of b] (c) {CSV local\\y runtime};
+\node[draw=warnamber,fill=warnamber!10,rounded corners=2pt,inner xsep=5pt,inner ysep=3pt,right=0.32cm of c] (d) {Calidad\\y brechas};
+\node[draw=okgreen,fill=okgreen!8,rounded corners=2pt,inner xsep=5pt,inner ysep=3pt,right=0.32cm of d] (e) {Indicador\\Observatorio};
+\draw[-{Latex[length=2mm]},cchenpurple] (a) -- (b);
+\draw[-{Latex[length=2mm]},cchenpurple] (b) -- (c);
+\draw[-{Latex[length=2mm]},cchenpurple] (c) -- (d);
+\draw[-{Latex[length=2mm]},cchenpurple] (d) -- (e);
+\end{tikzpicture}
+\end{tcolorbox}
+\end{document}

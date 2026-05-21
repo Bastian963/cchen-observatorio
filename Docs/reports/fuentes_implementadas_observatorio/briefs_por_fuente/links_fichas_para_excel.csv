@@ -1,0 +1,23 @@
+source_key,source_name,ficha_pdf,nombre_link_sugerido
+arxiv,arXiv,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_arxiv.pdf,Ficha fuente - arXiv
+crossref,Crossref,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_crossref.pdf,Ficha fuente - Crossref
+datacite_outputs,DataCite,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_datacite_outputs.pdf,Ficha fuente - DataCite
+europmc_works,Europe PMC,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_europmc_works.pdf,Ficha fuente - Europe PMC
+inspire_works,INSPIRE,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_inspire_works.pdf,Ficha fuente - INSPIRE
+openaire_outputs,OpenAIRE,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_openaire_outputs.pdf,Ficha fuente - OpenAIRE
+orcid,ORCID,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_orcid.pdf,Ficha fuente - ORCID
+pubmed_works,PubMed,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_pubmed_works.pdf,Ficha fuente - PubMed
+semantic_scholar,Semantic Scholar,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_semantic_scholar.pdf,Ficha fuente - Semantic Scholar
+unpaywall_oa,Unpaywall,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_unpaywall_oa.pdf,Ficha fuente - Unpaywall
+zenodo_outputs,Zenodo,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_zenodo_outputs.pdf,Ficha fuente - Zenodo
+patentsview_uspto,PatentsView / USPTO,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_patentsview_uspto.pdf,Ficha fuente - PatentsView / USPTO
+radiofarmacia_cchen_seeded,PubChem,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_radiofarmacia_cchen_seeded.pdf,Ficha fuente - PubChem
+clinvar,ClinVar,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_clinvar.pdf,Ficha fuente - ClinVar
+openalex,OpenAlex,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_openalex.pdf,Ficha fuente - OpenAlex
+datos_gob_cl,Datos.gob.cl,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_datos_gob_cl.pdf,Ficha fuente - Datos.gob.cl
+genbank,GenBank,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_genbank.pdf,Ficha fuente - GenBank
+gene_expression_omnibus_geo,Gene Expression Omnibus (GEO),/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_gene_expression_omnibus_geo.pdf,Ficha fuente - Gene Expression Omnibus (GEO)
+nih,NIH,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_nih.pdf,Ficha fuente - NIH
+sequence_read_archive,Sequence Read Archive,/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_sequence_read_archive.pdf,Ficha fuente - Sequence Read Archive
+iaea_inis_monitor,IAEA (INIS),/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_iaea_inis_monitor.pdf,Ficha fuente - IAEA (INIS)
+news_monitor,Google Finance / News monitor (revisar match),/home/bastin/Dropbox/CCHEN/Docs/reports/fuentes_implementadas_observatorio/fichas_por_fuente/ficha_fuente_news_monitor.pdf,Ficha fuente - Google Finance / News monitor (revisar match)

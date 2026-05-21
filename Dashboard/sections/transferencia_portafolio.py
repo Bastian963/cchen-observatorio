@@ -26,10 +26,20 @@ except Exception:
 @st.cache_data(show_spinner=False, ttl=900)
 def _load_evidence_index() -> pd.DataFrame:
     configured_path = os.getenv("EVIDENCE_SEARCH_INDEX_FILE", "").strip()
-    path = Path(configured_path) if configured_path else _ROOT / "Data" / "Semantic" / "evidence_index.csv"
-    if not path.is_absolute():
-        path = _ROOT / path
-    if not path.exists():
+    candidate_paths = []
+    if configured_path:
+        candidate_paths.append(Path(configured_path))
+    publicable_path = os.getenv("EVIDENCE_SEARCH_PUBLICABLE_INDEX_FILE", "").strip()
+    if publicable_path:
+        candidate_paths.append(Path(publicable_path))
+    candidate_paths.extend(
+        [
+            _ROOT / "Data" / "Semantic" / "evidence_index.csv",
+            _ROOT / "Data" / "Gobernanza" / "evidence_index_publicable.csv",
+        ]
+    )
+    path = next((p if p.is_absolute() else _ROOT / p for p in candidate_paths if (p if p.is_absolute() else _ROOT / p).exists()), None)
+    if path is None or not path.exists():
         return pd.DataFrame()
     try:
         return pd.read_csv(path, low_memory=False, encoding="utf-8-sig").fillna("")

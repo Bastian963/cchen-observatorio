@@ -90,9 +90,12 @@ def test_evidence_search_lexical_fallback(tmp_path, monkeypatch):
     monkeypatch.setenv("EVIDENCE_SEARCH_META_FILE", str(index_path))
     monkeypatch.setenv("EVIDENCE_SEARCH_EMB_FILE", str(tmp_path / "missing.npy"))
     monkeypatch.setenv("EVIDENCE_SEARCH_PIPELINE_FILE", str(tmp_path / "missing.joblib"))
+    monkeypatch.setenv("EVIDENCE_SEARCH_DISABLE_RUNTIME_EMBEDDINGS", "1")
     evidence_search._metadata = None
     evidence_search._embeddings = None
+    evidence_search._runtime_embeddings = None
     evidence_search._pipeline = None
+    evidence_search._model = None
 
     result = evidence_search.search("outputs o datasets asociados a CCHEN", top_k=2)
     assert not result.empty

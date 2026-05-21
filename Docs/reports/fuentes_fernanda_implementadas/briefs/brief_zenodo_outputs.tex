@@ -1,0 +1,70 @@
+% !TeX program = pdflatex
+\documentclass[10pt,a4paper]{article}
+\usepackage[spanish,es-nodecimaldot,es-noshorthands]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[a4paper,left=1.6cm,right=1.6cm,top=1.35cm,bottom=1.45cm]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{microtype}
+\definecolor{cchenpurple}{HTML}{483888}
+\definecolor{cchenlime}{HTML}{DDDC40}
+\definecolor{textgray}{HTML}{333333}
+\hypersetup{colorlinks=true, linkcolor=cchenpurple, urlcolor=cchenpurple}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\begin{document}
+{\Large\bfseries\color{cchenpurple} Brief de fuente implementada: Zenodo}
+
+\vspace{2mm}
+{\bfseries Source key:} \texttt{zenodo\_outputs} \quad
+{\bfseries Categoria:} Científica \quad
+{\bfseries Madurez:} Implementada OK
+
+{\bfseries Tipo:} Implementada directa/API \quad
+{\bfseries Decision operativa:} \texttt{mantener}
+
+\vspace{2mm}
+\includegraphics[width=\textwidth]{../assets/zenodo\_outputs\_resumen.png}
+
+\section*{Ficha rapida para Fernanda}
+Tipo de datos descargados: CSV de metadatos Zenodo y CSV de inventario de archivos; no descarga archivos binarios.. Tipologia de datos: Metadatos de datasets, presentaciones y archivos asociados. Uso posible en el observatorio: Inventariar metadatos de datasets, presentaciones y outputs CCHEN en Zenodo sin descargar archivos.. Frecuencia de descarga: semestral. Estado: Implementada y usable con control de calidad/frescura.. Decision operativa: mantener.
+
+\section*{Comentario para Excel}
+Implementada para extraccion CCHEN-only; Inventariar metadatos de datasets, presentaciones y outputs CCHEN en Zenodo sin descargar archivos; mantener frecuencia semestral.
+
+\section*{Que datos ofrece la fuente}
+Repositorio CERN
+
+\section*{Que extraemos para CCHEN}
+Se guardan artefactos locales trazables: Data/ResearchOutputs/cchen\_zenodo\_metadata.csv, Data/ResearchOutputs/cchen\_zenodo\_files.csv, Data/ResearchOutputs/zenodo\_cchen\_state.json y 1 artefactos adicionales.
+
+\section*{Como se filtra CCHEN-only}
+Aliases institucionales CCHEN visibles en afiliacion o metadatos; metadata-only, sin descarga de archivos.
+
+\section*{Potencial para el observatorio}
+Inventariar metadatos de datasets, presentaciones y outputs CCHEN en Zenodo sin descargar archivos.
+
+\section*{Debilidades y riesgos}
+Riesgo principal: falsos positivos si se relaja el filtro CCHEN-only o si se consume sin curaduria.
+
+\section*{Frecuencia recomendada}
+semestral (SLA: 180 dias).
+
+\section*{Estado operativo}
+Estado catalogo: implementada\_runtime. Ultima corrida: success; ultima actualizacion: 2026-05-19.
+
+\section*{Evidencia disponible}
+Conteo registrado: 68. Calidad: 1.0. Outputs: Data/ResearchOutputs/cchen\_zenodo\_metadata.csv; Data/ResearchOutputs/cchen\_zenodo\_files.csv; Data/ResearchOutputs/zenodo\_cchen\_state.json; Data/Gobernanza/curaduria\_zenodo\_cchen.csv.
+
+\section*{Decision}
+Mantener como fuente implementada del observatorio y exigir evidencia de refresco segun frecuencia declarada.
+
+
+\section*{URLs}
+Sitio: https://zenodo.org\\
+API: https://developers.zenodo.org/
+\end{document}

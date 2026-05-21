@@ -1,0 +1,70 @@
+% !TeX program = pdflatex
+\documentclass[10pt,a4paper]{article}
+\usepackage[spanish,es-nodecimaldot,es-noshorthands]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[a4paper,left=1.6cm,right=1.6cm,top=1.35cm,bottom=1.45cm]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{microtype}
+\definecolor{cchenpurple}{HTML}{483888}
+\definecolor{cchenlime}{HTML}{DDDC40}
+\definecolor{textgray}{HTML}{333333}
+\hypersetup{colorlinks=true, linkcolor=cchenpurple, urlcolor=cchenpurple}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\begin{document}
+{\Large\bfseries\color{cchenpurple} Brief de fuente implementada: IAEA (INIS)}
+
+\vspace{2mm}
+{\bfseries Source key:} \texttt{iaea\_inis\_monitor} \quad
+{\bfseries Categoria:} Nuclear \quad
+{\bfseries Madurez:} Implementada OK
+
+{\bfseries Tipo:} Implementada runtime/local \quad
+{\bfseries Decision operativa:} \texttt{mantener}
+
+\vspace{2mm}
+\includegraphics[width=\textwidth]{../assets/iaea\_inis\_monitor\_resumen.png}
+
+\section*{Ficha rapida para Fernanda}
+Tipo de datos descargados: CSV de vigilancia INIS/IAEA con registros nucleares relevantes a CCHEN.. Tipologia de datos: Registros de informacion nuclear y vigilancia técnica. Uso posible en el observatorio: Vigilancia especializada de INIS/IAEA para informacion nuclear relevante a CCHEN.. Frecuencia de descarga: semanal. Estado: Implementada y usable con control de calidad/frescura.. Decision operativa: mantener.
+
+\section*{Comentario para Excel}
+Implementada para extraccion CCHEN-only; Vigilancia especializada de INIS/IAEA para informacion nuclear relevante a CCHEN; mantener frecuencia semanal.
+
+\section*{Que datos ofrece la fuente}
+Literatura nuclear
+
+\section*{Que extraemos para CCHEN}
+Se guardan artefactos locales trazables: Data/Vigilancia/iaea\_inis\_monitor.csv, Data/Vigilancia/iaea\_inis\_state.json.
+
+\section*{Como se filtra CCHEN-only}
+Sin API; eventual carga manual/curada.
+
+\section*{Potencial para el observatorio}
+Vigilancia especializada de INIS/IAEA para informacion nuclear relevante a CCHEN.
+
+\section*{Debilidades y riesgos}
+Aparece como implementada por runtime, pero su origen en la matriz no era API priorizada; mantener trazabilidad de metodo y outputs.
+
+\section*{Frecuencia recomendada}
+semanal (SLA: 30 dias).
+
+\section*{Estado operativo}
+Estado catalogo: implementada\_runtime. Ultima corrida: success; ultima actualizacion: 2026-05-19.
+
+\section*{Evidencia disponible}
+Conteo registrado: 110. Calidad: 1.0. Outputs: Data/Vigilancia/iaea\_inis\_monitor.csv; Data/Vigilancia/iaea\_inis\_state.json.
+
+\section*{Decision}
+Mantener como fuente implementada del observatorio y exigir evidencia de refresco segun frecuencia declarada.
+
+
+\section*{URLs}
+Sitio: https://inis.iaea.org\\
+API: sin API registrada
+\end{document}
