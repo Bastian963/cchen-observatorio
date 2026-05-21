@@ -1,0 +1,70 @@
+% !TeX program = pdflatex
+\documentclass[10pt,a4paper]{article}
+\usepackage[spanish,es-nodecimaldot,es-noshorthands]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[a4paper,left=1.6cm,right=1.6cm,top=1.35cm,bottom=1.45cm]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{microtype}
+\definecolor{cchenpurple}{HTML}{483888}
+\definecolor{cchenlime}{HTML}{DDDC40}
+\definecolor{textgray}{HTML}{333333}
+\hypersetup{colorlinks=true, linkcolor=cchenpurple, urlcolor=cchenpurple}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\begin{document}
+{\Large\bfseries\color{cchenpurple} Brief de fuente implementada: PubChem}
+
+\vspace{2mm}
+{\bfseries Source key:} \texttt{radiofarmacia\_cchen\_seeded} \quad
+{\bfseries Categoria:} Bio/Farma \quad
+{\bfseries Madurez:} Implementada OK
+
+{\bfseries Tipo:} Implementada derivada/semilla \quad
+{\bfseries Decision operativa:} \texttt{mantener\_con\_observacion}
+
+\vspace{2mm}
+\includegraphics[width=\textwidth]{../assets/radiofarmacia\_cchen\_seeded\_resumen.png}
+
+\section*{Ficha rapida para Fernanda}
+Tipo de datos descargados: CSVs de semillas, compuestos/radionuclidos, literatura, curaduria y revision operativa.. Tipologia de datos: Radiofarmacos, radionuclidos, compuestos PubChem y literatura técnica. Uso posible en el observatorio: Sirve como evidencia temática o vigilancia exploratoria; no como indicador directo de la fuente original.. Frecuencia de descarga: trimestral. Estado: Implementada como derivada/semilla; requiere nota metodologica al usarla.. Decision operativa: mantener\_con\_observacion.
+
+\section*{Comentario para Excel}
+Implementada como fuente derivada/semilla CCHEN-only; Consolidar semillas de radiofarmacos, radionuclidos, PubChem y literatura abierta relevante; mantener como evidencia tecnica, no como conexion directa a la fuente original.
+
+\section*{Que datos ofrece la fuente}
+Química
+
+\section*{Que extraemos para CCHEN}
+La evidencia actual proviene de flujos relacionados ya implementados (Radiofarmacia CCHEN seeded). No hay extractor directo propio para esta fuente.
+
+\section*{Como se filtra CCHEN-only}
+Probe CCHEN-only por alias institucional; activar solo con resultados relevantes.
+
+\section*{Potencial para el observatorio}
+Consolidar semillas de radiofarmacos, radionuclidos, PubChem y literatura abierta relevante.
+
+\section*{Debilidades y riesgos}
+Usa semillas tematicas; ampliar semillas exige justificacion experta para evitar ruido.
+
+\section*{Frecuencia recomendada}
+trimestral (SLA: 90 dias).
+
+\section*{Estado operativo}
+Estado catalogo: implementada\_runtime. Ultima corrida: success; ultima actualizacion: 2026-05-19.
+
+\section*{Evidencia disponible}
+Conteo registrado: 875. Calidad: 1.0. Outputs: Data/Gobernanza/radiofarmacia\_cchen\_seeds.csv; Data/Gobernanza/radiofarmacia\_cchen\_pubchem\_compounds.csv; Data/Gobernanza/radiofarmacia\_cchen\_literature.csv; Data/Gobernanza/radiofarmacia\_cchen\_status.csv; Data/Gobernanza/radiofarmacia\_cchen\_state.json; Data/Gobernanza/radiofarmacia\_cchen\_literature\_curated.csv; Data/Gobernanza/radiofarmacia\_cchen\_compounds\_curated.csv; Data/Gobernanza/radiofarmacia\_cchen\_curation\_summary.csv; Data/Gobernanza/radiofarmacia\_cchen\_literature\_reviewed.csv; Data/Gobernanza/radiofarmacia\_cchen\_review\_summary.csv; Docs/reports/metodologia\_curaduria\_radiofarmacia\_cchen.md; Docs/reports/metodologia\_revision\_radiofarmacia\_cchen.md.
+
+\section*{Decision}
+Mantener como fuente derivada/semilla; no presentarla como conexión directa a la fuente original hasta implementar extractor propio.
+
+
+\section*{URLs}
+Sitio: https://pubchem.ncbi.nlm.nih.gov\\
+API: https://pubchem.ncbi.nlm.nih.gov/docs/pug-rest\#section=The-URL-Path
+\end{document}

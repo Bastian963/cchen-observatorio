@@ -1,0 +1,37 @@
+﻿tipo_evidencia,fuente,registros
+acceso abierto,Unpaywall,780
+compuesto,PubChem / radiofarmacia curada,7
+convenio,Convenios CCHEN,84
+convenio,Acuerdos internacionales CCHEN,61
+dataset/output,OpenAIRE,879
+dataset/output,DOAJ,25
+dataset/output,Zenodo,20
+dataset/output,CORE,14
+dataset/output,DataCite,13
+dataset/output,HAL,11
+dataset/output,Zenodo/DataCite,1
+oportunidad,ANID,26
+oportunidad,Matching institucional,26
+oportunidad,ANID matching,3
+oportunidad,IAEA INIS monitor,1
+patente,INAPI_manual,4
+patente,INAPI,3
+proyecto,ANID Repositorio,30
+proyecto,ANID,2
+proyecto,Portafolio semilla,1
+publicacion,Semantic Scholar,950
+publicacion,OpenAlex publicaciones,877
+publicacion,CrossRef,833
+publicacion,Europe PMC,74
+publicacion,INSPIRE-HEP,21
+publicacion,PubMed,20
+publicacion,OpenAlex,4
+publicacion,arXiv,1
+registro interno,Publicaciones DIAN,133
+senal tematica,EuropePMC,93
+senal tematica,PubMed,70
+senal tematica,Matching institucional,1
+senal tematica,Portafolio semilla,1
+senal tematica,PubChem curado,1
+senal tematica,Radiofarmacia curada,1
+senal tematica,Índice semántico,1

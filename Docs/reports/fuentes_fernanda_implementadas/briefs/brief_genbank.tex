@@ -1,0 +1,70 @@
+% !TeX program = pdflatex
+\documentclass[10pt,a4paper]{article}
+\usepackage[spanish,es-nodecimaldot,es-noshorthands]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[a4paper,left=1.6cm,right=1.6cm,top=1.35cm,bottom=1.45cm]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{microtype}
+\definecolor{cchenpurple}{HTML}{483888}
+\definecolor{cchenlime}{HTML}{DDDC40}
+\definecolor{textgray}{HTML}{333333}
+\hypersetup{colorlinks=true, linkcolor=cchenpurple, urlcolor=cchenpurple}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\begin{document}
+{\Large\bfseries\color{cchenpurple} Brief de fuente implementada: GenBank}
+
+\vspace{2mm}
+{\bfseries Source key:} \texttt{genbank} \quad
+{\bfseries Categoria:} Life Sciences \quad
+{\bfseries Madurez:} Implementada OK
+
+{\bfseries Tipo:} Implementada derivada/semilla \quad
+{\bfseries Decision operativa:} \texttt{mantener\_con\_observacion}
+
+\vspace{2mm}
+\includegraphics[width=\textwidth]{../assets/genbank\_resumen.png}
+
+\section*{Ficha rapida para Fernanda}
+Tipo de datos descargados: No hay extractor directo GenBank; la evidencia viene de PubMed/radiofarmacia como aproximacion temática.. Tipologia de datos: Secuencias genéticas relacionadas por flujos biomédicos derivados. Uso posible en el observatorio: Sirve como evidencia temática o vigilancia exploratoria; no como indicador directo de la fuente original.. Frecuencia de descarga: semestral (otros outputs: trimestral). Estado: Implementada como derivada/semilla; requiere nota metodologica al usarla.. Decision operativa: mantener\_con\_observacion.
+
+\section*{Comentario para Excel}
+Implementada como fuente derivada/semilla CCHEN-only; Aporta secuencias genéticas para completar vistas del observatorio; mantener como evidencia tecnica, no como conexion directa a la fuente original.
+
+\section*{Que datos ofrece la fuente}
+Secuencias genéticas
+
+\section*{Que extraemos para CCHEN}
+La evidencia actual proviene de flujos relacionados ya implementados (PubMed works; Radiofarmacia CCHEN seeded). No hay extractor directo propio para esta fuente.
+
+\section*{Como se filtra CCHEN-only}
+Aliases CCHEN, autores/afiliaciones o DOI ya conocidos; revisar falsos positivos.
+
+\section*{Potencial para el observatorio}
+Aporta secuencias genéticas para completar vistas del observatorio.
+
+\section*{Debilidades y riesgos}
+Aparece como implementada por runtime, pero su origen en la matriz no era API priorizada; mantener trazabilidad de metodo y outputs.
+
+\section*{Frecuencia recomendada}
+semestral (otros outputs: trimestral) (SLA: 180; 90 dias).
+
+\section*{Estado operativo}
+Estado catalogo: implementada\_runtime. Ultima corrida: seeded\_from\_outputs; success; ultima actualizacion: 2026-05-11; 2026-05-19.
+
+\section*{Evidencia disponible}
+Conteo registrado: outputs multiples: 20; 875. Calidad: 1.0. Outputs: Data/Publications/cchen\_pubmed\_works.csv; Data/Publications/pubmed\_state.json; Data/Gobernanza/radiofarmacia\_cchen\_seeds.csv; Data/Gobernanza/radiofarmacia\_cchen\_pubchem\_compounds.csv; Data/Gobernanza/radiofarmacia\_cchen\_literature.csv; Data/Gobernanza/radiofarmacia\_cchen\_status.csv; Data/Gobernanza/radiofarmacia\_cchen\_state.json; Data/Gobernanza/radiofarmacia\_cchen\_literature\_curated.csv; Data/Gobernanza/radiofarmacia\_cchen\_compounds\_curated.csv; Data/Gobernanza/radiofarmacia\_cchen\_curation\_summary.csv; Data/Gobernanza/radiofarmacia\_cchen\_literature\_reviewed.csv; Data/Gobernanza/radiofarmacia\_cchen\_review\_summary.csv; Docs/reports/metodologia\_curaduria\_radiofarmacia\_cchen.md; Docs/reports/metodologia\_revision\_radiofarmacia\_cchen.md. Los conteos corresponden a artefactos distintos; no deben sumarse como una sola tabla.
+
+\section*{Decision}
+Mantener como fuente derivada/semilla; no presentarla como conexión directa a la fuente original hasta implementar extractor propio.
+
+
+\section*{URLs}
+Sitio: https://www.ncbi.nlm.nih.gov/genbank/\\
+API: sin API registrada
+\end{document}

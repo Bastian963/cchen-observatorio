@@ -1,0 +1,3 @@
+[source-refresh] dry-run | fuentes seleccionadas: 1
+[dry-run] job=fetch_patentsview -> patentsview_uspto
+          command=python Scripts/fetch_patentsview_patents.py && python Database/migrate_patentsview.py

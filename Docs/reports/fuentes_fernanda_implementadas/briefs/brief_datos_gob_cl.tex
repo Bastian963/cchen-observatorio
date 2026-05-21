@@ -1,0 +1,70 @@
+% !TeX program = pdflatex
+\documentclass[10pt,a4paper]{article}
+\usepackage[spanish,es-nodecimaldot,es-noshorthands]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[a4paper,left=1.6cm,right=1.6cm,top=1.35cm,bottom=1.45cm]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{microtype}
+\definecolor{cchenpurple}{HTML}{483888}
+\definecolor{cchenlime}{HTML}{DDDC40}
+\definecolor{textgray}{HTML}{333333}
+\hypersetup{colorlinks=true, linkcolor=cchenpurple, urlcolor=cchenpurple}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\begin{document}
+{\Large\bfseries\color{cchenpurple} Brief de fuente implementada: Datos.gob.cl}
+
+\vspace{2mm}
+{\bfseries Source key:} \texttt{datos\_gob\_cl} \quad
+{\bfseries Categoria:} Datos Abiertos \quad
+{\bfseries Madurez:} Implementada OK
+
+{\bfseries Tipo:} Implementada runtime/local \quad
+{\bfseries Decision operativa:} \texttt{mantener}
+
+\vspace{2mm}
+\includegraphics[width=\textwidth]{../assets/datos\_gob\_cl\_resumen.png}
+
+\section*{Ficha rapida para Fernanda}
+Tipo de datos descargados: CSVs institucionales de convenios y acuerdos públicos asociados a CCHEN.. Tipologia de datos: Convenios, acuerdos e informacion institucional publica. Uso posible en el observatorio: Datos publicos nacionales vinculados a convenios, acuerdos e informacion institucional CCHEN.. Frecuencia de descarga: semestral. Estado: Implementada y usable con control de calidad/frescura.. Decision operativa: mantener.
+
+\section*{Comentario para Excel}
+Implementada para extraccion CCHEN-only; Datos publicos nacionales vinculados a convenios, acuerdos e informacion institucional CCHEN; mantener frecuencia semestral.
+
+\section*{Que datos ofrece la fuente}
+Chile
+
+\section*{Que extraemos para CCHEN}
+Se guardan artefactos locales trazables: Data/Institutional/clean\_Convenios\_suscritos\_por\_la\_Com.csv, Data/Institutional/clean\_Acuerdos\_e\_instrumentos\_intern.csv.
+
+\section*{Como se filtra CCHEN-only}
+Sin API; eventual carga manual/curada.
+
+\section*{Potencial para el observatorio}
+Datos publicos nacionales vinculados a convenios, acuerdos e informacion institucional CCHEN.
+
+\section*{Debilidades y riesgos}
+Aparece como implementada por runtime, pero su origen en la matriz no era API priorizada; mantener trazabilidad de metodo y outputs.
+
+\section*{Frecuencia recomendada}
+semestral (SLA: 180 dias).
+
+\section*{Estado operativo}
+Estado catalogo: implementada\_runtime. Ultima corrida: seeded\_from\_outputs; ultima actualizacion: 2026-03-21.
+
+\section*{Evidencia disponible}
+Conteo registrado: outputs multiples: 84; 126. Calidad: 1.0. Outputs: Data/Institutional/clean\_Convenios\_suscritos\_por\_la\_Com.csv; Data/Institutional/clean\_Acuerdos\_e\_instrumentos\_intern.csv. Los conteos corresponden a artefactos distintos; no deben sumarse como una sola tabla.
+
+\section*{Decision}
+Mantener como fuente implementada del observatorio y exigir evidencia de refresco segun frecuencia declarada.
+
+
+\section*{URLs}
+Sitio: https://datos.gob.cl\\
+API: sin API registrada
+\end{document}

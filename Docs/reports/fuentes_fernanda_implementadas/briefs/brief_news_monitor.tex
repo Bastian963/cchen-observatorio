@@ -1,0 +1,70 @@
+% !TeX program = pdflatex
+\documentclass[10pt,a4paper]{article}
+\usepackage[spanish,es-nodecimaldot,es-noshorthands]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[a4paper,left=1.6cm,right=1.6cm,top=1.35cm,bottom=1.45cm]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{microtype}
+\definecolor{cchenpurple}{HTML}{483888}
+\definecolor{cchenlime}{HTML}{DDDC40}
+\definecolor{textgray}{HTML}{333333}
+\hypersetup{colorlinks=true, linkcolor=cchenpurple, urlcolor=cchenpurple}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\begin{document}
+{\Large\bfseries\color{cchenpurple} Brief de fuente implementada: Google Finance / News monitor (revisar match)}
+
+\vspace{2mm}
+{\bfseries Source key:} \texttt{news\_monitor} \quad
+{\bfseries Categoria:} Reportes financieros \quad
+{\bfseries Madurez:} Revisar match runtime
+
+{\bfseries Tipo:} Revisar match runtime \quad
+{\bfseries Decision operativa:} \texttt{revisar\_match}
+
+\vspace{2mm}
+\includegraphics[width=\textwidth]{../assets/news\_monitor\_resumen.png}
+
+\section*{Ficha rapida para Fernanda}
+Tipo de datos descargados: CSV de noticias CCHEN/nuclear; no corresponde a descarga financiera desde Google Finance.. Tipologia de datos: Noticias y monitoreo de prensa CCHEN/nuclear; match financiero en revision. Uso posible en el observatorio: Solo serviria para vigilancia de noticias si se reclasifica; no usar como fuente financiera sin confirmacion.. Frecuencia de descarga: semanal. Estado: Requiere confirmacion de correspondencia entre planilla y runtime.. Decision operativa: revisar\_match.
+
+\section*{Comentario para Excel}
+Revisar match: la planilla indica Google Finance, pero el runtime implementado es News monitor para prensa CCHEN/nuclear; no tratar como fuente financiera sin confirmacion.
+
+\section*{Que datos ofrece la fuente}
+Overview financiero
+
+\section*{Que extraemos para CCHEN}
+El artefacto existente es Data/Vigilancia/news\_monitor.csv, asociado a monitoreo de prensa CCHEN/nuclear. No corresponde a una extracción financiera de Google Finance.
+
+\section*{Como se filtra CCHEN-only}
+Filtro del runtime: consulta/curaduria de noticias CCHEN y energia nuclear. El filtro financiero de Google Finance no esta implementado.
+
+\section*{Potencial para el observatorio}
+Monitoreo de prensa y noticias sobre CCHEN y energia nuclear; no debe confundirse con datos financieros de Google Finance.
+
+\section*{Debilidades y riesgos}
+La fila del Excel indica Google Finance, pero el runtime conectado corresponde a News monitor. Requiere confirmar si se mantiene como vigilancia de noticias o se excluye del bloque financiero.
+
+\section*{Frecuencia recomendada}
+semanal (SLA: 8 dias).
+
+\section*{Estado operativo}
+Estado catalogo: implementada\_runtime. Ultima corrida: success; ultima actualizacion: 2026-05-19.
+
+\section*{Evidencia disponible}
+Conteo registrado: 144. Calidad: 1.0. Outputs: Data/Vigilancia/news\_monitor.csv.
+
+\section*{Decision}
+Revisar con Fernanda: la planilla apunta a Google Finance, pero el runtime implementado es News monitor para prensa CCHEN/nuclear. Mantener solo si se reclasifica como vigilancia de noticias.
+
+
+\section*{URLs}
+Sitio: https://www.google.com/finance/\\
+API: sin API registrada
+\end{document}

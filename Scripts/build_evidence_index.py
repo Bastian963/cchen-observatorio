@@ -31,6 +31,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "Data"
 OUT_DIR = DATA / "Semantic"
+GOVERNANCE_DIR = DATA / "Gobernanza"
 
 INDEX_PATH = OUT_DIR / "evidence_index.csv"
 EMB_PATH = OUT_DIR / "evidence_embeddings.npy"
@@ -38,6 +39,8 @@ META_PATH = OUT_DIR / "evidence_embeddings_meta.csv"
 PIPELINE_PATH = OUT_DIR / "evidence_embedding_pipeline.joblib"
 STATE_PATH = OUT_DIR / "evidence_index_state.json"
 SUMMARY_PATH = OUT_DIR / "evidence_index_summary.csv"
+PUBLICABLE_INDEX_PATH = GOVERNANCE_DIR / "evidence_index_publicable.csv"
+PUBLICABLE_SUMMARY_PATH = GOVERNANCE_DIR / "evidence_index_publicable_summary.csv"
 
 INDEX_COLUMNS = [
     "id",
@@ -57,6 +60,26 @@ INDEX_COLUMNS = [
     "identificador",
     "source_path",
     "texto_embedding",
+    "fetched_at",
+]
+
+PUBLICABLE_COLUMNS = [
+    "id",
+    "titulo",
+    "resumen",
+    "tipo_evidencia",
+    "fuente",
+    "source_key",
+    "url",
+    "fecha",
+    "autores",
+    "relacion_cchen",
+    "tema",
+    "uso_observatorio",
+    "brecha",
+    "nivel_confianza",
+    "identificador",
+    "source_path",
     "fetched_at",
 ]
 
@@ -899,6 +922,7 @@ def build_embeddings(df: pd.DataFrame, mode: str) -> dict:
 
 def write_outputs(df: pd.DataFrame, *, build_vectors: bool, embedding_mode: str) -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    GOVERNANCE_DIR.mkdir(parents=True, exist_ok=True)
     df.to_csv(INDEX_PATH, index=False, encoding="utf-8-sig")
     summary = (
         df.groupby(["tipo_evidencia", "fuente"], dropna=False)
@@ -907,6 +931,9 @@ def write_outputs(df: pd.DataFrame, *, build_vectors: bool, embedding_mode: str)
         .sort_values(["tipo_evidencia", "registros", "fuente"], ascending=[True, False, True])
     )
     summary.to_csv(SUMMARY_PATH, index=False, encoding="utf-8-sig")
+    publicable_cols = [col for col in PUBLICABLE_COLUMNS if col in df.columns]
+    df[publicable_cols].to_csv(PUBLICABLE_INDEX_PATH, index=False, encoding="utf-8-sig")
+    summary.to_csv(PUBLICABLE_SUMMARY_PATH, index=False, encoding="utf-8-sig")
 
     state = {
         "generated_at": dt.datetime.now().isoformat(timespec="seconds"),
@@ -916,6 +943,8 @@ def write_outputs(df: pd.DataFrame, *, build_vectors: bool, embedding_mode: str)
         "outputs": {
             "index": str(INDEX_PATH.relative_to(ROOT)),
             "summary": str(SUMMARY_PATH.relative_to(ROOT)),
+            "publicable_index": str(PUBLICABLE_INDEX_PATH.relative_to(ROOT)),
+            "publicable_summary": str(PUBLICABLE_SUMMARY_PATH.relative_to(ROOT)),
         },
     }
 

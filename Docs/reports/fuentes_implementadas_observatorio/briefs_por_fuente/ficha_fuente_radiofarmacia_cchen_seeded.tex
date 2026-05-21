@@ -1,0 +1,170 @@
+% !TeX program = pdflatex
+\documentclass[9pt,a4paper]{extarticle}
+\usepackage[spanish,es-nodecimaldot,es-noshorthands]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[a4paper,left=0.92cm,right=0.92cm,top=0.7cm,bottom=0.76cm,headheight=9pt]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{microtype}
+
+\definecolor{cchenpurple}{HTML}{483888}
+\definecolor{cchenlime}{HTML}{DDDC40}
+\definecolor{textgray}{HTML}{333333}
+\definecolor{mutedgray}{HTML}{6F6F6F}
+\definecolor{lightgray}{HTML}{F3F3F5}
+\definecolor{linegray}{HTML}{D9D9DF}
+\definecolor{okgreen}{HTML}{2E7D32}
+\definecolor{warnamber}{HTML}{F9A825}
+\definecolor{badred}{HTML}{C62828}
+
+\hypersetup{colorlinks=true, linkcolor=cchenpurple, urlcolor=cchenpurple,
+  pdftitle={Ficha de fuente de información - PubChem},
+  pdfauthor={CCHEN 360}}
+\urlstyle{same}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[L]{\scriptsize\color{mutedgray}Observatorio CCHEN 360 -- ficha de fuente de información}
+\fancyfoot[R]{\scriptsize\color{mutedgray}\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0.25pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1.2pt}
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
+\setlist[itemize]{leftmargin=*,topsep=1pt,itemsep=0.2pt,parsep=0pt}
+\renewcommand{\arraystretch}{1.04}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\sectiontitle}[1]{\vspace{3pt}{\normalsize\bfseries\color{cchenpurple}#1}\par\vspace{1pt}}
+\newtcolorbox{keybox}{enhanced,colback=cchenpurple!5,colframe=cchenpurple,boxrule=0.5pt,arc=2pt,left=4pt,right=4pt,top=3pt,bottom=3pt}
+\newtcolorbox{metricbox}[2]{enhanced,colback=#1!7,colframe=#1,boxrule=0.8pt,arc=2pt,left=5pt,right=5pt,top=4pt,bottom=4pt}
+\newtcolorbox{calloutbox}[1]{enhanced,colback=lightgray,colframe=linegray,boxrule=0.4pt,arc=2pt,left=4pt,right=4pt,top=3pt,bottom=3pt,title={#1},fonttitle=\bfseries\footnotesize\color{cchenpurple},attach title to upper={\par\vspace{0.5pt}}}
+\newcommand{\dotpattern}{\begin{tikzpicture}[remember picture,overlay]\foreach \x in {0.2,0.55,...,11.2} {\foreach \y in {-0.1,0.22,0.54,0.86} {\fill[cchenpurple!55] (\x,\y) circle (0.55pt); \fill[cchenlime!85] ({\x+0.16},{\y+0.13}) circle (0.48pt);}}\end{tikzpicture}}
+
+\begin{document}
+\thispagestyle{fancy}
+
+\begin{minipage}[t]{0.34\textwidth}
+  \includegraphics[height=0.9cm]{../../../licitacion/assets/ministerio\_energia\_color.png}
+\end{minipage}
+\begin{minipage}[t]{0.36\textwidth}
+  \vspace{0.08cm}\dotpattern
+\end{minipage}
+\begin{minipage}[t]{0.28\textwidth}
+  \raggedleft\includegraphics[height=0.9cm]{../../../licitacion/assets/cchen360\_logo\_color.png}
+\end{minipage}
+
+\vspace{0.11cm}
+{\color{cchenpurple}\rule{\textwidth}{1.5pt}}
+\vspace{0.05cm}
+
+\begin{center}
+{\fontsize{16}{17.5}\selectfont\bfseries\color{cchenpurple}PubChem}\\[-1pt]
+{\fontsize{9.1}{10.4}\selectfont\color{textgray}Ficha de fuente de información para datos relacionados con CCHEN}\\[-1pt]
+{\fontsize{7.8}{9}\selectfont\color{mutedgray}Código: \texttt{radiofarmacia\_cchen} \quad | \quad Categoría: Bio/Farma}
+\end{center}
+\vspace{0.01cm}
+
+\begin{keybox}
+\textbf{\color{cchenpurple}Mensaje operativo.} Esta fuente se documenta solo para registros relacionados con CCHEN. No se descarga ni se usa el universo completo: el filtro opera por DOI, autor, afiliación, ROR/ORCID, alias institucional, resultados conocidos o semillas temáticas justificadas.
+\end{keybox}
+
+\vspace{0.04cm}
+\begin{minipage}{0.24\textwidth}
+\begin{metricbox}{okgreen}{Datos obtenidos}
+{\large\bfseries Datos obtenidos}\par
+{\Large\bfseries 875}\par
+{\normalsize conteo registrado}
+\end{metricbox}
+\end{minipage}\hfill
+\begin{minipage}{0.24\textwidth}
+\begin{metricbox}{cchenpurple}{Frecuencia}
+{\large\bfseries Frecuencia}\par
+{\large\bfseries trimestral}\par
+{\normalsize refresco sugerido}
+\end{metricbox}
+\end{minipage}\hfill
+\begin{minipage}{0.24\textwidth}
+\begin{metricbox}{warnamber}{Tipo}
+{\large\bfseries Tipo}\par
+{\normalsize\bfseries Implementada derivada/semilla}\par
+{\normalsize implementación}
+\end{metricbox}
+\end{minipage}\hfill
+\begin{minipage}{0.24\textwidth}
+\begin{metricbox}{warnamber}{Decisión}
+{\large\bfseries Decisión}\par
+{\normalsize\bfseries Mantener con nota}\par
+{\normalsize criterio operativo}
+\end{metricbox}
+\end{minipage}
+
+\vspace{0.04cm}
+\begin{minipage}[t]{0.48\textwidth}\raggedright
+\sectiontitle{1. Descripción de la fuente}
+Paquete temático construido con semillas de radiofarmacia, compuestos, radionúclidos y literatura técnica abierta.
+
+\sectiontitle{2. Qué datos se descargaron}
+\begin{calloutbox}{Tipología de datos}
+Radiofarmacos, radionuclidos, compuestos PubChem y literatura técnica
+\end{calloutbox}
+\textbf{Datos descargados para CCHEN.} CSVs de semillas, compuestos/radionuclidos, literatura, curaduria y revision operativa.
+
+\sectiontitle{3. Cómo se filtra}
+Probe relacionada con CCHEN por alias institucional; activar solo con resultados relevantes.
+
+\sectiontitle{4. Dónde quedó guardado}
+\begin{itemize}
+\item \path{Data/Gobernanza/radiofarmacia_cchen_seeds.csv}
+\item \path{Data/Gobernanza/radiofarmacia_cchen_pubchem_compounds.csv}
+\item \path{Data/Gobernanza/radiofarmacia_cchen_literature.csv}
+\item \path{Data/Gobernanza/radiofarmacia_cchen_status.csv}
+\end{itemize}
+
+\sectiontitle{5. Estadística de descarga}
+Registros obtenidos/evidencia: 875. Archivos locales generados o registrados: 12. Calidad registrada: 1.0. Última actualización: 2026-05-19. Estado de corrida: success.
+
+\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}\raggedright
+\sectiontitle{6. Para qué sirve en el observatorio}
+\begin{itemize}
+  \item \textbf{Uso principal:} Sirve como evidencia temática o vigilancia exploratoria; no como indicador directo de la fuente original.
+  \item \textbf{Potencial:} Consolidar semillas de radiofarmacos, radionuclidos, PubChem y literatura abierta relevante.
+\end{itemize}
+
+\sectiontitle{7. Estado operativo}
+\begin{calloutbox}{Estado}
+Implementada como derivada/semilla; requiere nota metodologica al usarla.
+\end{calloutbox}
+Estado catalogo: implementada en registro operativo. Ultima corrida: success; ultima actualizacion: 2026-05-19.
+
+\sectiontitle{8. Debilidades y riesgos}
+Usa semillas tematicas; ampliar semillas exige justificacion experta para evitar ruido.
+
+\sectiontitle{9. Decisión}
+Mantener como evidencia derivada o semilla. No presentarla como extractor directo hasta implementar conexion propia.
+
+\end{minipage}
+
+\vspace{0.06cm}
+\begin{tcolorbox}[enhanced,colback=white,colframe=cchenpurple!55,boxrule=0.45pt,arc=2pt,left=6pt,right=6pt,top=5pt,bottom=5pt]
+{\bfseries\color{cchenpurple}Método replicable:} tomar la fuente, filtrar solo datos relacionados con CCHEN, guardar el archivo local, revisar calidad y usar la evidencia para indicadores del observatorio.
+\end{tcolorbox}
+
+\vspace{0.02cm}
+{\scriptsize\color{mutedgray}Sitio: https://pubchem.ncbi.nlm.nih.gov \quad | \quad Interfaz de datos: https://pubchem.ncbi.nlm.nih.gov/docs/pug-rest\#section=The-URL-Path}
+
+\end{document}

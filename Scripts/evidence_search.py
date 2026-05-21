@@ -2,10 +2,10 @@
 """
 Search over the unified CCHEN evidence index.
 
-The preferred backend is Data/Semantic/evidence_embeddings.npy. When the index
-was built with TF-IDF + SVD, the saved sklearn pipeline is used to encode the
-query. When it was built with sentence-transformers, the same transformer model
-is used. A small lexical fallback is kept for degraded local environments.
+The preferred backend is Data/Semantic/evidence_embeddings.npy. When those
+local artifacts are absent, Streamlit Cloud can still read the publicable
+governance CSV and build in-memory sentence-transformer vectors. A small
+lexical fallback is kept for degraded local environments.
 """
 
 from __future__ import annotations
@@ -23,12 +23,14 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "Data"
 SEM_DIR = DATA / "Semantic"
+GOVERNANCE_DIR = DATA / "Gobernanza"
 
 INDEX_PATH = SEM_DIR / "evidence_index.csv"
 EMB_PATH = SEM_DIR / "evidence_embeddings.npy"
 META_PATH = SEM_DIR / "evidence_embeddings_meta.csv"
 PIPELINE_PATH = SEM_DIR / "evidence_embedding_pipeline.joblib"
 STATE_PATH = SEM_DIR / "evidence_index_state.json"
+PUBLICABLE_INDEX_PATH = GOVERNANCE_DIR / "evidence_index_publicable.csv"
 
 RESULT_COLUMNS = [
     "id",
@@ -48,6 +50,7 @@ RESULT_COLUMNS = [
 
 _embeddings: np.ndarray | None = None
 _metadata: pd.DataFrame | None = None
+_runtime_embeddings: np.ndarray | None = None
 _pipeline = None
 _model = None
 
@@ -80,6 +83,10 @@ def _state_path() -> Path:
     return _resolve_path("EVIDENCE_SEARCH_STATE_FILE", STATE_PATH)
 
 
+def _publicable_index_path() -> Path:
+    return _resolve_path("EVIDENCE_SEARCH_PUBLICABLE_INDEX_FILE", PUBLICABLE_INDEX_PATH)
+
+
 def _empty_result() -> pd.DataFrame:
     return pd.DataFrame(columns=RESULT_COLUMNS)
 
@@ -97,7 +104,8 @@ def _load_state() -> dict:
 def _load_metadata() -> pd.DataFrame:
     meta_path = _meta_path()
     index_path = _index_path()
-    path = meta_path if meta_path.exists() else index_path
+    publicable_path = _publicable_index_path()
+    path = meta_path if meta_path.exists() else index_path if index_path.exists() else publicable_path
     if not path.exists():
         return pd.DataFrame()
     try:
@@ -147,6 +155,63 @@ def _get_sentence_model(model_name: str):
     return _model
 
 
+def _sentence_model_name() -> str:
+    state = _load_state().get("embedding", {})
+    model_name = str(state.get("model", "") or "").strip()
+    if model_name and not model_name.startswith("tfidf_svd_"):
+        return model_name
+    return os.getenv("EVIDENCE_SEARCH_SENTENCE_MODEL", "paraphrase-multilingual-MiniLM-L12-v2")
+
+
+def _embedding_text(row: pd.Series) -> str:
+    if str(row.get("texto_embedding", "") or "").strip():
+        return str(row.get("texto_embedding", ""))
+    cols = [
+        "titulo",
+        "resumen",
+        "tipo_evidencia",
+        "fuente",
+        "tema",
+        "relacion_cchen",
+        "uso_observatorio",
+        "brecha",
+    ]
+    return " | ".join(str(row.get(col, "") or "") for col in cols)
+
+
+def _encode_sentence_query(query: str) -> np.ndarray | None:
+    try:
+        model = _get_sentence_model(_sentence_model_name())
+        return model.encode([query], normalize_embeddings=True)[0].astype("float32")
+    except Exception as exc:
+        print(f"[evidence_search] No se pudo codificar query con sentence-transformers: {exc}")
+        return None
+
+
+def _build_runtime_embeddings(meta: pd.DataFrame) -> np.ndarray | None:
+    global _runtime_embeddings
+    if os.getenv("EVIDENCE_SEARCH_DISABLE_RUNTIME_EMBEDDINGS", "").strip().lower() in {"1", "true", "yes"}:
+        return None
+    if _runtime_embeddings is not None:
+        return _runtime_embeddings
+    if meta.empty:
+        return None
+    try:
+        model = _get_sentence_model(_sentence_model_name())
+        texts = meta.apply(_embedding_text, axis=1).fillna("").astype(str).tolist()
+        _runtime_embeddings = model.encode(
+            texts,
+            batch_size=64,
+            show_progress_bar=False,
+            normalize_embeddings=True,
+        ).astype("float32")
+        return _runtime_embeddings
+    except Exception as exc:
+        print(f"[evidence_search] No se pudieron generar vectores en memoria: {exc}")
+        _runtime_embeddings = None
+        return None
+
+
 def _encode_query(query: str) -> np.ndarray | None:
     state = _load_state().get("embedding", {})
     backend = state.get("backend", "")
@@ -159,12 +224,7 @@ def _encode_query(query: str) -> np.ndarray | None:
         return pipeline.transform([query])[0].astype("float32")
 
     if backend == "sentence-transformers" or model_name:
-        try:
-            model = _get_sentence_model(model_name or "paraphrase-multilingual-MiniLM-L12-v2")
-            return model.encode([query], normalize_embeddings=True)[0].astype("float32")
-        except Exception as exc:
-            print(f"[evidence_search] No se pudo codificar query con sentence-transformers: {exc}")
-            return None
+        return _encode_sentence_query(query)
 
     return None
 
@@ -227,9 +287,19 @@ def _profile_bonus(row: pd.Series, query: str) -> float:
 
     if any(term in q for term in ["convocatoria", "oportunidad", "financiamiento", "fondo"]):
         if evidence_type == "oportunidad":
-            bonus += 0.35
+            bonus += 0.80
         if evidence_type == "proyecto":
-            bonus += 0.15
+            bonus += 0.30
+        if evidence_type not in {"oportunidad", "proyecto"}:
+            bonus -= 0.20
+
+    if any(term in q for term in ["convenio", "acuerdo", "colaboracion", "cooperacion"]):
+        if evidence_type == "convenio":
+            bonus += 0.65
+        if any(term in source for term in ["convenio", "acuerdo"]):
+            bonus += 0.20
+        if evidence_type not in {"convenio", "proyecto"}:
+            bonus -= 0.15
 
     return bonus
 
@@ -288,7 +358,8 @@ def _lexical_search(query: str, meta: pd.DataFrame, top_k: int) -> pd.DataFrame:
     combined = tmp[searchable_cols].astype(str).agg(" ".join, axis=1)
     tmp["score"] = combined.map(lambda text: float(len(query_tokens & _tokens(text))))
     tmp = tmp[tmp["score"] > 0].sort_values(["score", "fecha", "titulo"], ascending=[False, False, True])
-    return _shape_result(_rerank(tmp.head(max(top_k * 8, 30)), query, top_k))
+    candidate_count = _candidate_pool_size(query, top_k, len(tmp))
+    return _shape_result(_rerank(tmp.head(candidate_count), query, top_k))
 
 
 def _shape_result(df: pd.DataFrame) -> pd.DataFrame:
@@ -321,11 +392,22 @@ def search(query: str, top_k: int = 10) -> pd.DataFrame:
             result["score"] = scores[top_idx].round(4)
             return _shape_result(_rerank(result, query, top_k))
 
+    runtime_emb = _build_runtime_embeddings(meta)
+    if runtime_emb is not None and len(runtime_emb) == len(meta):
+        q_vec = _encode_sentence_query(query)
+        if q_vec is not None:
+            scores = runtime_emb @ q_vec
+            candidate_count = _candidate_pool_size(query, top_k, len(meta))
+            top_idx = np.argsort(scores)[::-1][:candidate_count]
+            result = meta.iloc[top_idx].copy()
+            result["score"] = scores[top_idx].round(4)
+            return _shape_result(_rerank(result, query, top_k))
+
     return _lexical_search(query, meta, top_k)
 
 
 def is_available() -> bool:
-    return _index_path().exists() and (_emb_path().exists() or _pipeline_path().exists())
+    return _meta_path().exists() or _index_path().exists() or _publicable_index_path().exists()
 
 
 if __name__ == "__main__":

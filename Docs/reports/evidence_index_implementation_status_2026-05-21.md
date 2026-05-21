@@ -35,6 +35,8 @@ El objetivo fue conectar tres piezas que antes estaban separadas:
 | `Data/Semantic/evidence_embedding_pipeline.joblib` | Generado |
 | `Data/Semantic/evidence_index_summary.csv` | Generado |
 | `Data/Semantic/evidence_index_state.json` | Generado |
+| `Data/Gobernanza/evidence_index_publicable.csv` | Generado para Streamlit Cloud |
+| `Data/Gobernanza/evidence_index_publicable_summary.csv` | Generado |
 | `Docs/reports/evidence_topics/` | Generado |
 
 ## Cobertura inicial
@@ -90,13 +92,13 @@ Resultado de evaluacion:
 
 ## Nota para Streamlit Cloud / GitHub
 
-Los artefactos `Data/Semantic/*` quedan excluidos de GitHub por contener datos internos y derivados de fuentes CCHEN. Por tanto, el despliegue en Streamlit Cloud debe usar una de estas rutas antes de activar el buscador semantico en produccion:
+Los artefactos pesados `Data/Semantic/*.npy` y `Data/Semantic/*.joblib` quedan excluidos de GitHub. Para Streamlit Cloud queda versionado el indice sanitizado `Data/Gobernanza/evidence_index_publicable.csv`.
 
-1. subir un artefacto sanitizado y versionable del indice;
-2. regenerar `Data/Semantic/*` dentro del entorno de despliegue con datos ya provisionados;
-3. mover el indice a una base privada, por ejemplo Supabase/pgvector, y configurar la app para leer desde ahi.
+El codigo del dashboard usa este orden:
 
-El codigo del dashboard ya queda preparado para usar los artefactos locales cuando existan; si no existen, muestra una advertencia operativa en vez de fallar.
+1. artefactos locales completos en `Data/Semantic/` si existen;
+2. indice publicable con embeddings en memoria si `sentence-transformers` esta disponible;
+3. fallback lexical con reranking si no hay backend semantico disponible.
 
 ## Siguiente mejora recomendada
 

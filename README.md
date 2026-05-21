@@ -523,6 +523,7 @@ can_view_sensitive = true
 
 - El archivo canónico para Streamlit Cloud es `requirements.txt` en la raíz del repositorio.
 - Se fija `python-3.11` en `runtime.txt` para evitar problemas de compatibilidad con el stack científico (`sentence-transformers`, `matplotlib`, `plotly`, `networkx`, `duckdb`).
+- La capa de evidencia integrada usa `Data/Gobernanza/evidence_index_publicable.csv` en Streamlit Cloud. Si existen artefactos locales en `Data/Semantic/`, el buscador los usa primero; si no, genera vectores en memoria o cae a búsqueda lexical.
 - Si el deploy muestra un error del tipo `cannot import name 'load_convocatorias' from 'data_loader'`, la app está corriendo una revisión antigua del repo. En ese caso:
   1. confirma que Streamlit Cloud apunte a la rama `main`,
   2. fuerza un `Redeploy` o `Reboot app`,

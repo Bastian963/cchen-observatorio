@@ -13,12 +13,12 @@ Fecha: 2026-05-21
 
 | Query | Estado | Top tipo | Top fuente | Top titulo | Hits tipo | Hits termino |
 |---|---|---|---|---|---:|---:|
-| Q01 | ok | senal tematica | EuropePMC | Global Issues of Radiopharmaceutical Access and Availability: A Nuclear Medicine Global Initiative Project. | 8 | 8 |
-| Q02 | ok | compuesto | PubChem / radiofarmacia curada | Technetium (99mTc) sestamibi | 8 | 8 |
-| Q03 | ok | dataset/output | DataCite | Outputs con DOI y ROR CCHEN | 8 | 6 |
-| Q04 | ok | patente | INAPI | Sistema y método para obtener tetra fluoruro de uranio a partir de ADU o torta amarilla | 7 | 8 |
-| Q05 | ok | convenio | Acuerdos internacionales CCHEN | Tratado de no proliferación de las armas nucleares. | 7 | 8 |
-| Q06 | ok | oportunidad | ANID | Concurso de Proyectos de Exploración 2026 | 8 | 8 |
+| Q01 | ok | publicacion | CrossRef | 10.1051/0004-6361/202558299 | 8 | 7 |
+| Q02 | ok | compuesto | PubChem / radiofarmacia curada | 68Ga-DOTATATE | 8 | 8 |
+| Q03 | ok | dataset/output | DataCite | Outputs con DOI y ROR CCHEN | 8 | 8 |
+| Q04 | ok | patente | INAPI_manual | METODO DE MEDICION DIRECTO DE VELOCIDAD DE DESGASTE DE UN REVESTIMIENTO REFRACTARIO O AISLANTE DE UN REACTOR QUIMICO O METALURGICO QUE COMPRENDE UTILIZAR UN NUMERO DETERMINADO DE R | 5 | 8 |
+| Q05 | ok | convenio | Acuerdos internacionales CCHEN | 26-09-1986 26-09-1986 | 8 | 8 |
+| Q06 | ok | proyecto | ANID Repositorio | Modernización Tecnológica para la Purificación de Salmueras de Litio: Aumento de Eficiencia y Valor Agregado al Producto Nacional | 8 | 8 |
 
 ## Criterio
 
