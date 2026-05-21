@@ -1,12 +1,161 @@
 """Section: Modelo y Gobernanza — CCHEN Observatorio"""
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 
+from . import cris_rims_audit
 from .shared import (
+    AMBER, BLUE, GREEN, RED,
     kpi, kpi_row, sec, make_csv,
     _load_entity_model_tables,
     _build_entity_observed_counts,
 )
+
+
+_MATURITY_COLORS = {
+    "Faltante": RED,
+    "Inicial": AMBER,
+    "Funcional": BLUE,
+    "Robusto": GREEN,
+}
+
+
+def _render_cris_rims_audit_panel(ctx: dict) -> None:
+    """Render the deterministic CRIS/RIMS benchmark audit."""
+    if str(ctx.get("app_mode", "internal")).strip().lower() == "public":
+        return
+
+    source_registry = cris_rims_audit.load_optional_source_registry()
+    audit = cris_rims_audit.build_cris_rims_audit(ctx, source_registry)
+    maturity = audit["maturity"]
+    gaps = audit["gaps"]
+    interoperability = audit["interoperability"]
+    backlog = audit["backlog"]
+    agents = audit["agents"]
+    benchmark = audit["benchmark"]
+    summary = cris_rims_audit.audit_summary(maturity)
+
+    sec("Auditoría CRIS/RIMS")
+    st.caption(
+        "Benchmark determinístico para comparar el observatorio con capacidades maduras de CRIS/RIMS. "
+        "No usa LLM ni archivos externos en runtime; si faltan snapshots de datos, muestra brechas sin romper el dashboard."
+    )
+    if source_registry.empty:
+        st.info(
+            "No se encontró `Data/Gobernanza/data_sources_runtime.csv`; la auditoría usa solo el contexto cargado "
+            "en esta sección y marca como faltante lo que no tenga evidencia local."
+        )
+
+    kpi_row(
+        kpi("Score CRIS/RIMS", f"{summary['weighted_score']:.1f}/100", "ponderado por impacto"),
+        kpi("Madurez promedio", f"{summary['average_maturity']:.2f}/3", "escala 0=faltante, 3=robusto"),
+        kpi("Dimensiones robustas", f"{summary['robust_dimensions']:,}", "score igual a 3"),
+        kpi("Dimensiones críticas", f"{summary['critical_dimensions']:,}", "score igual o menor a 1"),
+    )
+
+    tab_maturity, tab_gaps, tab_interop, tab_backlog, tab_agents = st.tabs(
+        [
+            "Madurez CRIS/RIMS",
+            "Brechas críticas",
+            "Interoperabilidad",
+            "Backlog",
+            "Agentes determinísticos",
+        ]
+    )
+
+    with tab_maturity:
+        left, right = st.columns([1, 1.25], gap="large")
+        with left:
+            fig = px.bar(
+                maturity.sort_values("Puntaje ponderado"),
+                x="Puntaje ponderado",
+                y="Dimensión",
+                orientation="h",
+                text="Madurez 0-3",
+                color="Estado",
+                color_discrete_map=_MATURITY_COLORS,
+                height=380,
+            )
+            fig.update_layout(showlegend=True, margin=dict(t=10, b=10, l=10, r=10))
+            st.plotly_chart(fig, width="stretch")
+        with right:
+            st.dataframe(
+                maturity.drop(columns=["dimension_key"], errors="ignore"),
+                width="stretch",
+                hide_index=True,
+                height=380,
+            )
+        with st.expander("Benchmark usado como referencia", expanded=False):
+            st.dataframe(benchmark, width="stretch", hide_index=True, height=320)
+
+    with tab_gaps:
+        priority_order = ["Critica", "Alta", "Media", "Deseable", "Futura"]
+        gap_show = gaps.copy()
+        if "Prioridad" in gap_show.columns:
+            gap_show["_priority_order"] = gap_show["Prioridad"].map(
+                {priority: index for index, priority in enumerate(priority_order)}
+            ).fillna(99)
+            gap_show = gap_show.sort_values(["_priority_order", "Estado CCHEN", "Feature"]).drop(
+                columns=["_priority_order"]
+            )
+        st.dataframe(gap_show, width="stretch", hide_index=True, height=460)
+        st.download_button(
+            "Exportar brechas CRIS/RIMS CSV",
+            make_csv(gap_show),
+            "cris_rims_brechas_cchen.csv",
+            "text/csv",
+        )
+
+    with tab_interop:
+        left, right = st.columns([1.1, 1], gap="large")
+        with left:
+            st.dataframe(interoperability, width="stretch", hide_index=True, height=430)
+        with right:
+            detected = int((interoperability["Estado CCHEN"] == "Detectado").sum()) if not interoperability.empty else 0
+            missing = int((interoperability["Estado CCHEN"] != "Detectado").sum()) if not interoperability.empty else 0
+            fig_std = px.pie(
+                pd.DataFrame(
+                    [
+                        {"Estado": "Detectado", "N": detected},
+                        {"Estado": "No detectado", "N": missing},
+                    ]
+                ),
+                names="Estado",
+                values="N",
+                color="Estado",
+                color_discrete_map={"Detectado": GREEN, "No detectado": AMBER},
+                height=280,
+            )
+            fig_std.update_layout(margin=dict(t=10, b=10, l=10, r=10))
+            st.plotly_chart(fig_std, width="stretch")
+            st.markdown(
+                "<div class='alert-azul'><b>Canasta mínima recomendada:</b> ORCID + ROR + DOI/DataCite + "
+                "Crossref + OpenAlex + REST/JSON versionado + OAI-PMH + schema.org.</div>",
+                unsafe_allow_html=True,
+            )
+
+    with tab_backlog:
+        st.dataframe(backlog, width="stretch", hide_index=True, height=460)
+        st.download_button(
+            "Exportar backlog CRIS/RIMS CSV",
+            make_csv(backlog),
+            "cris_rims_backlog_cchen.csv",
+            "text/csv",
+        )
+
+    with tab_agents:
+        st.markdown(
+            "<div class='alert-amarillo'><b>Agentes determinísticos:</b> estos evaluadores no llaman a Groq, "
+            "Claude ni servicios externos. Solo resumen reglas y evidencia local para orientar curaduría.</div>",
+            unsafe_allow_html=True,
+        )
+        st.dataframe(agents, width="stretch", hide_index=True, height=360)
+        st.download_button(
+            "Exportar hallazgos de agentes CSV",
+            make_csv(agents),
+            "cris_rims_agentes_deterministicos.csv",
+            "text/csv",
+        )
 
 
 def render(ctx: dict) -> None:
@@ -61,6 +210,8 @@ def render(ctx: dict) -> None:
         "que permita matching, trazabilidad y mejores respuestas del asistente.</div>",
         unsafe_allow_html=True,
     )
+
+    _render_cris_rims_audit_panel(ctx)
 
     sec("Catálogo de entidades")
     if _entity_df.empty:
