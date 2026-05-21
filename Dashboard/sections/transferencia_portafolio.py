@@ -1,4 +1,8 @@
 """Section: Transferencia y Portafolio — CCHEN Observatorio"""
+import os
+from pathlib import Path
+import sys
+
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -8,6 +12,247 @@ from .shared import (
     kpi, kpi_row, sec, make_csv,
     _load_portafolio_seed,
 )
+
+_ROOT = Path(__file__).resolve().parents[2]
+_SCRIPTS_DIR = _ROOT / "Scripts"
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+try:
+    import evidence_search as _evidence_search
+except Exception:
+    _evidence_search = None
+
+
+@st.cache_data(show_spinner=False, ttl=900)
+def _load_evidence_index() -> pd.DataFrame:
+    configured_path = os.getenv("EVIDENCE_SEARCH_INDEX_FILE", "").strip()
+    path = Path(configured_path) if configured_path else _ROOT / "Data" / "Semantic" / "evidence_index.csv"
+    if not path.is_absolute():
+        path = _ROOT / path
+    if not path.exists():
+        return pd.DataFrame()
+    try:
+        return pd.read_csv(path, low_memory=False, encoding="utf-8-sig").fillna("")
+    except Exception:
+        return pd.read_csv(path, low_memory=False).fillna("")
+
+
+@st.cache_data(show_spinner=False, ttl=900)
+def _load_evidence_topic_index() -> pd.DataFrame:
+    path = _ROOT / "Docs" / "reports" / "evidence_topics" / "indice_fichas_evidencia.csv"
+    if not path.exists():
+        return pd.DataFrame()
+    try:
+        return pd.read_csv(path, low_memory=False, encoding="utf-8-sig").fillna("")
+    except Exception:
+        return pd.read_csv(path, low_memory=False).fillna("")
+
+
+def _read_topic_brief(relative_path: str) -> str:
+    path = (_ROOT / str(relative_path or "")).resolve()
+    if _ROOT.resolve() not in path.parents and path != _ROOT.resolve():
+        return ""
+    if not path.exists() or not path.is_file():
+        return ""
+    try:
+        return path.read_text(encoding="utf-8")
+    except Exception:
+        return ""
+
+
+def _fallback_evidence_search(df: pd.DataFrame, query: str, top_k: int = 20) -> pd.DataFrame:
+    query = str(query or "").strip().lower()
+    if df.empty or not query:
+        return pd.DataFrame()
+    tokens = {tok for tok in query.replace("/", " ").split() if len(tok) >= 3}
+    if not tokens:
+        return pd.DataFrame()
+    searchable = [c for c in ["titulo", "resumen", "tema", "relacion_cchen", "uso_observatorio", "brecha"] if c in df.columns]
+    tmp = df.copy()
+    text = tmp[searchable].astype(str).agg(" ".join, axis=1).str.lower()
+    tmp["score"] = text.map(lambda value: float(sum(tok in value for tok in tokens)))
+    return tmp[tmp["score"] > 0].sort_values("score", ascending=False).head(top_k)
+
+
+def _evidence_prompt(query: str) -> str:
+    return f"""Actua como asistente de evidencia para gestion de investigacion e innovacion CCHEN.
+
+Pregunta del usuario:
+\"{query}\"
+
+Usa solo la evidencia recuperada desde la base interna.
+Para cada hallazgo, indica:
+1. Fuente del dato.
+2. Tipo de evidencia: publicacion, patente, proyecto, dataset/output, compuesto, convenio u oportunidad.
+3. Relacion con CCHEN.
+4. Posible uso para gestion de investigacion o transferencia.
+5. Brechas o validaciones pendientes.
+6. Nivel de confianza: alto, medio o bajo.
+
+No afirmes que una tecnologia esta lista para transferirse.
+No inventes evidencia.
+Si la informacion no alcanza, dilo explicitamente."""
+
+
+def _render_evidence_search_panel(is_public_app: bool) -> None:
+    sec("Buscador de evidencia para gestión de investigación e innovación")
+    if is_public_app:
+        st.info("El buscador de evidencia integrado queda disponible solo en la superficie interna.")
+        return
+
+    evidence = _load_evidence_index()
+    if evidence.empty:
+        st.warning(
+            "Aún no existe `Data/Semantic/evidence_index.csv`. "
+            "Ejecuta `python Scripts/build_evidence_index.py` para construirlo."
+        )
+        return
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Registros de evidencia", f"{len(evidence):,}")
+    c2.metric("Fuentes", f"{evidence['fuente'].nunique():,}" if "fuente" in evidence.columns else "0")
+    c3.metric("Tipos", f"{evidence['tipo_evidencia'].nunique():,}" if "tipo_evidencia" in evidence.columns else "0")
+    c4.metric("Con brecha", f"{int(evidence.get('brecha', pd.Series(dtype=str)).astype(str).str.len().gt(0).sum()):,}")
+
+    chart_left, chart_right = st.columns(2)
+    with chart_left:
+        if "tipo_evidencia" in evidence.columns:
+            type_counts = evidence["tipo_evidencia"].fillna("sin tipo").value_counts().reset_index()
+            type_counts.columns = ["Tipo", "Registros"]
+            fig_types = px.bar(
+                type_counts.sort_values("Registros"),
+                x="Registros",
+                y="Tipo",
+                orientation="h",
+                text="Registros",
+                color_discrete_sequence=[PURPLE],
+                height=300,
+            )
+            fig_types.update_layout(showlegend=False, margin=dict(t=10, b=10))
+            st.plotly_chart(fig_types, width="stretch")
+    with chart_right:
+        if "fuente" in evidence.columns:
+            source_counts = evidence["fuente"].fillna("sin fuente").value_counts().head(12).reset_index()
+            source_counts.columns = ["Fuente", "Registros"]
+            fig_sources = px.bar(
+                source_counts.sort_values("Registros"),
+                x="Registros",
+                y="Fuente",
+                orientation="h",
+                text="Registros",
+                color_discrete_sequence=[GREEN],
+                height=300,
+            )
+            fig_sources.update_layout(showlegend=False, margin=dict(t=10, b=10))
+            st.plotly_chart(fig_sources, width="stretch")
+
+    query = st.text_input(
+        "Pregunta de evidencia",
+        value="radiofarmacia con potencial de transferencia",
+        key="transferencia_evidence_query",
+        help="Busca sobre publicaciones, datasets, patentes, proyectos, convenios, compuestos y señales temáticas.",
+    )
+    f1, f2, f3 = st.columns([1, 1, 1])
+    with f1:
+        type_filter = st.multiselect(
+            "Tipo de evidencia",
+            sorted(evidence["tipo_evidencia"].dropna().astype(str).unique()) if "tipo_evidencia" in evidence.columns else [],
+            default=[],
+            key="transferencia_evidence_type_filter",
+        )
+    with f2:
+        source_filter = st.multiselect(
+            "Fuente",
+            sorted(evidence["fuente"].dropna().astype(str).unique()) if "fuente" in evidence.columns else [],
+            default=[],
+            key="transferencia_evidence_source_filter",
+        )
+    with f3:
+        top_k = st.slider("Resultados", min_value=5, max_value=30, value=12, step=1)
+
+    if _evidence_search is not None and _evidence_search.is_available():
+        results = _evidence_search.search(query, top_k=max(top_k * 3, 30))
+    else:
+        results = _fallback_evidence_search(evidence, query, top_k=max(top_k * 3, 30))
+
+    if type_filter and not results.empty and "tipo_evidencia" in results.columns:
+        results = results[results["tipo_evidencia"].isin(type_filter)]
+    if source_filter and not results.empty and "fuente" in results.columns:
+        results = results[results["fuente"].isin(source_filter)]
+    results = results.head(top_k).copy()
+
+    if results.empty:
+        st.info("No hay resultados para la consulta y filtros actuales.")
+    else:
+        show_cols = [
+            c for c in [
+                "score", "tipo_evidencia", "fuente", "titulo", "fecha", "tema",
+                "relacion_cchen", "uso_observatorio", "brecha", "nivel_confianza", "url",
+            ] if c in results.columns
+        ]
+        st.dataframe(
+            results[show_cols].rename(
+                columns={
+                    "score": "Score",
+                    "tipo_evidencia": "Tipo",
+                    "fuente": "Fuente",
+                    "titulo": "Título",
+                    "fecha": "Fecha",
+                    "tema": "Tema",
+                    "relacion_cchen": "Relación CCHEN",
+                    "uso_observatorio": "Uso en gestión",
+                    "brecha": "Brecha",
+                    "nivel_confianza": "Confianza",
+                    "url": "URL",
+                }
+            ),
+            width="stretch",
+            hide_index=True,
+            height=360,
+            column_config={"URL": st.column_config.LinkColumn("URL", display_text="abrir")},
+        )
+        st.download_button(
+            "Exportar resultados de evidencia CSV",
+            make_csv(results),
+            "evidencia_busqueda_cchen.csv",
+            "text/csv",
+        )
+
+    with st.expander("Prompt sugerido para síntesis con Groq/LLM", expanded=False):
+        st.code(_evidence_prompt(query), language="text")
+
+
+def _render_topic_briefs_panel(is_public_app: bool) -> None:
+    sec("Fichas de evidencia por tema")
+    if is_public_app:
+        st.info("Las fichas de evidencia por tema quedan disponibles solo en la superficie interna.")
+        return
+    topic_index = _load_evidence_topic_index()
+    if topic_index.empty:
+        st.info(
+            "Aún no hay fichas generadas. Ejecuta "
+            "`python Scripts/generate_evidence_topic_briefs.py --top-k 12`."
+        )
+        return
+    labels = topic_index["topic_title"].astype(str).tolist()
+    selected = st.selectbox("Tema", labels, key="transferencia_topic_brief_select")
+    row = topic_index[topic_index["topic_title"].astype(str).eq(selected)].iloc[0]
+    brief = _read_topic_brief(str(row.get("brief_path", "")))
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Registros ficha", f"{int(row.get('records', 0)):,}")
+    c2.metric("Tipo top", str(row.get("top_type", "")) or "—")
+    c3.metric("Fuente top", str(row.get("top_source", "")) or "—")
+    if brief:
+        with st.expander("Ver ficha Markdown", expanded=False):
+            st.markdown(brief)
+        st.download_button(
+            "Descargar ficha Markdown",
+            brief.encode("utf-8"),
+            f"{row.get('topic_key', 'ficha_evidencia')}.md",
+            "text/markdown",
+        )
+    else:
+        st.warning("No se pudo abrir el archivo de ficha seleccionado.")
 
 
 def render(ctx: dict) -> None:
@@ -57,6 +302,9 @@ def render(ctx: dict) -> None:
         "TRL y situación de propiedad intelectual.</div>",
         unsafe_allow_html=True,
     )
+
+    _render_evidence_search_panel(bool(ctx.get("is_public_app", False)))
+    _render_topic_briefs_panel(bool(ctx.get("is_public_app", False)))
 
     sec("Portafolio tecnológico semilla")
     if _portfolio.empty:

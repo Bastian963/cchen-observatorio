@@ -1,0 +1,7 @@
+﻿topic_key,topic_title,query,records,top_type,top_source,brief_path
+radiofarmacia,Radiofarmacia y medicina nuclear,radiofarmacia medicina nuclear CCHEN compuestos transferencia,12,compuesto,PubChem / radiofarmacia curada,Docs/reports/evidence_topics/ficha_evidencia_radiofarmacia.md
+outputs_repositorios,"Outputs, datasets y repositorios abiertos",outputs datasets repositorios Zenodo DataCite OpenAIRE CCHEN,12,dataset/output,DataCite,Docs/reports/evidence_topics/ficha_evidencia_outputs_repositorios.md
+patentes_pi,Patentes y propiedad intelectual,patentes propiedad intelectual INAPI CCHEN transferencia,12,patente,INAPI,Docs/reports/evidence_topics/ficha_evidencia_patentes_pi.md
+materiales_procesos,Materiales y procesos para aplicaciones nucleares,materiales procesos aplicaciones nucleares CCHEN patentes proyectos publicaciones,12,patente,INAPI,Docs/reports/evidence_topics/ficha_evidencia_materiales_procesos.md
+convocatorias_oportunidades,Convocatorias y oportunidades,convocatorias oportunidades financiamiento matching institucional investigacion CCHEN,12,oportunidad,ANID,Docs/reports/evidence_topics/ficha_evidencia_convocatorias_oportunidades.md
+colaboracion_convenios,Convenios y colaboracion institucional,convenios acuerdos colaboracion institucional nuclear CCHEN,12,convenio,Acuerdos internacionales CCHEN,Docs/reports/evidence_topics/ficha_evidencia_colaboracion_convenios.md
