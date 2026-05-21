@@ -34,6 +34,12 @@ try:
 except Exception:
     _ss = None
     _SEM_AVAILABLE = False
+try:
+    import evidence_search as _evidence_search
+    _EVIDENCE_AVAILABLE = _evidence_search.is_available()
+except Exception:
+    _evidence_search = None
+    _EVIDENCE_AVAILABLE = False
 
 
 def _build_assistant_system_prompt(ctx: dict, patents_key: str = "") -> tuple:
@@ -532,6 +538,9 @@ def _build_assistant_system_prompt(ctx: dict, patents_key: str = "") -> tuple:
 - Si preguntan por convocatorias u oportunidades, prioriza el matching institucional formal y cita perfil, score_total, eligibility_status, readiness_status, owner_unit, evidence_summary y last_evaluated_at.
 - Si preguntan por financiamiento, usa la tabla curada de funding complementario y cita fuente, instrumento, elegibilidad_base, source_confidence y last_verified_at.
 - Si preguntan por transferencia o portafolio tecnológico, aclara que el portafolio actual es una semilla analítica y que requiere validación técnica antes de tratarlo como inventario formal.
+- Cuando actúes como asistente de evidencia para gestión de investigación e innovación, usa solo la evidencia recuperada desde la base interna y el contexto inyectado.
+- Para cada hallazgo de evidencia, indica fuente del dato, tipo de evidencia, relación con CCHEN, posible uso para gestión o transferencia, brechas pendientes y nivel de confianza.
+- No afirmes que una tecnología está lista para transferirse. No inventes evidencia. Si la información no alcanza, dilo explícitamente.
 - Si usas OpenAIRE, diferencia claramente entre vínculo fuerte (`cchen_ror_org` o `cchen_name_org`) y vínculo débil (`author_orcid_only`).
 - Si preguntan por gobernanza o integración de datos, usa los registros canónicos de personas, proyectos, convocatorias e institution_registry como marco operativo; aclara que no existe aún un grafo persistente separado.
 - Si existe un activo institucional publicado relevante, cita explícitamente la URL pública de DSpace o CKAN en la respuesta.
@@ -667,6 +676,16 @@ def render(ctx: dict) -> None:
         prompt_rapido = "Usando el matching institucional formal, identifica las oportunidades abiertas y próximas más relevantes para CCHEN. Organízalas por perfil, incluye score_total, eligibility_status, readiness_status, owner_unit y recommended_action, y explica por qué cada una calza o no con la evidencia interna."
     if q8.button("Transferencia / portafolio", width="stretch"):
         prompt_rapido = "Con base en el portafolio tecnológico semilla, los proyectos ANID, publicaciones, convenios y financiamiento complementario, elabora un diagnóstico de transferencia para CCHEN. Distingue claramente entre capacidades observables, activos por validar y vacíos críticos como patentes o TRL."
+    if not is_public_app:
+        q9, q10, q11, q12 = st.columns(4)
+        if q9.button("Evidencia radiofarmacia", width="stretch"):
+            prompt_rapido = (
+                "Actúa como asistente de evidencia para gestión de investigación e innovación CCHEN. "
+                "Pregunta: ¿Qué evidencia existe en CCHEN sobre radiofarmacia con potencial uso en transferencia tecnológica? "
+                "Usa solo la evidencia recuperada desde la base interna. Para cada hallazgo indica fuente del dato, "
+                "tipo de evidencia, relación con CCHEN, posible uso para gestión o transferencia, brechas o validaciones pendientes "
+                "y nivel de confianza alto, medio o bajo. No afirmes que una tecnología está lista para transferirse y no inventes evidencia."
+            )
 
     # ── Historial de chat ──
     if "messages" not in st.session_state:
@@ -677,10 +696,15 @@ def render(ctx: dict) -> None:
             st.markdown(msg["content"])
 
     # ── Input ──
-    if _SEM_AVAILABLE:
-        st.caption("🔍 Búsqueda semántica activa — el asistente recupera papers relevantes por consulta.")
+    if _SEM_AVAILABLE or (_EVIDENCE_AVAILABLE and not is_public_app):
+        active_layers = []
+        if _SEM_AVAILABLE:
+            active_layers.append("papers")
+        if _EVIDENCE_AVAILABLE and not is_public_app:
+            active_layers.append("evidencia integrada")
+        st.caption(f"🔍 Búsqueda semántica activa — capas: {', '.join(active_layers)}.")
     else:
-        st.caption("💡 Para activar búsqueda semántica ejecuta: `python3 Scripts/build_embeddings.py`")
+        st.caption("💡 Para activar búsqueda semántica ejecuta: `python3 Scripts/build_embeddings.py` y `python Scripts/build_evidence_index.py`")
     user_input = st.chat_input("Escribe tu consulta o solicita un informe técnico...") or prompt_rapido
     if user_input:
         st.session_state.messages.append({"role": "user", "content": user_input})
@@ -710,6 +734,35 @@ def render(ctx: dict) -> None:
             except Exception:
                 pass
 
+        _evidence_context = ""
+        _evidence_df = pd.DataFrame()
+        if _EVIDENCE_AVAILABLE and not is_public_app and user_input:
+            try:
+                _evidence_df = _evidence_search.search(user_input, top_k=8)
+                if not _evidence_df.empty:
+                    _evidence_lines = []
+                    for _, _r in _evidence_df.iterrows():
+                        _score = _r.get("score", 0)
+                        _title = str(_r.get("titulo", ""))[:120]
+                        _tipo = str(_r.get("tipo_evidencia", ""))
+                        _fuente = str(_r.get("fuente", ""))
+                        _rel = str(_r.get("relacion_cchen", ""))[:180]
+                        _uso = str(_r.get("uso_observatorio", ""))[:180]
+                        _brecha = str(_r.get("brecha", ""))[:180]
+                        _conf = str(_r.get("nivel_confianza", ""))
+                        _url = str(_r.get("url", ""))
+                        _evidence_lines.append(
+                            f"  - [{_score:.2f}] {_title} | tipo: {_tipo} | fuente: {_fuente} | "
+                            f"relacion CCHEN: {_rel} | uso: {_uso} | brecha: {_brecha} | "
+                            f"confianza: {_conf}{' | url: '+_url if _url else ''}"
+                        )
+                    _evidence_context = (
+                        "\n\n### Evidencia integrada recuperada desde la base interna CCHEN:\n"
+                        + "\n".join(_evidence_lines)
+                    )
+            except Exception:
+                pass
+
         with st.chat_message("assistant"):
             reply = None
             client = None
@@ -721,7 +774,7 @@ def render(ctx: dict) -> None:
                         model="llama-3.3-70b-versatile",
                         max_tokens=2048,
                         stream=True,
-                        messages=[{"role": "system", "content": _system_prompt + _rag_context}] +
+                        messages=[{"role": "system", "content": _system_prompt + _rag_context + _evidence_context}] +
                                  [{"role": m["role"], "content": m["content"]}
                                   for m in st.session_state.messages],
                     )
@@ -733,7 +786,27 @@ def render(ctx: dict) -> None:
             except Exception as e:
                 # Fallback: respuesta basada en el contexto sin LLM
                 _q = user_input.lower()
-                if is_public_app and any(w in _q for w in ["capital humano", "tesista", "tesistas", "beca", "becario", "becarios", "persona", "personas"]):
+                if not is_public_app and not _evidence_df.empty:
+                    _lines = []
+                    for _, _r in _evidence_df.head(6).iterrows():
+                        _lines.append(
+                            "- "
+                            f"**{_r.get('titulo', 'Sin titulo')}** "
+                            f"({ _r.get('fuente', 'sin fuente')}; tipo: {_r.get('tipo_evidencia', 'sin tipo')}). "
+                            f"Relación CCHEN: {_r.get('relacion_cchen', 'sin detalle')}. "
+                            f"Uso: {_r.get('uso_observatorio', 'por revisar')}. "
+                            f"Brecha: {_r.get('brecha', 'por documentar')}. "
+                            f"Confianza: {_r.get('nivel_confianza', 'medio')}."
+                        )
+                    reply = (
+                        "**Evidencia recuperada desde la base interna CCHEN**\n\n"
+                        + "\n".join(_lines)
+                        + "\n\n"
+                        "Nota: esta síntesis se generó sin LLM porque el servicio Groq no está disponible. "
+                        "No afirma que una tecnología esté lista para transferirse; solo ordena evidencia para revisión experta.\n\n"
+                        f"_(Detalle técnico: {e})_"
+                    )
+                elif is_public_app and any(w in _q for w in ["capital humano", "tesista", "tesistas", "beca", "becario", "becarios", "persona", "personas"]):
                     reply = (
                         "**Superficie pública del observatorio**\n\n"
                         "La consulta apunta a una capa interna o sensible del observatorio y no está "

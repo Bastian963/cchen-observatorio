@@ -13,6 +13,8 @@
 pandas>=2.0.0
 requests>=2.31.0
 openpyxl>=3.1.0          # generar_boletin.py, load_dian_publications
+scikit-learn>=1.6.0      # build_evidence_index.py fallback TF-IDF + SVD
+joblib>=1.4.0            # persistencia del pipeline de busqueda de evidencia
 
 # ── Construcción del registro ROR ────────────────────────────────────────────
 # build_ror_registry.py — solo pandas (ya incluido arriba)
@@ -28,7 +30,7 @@ openpyxl>=3.1.0          # generar_boletin.py, load_dian_publications
 # fetch_semantic_scholar.py   — pandas + requests (ya incluidos arriba)
 
 # ── Análisis de tópicos (BERTopic) ───────────────────────────────────────────
-# Solo necesario para run_bertopic.py — instalar aparte si es necesario:
+# Solo necesario para run_bertopic.py o embeddings semanticos reales:
 # pip install bertopic>=0.15.0 sentence-transformers>=2.2.0
 
 # ── Migración a Supabase ─────────────────────────────────────────────────────
