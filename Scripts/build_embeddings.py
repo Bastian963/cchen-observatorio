@@ -182,6 +182,7 @@ def main() -> None:
     # Guardar — escritura atómica: primero a temporales, luego rename
     import tempfile
     out_dir = OUT_EMB.parent
+    out_dir.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(dir=out_dir, suffix=".npy", delete=False) as _tmp_emb:
         tmp_emb_path = Path(_tmp_emb.name)
     np.save(tmp_emb_path, embeddings.astype("float32"))
