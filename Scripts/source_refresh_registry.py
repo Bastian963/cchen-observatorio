@@ -718,6 +718,32 @@ SOURCE_DEFINITIONS: list[dict[str, object]] = [
         "blocking": False,
         "job_key": "manual_capital_humano",
     },
+    {
+        "source_key": "semantic_evidence_index",
+        "source_name": "Indice semantico de evidencia CCHEN",
+        "description": "Indice maestro de evidencia para gestion de investigacion e innovacion CCHEN.",
+        "url": "",
+        "table_name": "",
+        "notebook_path": "Scripts/build_evidence_index.py",
+        "update_frequency": "semanal",
+        "freshness_sla_days": 7,
+        "requires_token": False,
+        "token_source": "",
+        "notes": "Normaliza evidencia CCHEN-only y genera vectores semanticos locales; artefactos Data/Semantic no se versionan en GitHub.",
+        "enabled": True,
+        "runner_command": "python Scripts/build_evidence_index.py --embedding-mode auto && python Scripts/check_evidence_index.py",
+        "output_targets": [
+            "Data/Semantic/evidence_index.csv",
+            "Data/Semantic/evidence_embeddings.npy",
+            "Data/Semantic/evidence_embeddings_meta.csv",
+            "Data/Semantic/evidence_index_state.json",
+            "Data/Semantic/evidence_index_summary.csv",
+        ],
+        "owner": DEFAULT_OWNER,
+        "visibility": "interno",
+        "blocking": False,
+        "job_key": "semantic_evidence_index",
+    },
 ]
 
 

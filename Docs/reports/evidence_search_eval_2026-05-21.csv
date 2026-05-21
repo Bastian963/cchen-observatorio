@@ -1,0 +1,7 @@
+﻿query_id,query,top_k,results,expected_type_hits,expected_term_hits,top_type,top_source,top_title,top_score,status,notes
+Q01,radiofarmacia con potencial de transferencia,8,8,8,8,senal tematica,EuropePMC,Global Issues of Radiopharmaceutical Access and Availability: A Nuclear Medicine Global Initiative Project.,1.3178,ok,Top result type and evidence terms are aligned.
+Q02,capacidades CCHEN en medicina nuclear,8,8,8,8,compuesto,PubChem / radiofarmacia curada,Technetium (99mTc) sestamibi,1.4582,ok,Top result type and evidence terms are aligned.
+Q03,outputs o datasets asociados a CCHEN,8,8,8,6,dataset/output,DataCite,Outputs con DOI y ROR CCHEN,1.7697,ok,Top result type and evidence terms are aligned.
+Q04,patentes y propiedad intelectual CCHEN,8,8,7,8,patente,INAPI,Sistema y método para obtener tetra fluoruro de uranio a partir de ADU o torta amarilla,1.3782,ok,Top result type and evidence terms are aligned.
+Q05,convenios o colaboraciones institucionales nucleares,8,8,7,8,convenio,Acuerdos internacionales CCHEN,Tratado de no proliferación de las armas nucleares.,0.7811,ok,Top result type and evidence terms are aligned.
+Q06,convocatorias y oportunidades para investigacion CCHEN,8,8,8,8,oportunidad,ANID,Concurso de Proyectos de Exploración 2026,0.9987,ok,Top result type and evidence terms are aligned.
