@@ -236,7 +236,14 @@ def _normalize(value: object) -> str:
 
 
 def _tokens(value: object) -> set[str]:
-    return set(re.findall(r"[a-z0-9]{3,}", _normalize(value)))
+    tokens = set(re.findall(r"[a-z0-9]{3,}", _normalize(value)))
+    expanded = set(tokens)
+    for token in tokens:
+        if len(token) > 3 and token.endswith("s"):
+            expanded.add(token[:-1])
+        if len(token) > 4 and token.endswith("es"):
+            expanded.add(token[:-2])
+    return expanded
 
 
 def _profile_bonus(row: pd.Series, query: str) -> float:
@@ -275,14 +282,20 @@ def _profile_bonus(row: pd.Series, query: str) -> float:
         if not has_radio_signal:
             bonus -= 0.60
 
-    if any(term in q for term in ["patente", "propiedad intelectual", "transferencia", "licenciamiento"]):
+    patent_query = any(term in q for term in ["patente", "propiedad intelectual", "inapi"])
+    transfer_query = any(term in q for term in ["transferencia", "licenciamiento"])
+    if patent_query or transfer_query:
         radio_query = any(term in q for term in ["radiofarm", "medicina nuclear", "nuclear medicine"])
         radio_text = any(term in text for term in ["radiofarm", "medicina nuclear", "nuclear medicine", "fdg", "lu-177", "ga-68", "tc-99m", "i-131"])
         if evidence_type == "patente" and (not radio_query or radio_text):
-            bonus += 0.85
+            bonus += 2.20 if patent_query else 0.65
+        if patent_query and ("inapi" in source or "inapi" in text):
+            bonus += 0.30
         if "transferencia" in text or "propiedad intelectual" in text:
-            bonus += 0.16
-        if evidence_type != "patente" and any(term in q for term in ["patente", "propiedad intelectual"]):
+            bonus += 0.18
+        if patent_query and evidence_type == "publicacion":
+            bonus -= 1.00
+        elif patent_query and evidence_type != "patente":
             bonus -= 0.25
 
     if any(term in q for term in ["convocatoria", "oportunidad", "financiamiento", "fondo"]):
@@ -293,12 +306,14 @@ def _profile_bonus(row: pd.Series, query: str) -> float:
         if evidence_type not in {"oportunidad", "proyecto"}:
             bonus -= 0.20
 
-    if any(term in q for term in ["convenio", "acuerdo", "colaboracion", "cooperacion"]):
+    if any(term in q for term in ["convenio", "acuerdo", "colaboracion", "cooperacion", "alianza"]):
         if evidence_type == "convenio":
-            bonus += 0.65
-        if any(term in source for term in ["convenio", "acuerdo"]):
+            bonus += 1.10
+        if any(term in source for term in ["convenio", "acuerdo", "datos.gob", "institucional"]):
             bonus += 0.20
-        if evidence_type not in {"convenio", "proyecto"}:
+        if evidence_type == "publicacion":
+            bonus -= 0.30
+        elif evidence_type not in {"convenio", "proyecto"}:
             bonus -= 0.15
 
     return bonus
@@ -357,8 +372,13 @@ def _lexical_search(query: str, meta: pd.DataFrame, top_k: int) -> pd.DataFrame:
     tmp = meta.copy()
     combined = tmp[searchable_cols].astype(str).agg(" ".join, axis=1)
     tmp["score"] = combined.map(lambda text: float(len(query_tokens & _tokens(text))))
-    tmp = tmp[tmp["score"] > 0].sort_values(["score", "fecha", "titulo"], ascending=[False, False, True])
     candidate_count = _candidate_pool_size(query, top_k, len(tmp))
+    if candidate_count == len(tmp):
+        tmp["_profile_probe"] = tmp.apply(lambda row: _profile_bonus(row, query), axis=1)
+        tmp = tmp[(tmp["score"] > 0) | (tmp["_profile_probe"] > 0)]
+    else:
+        tmp = tmp[tmp["score"] > 0]
+    tmp = tmp.sort_values(["score", "fecha", "titulo"], ascending=[False, False, True])
     return _shape_result(_rerank(tmp.head(candidate_count), query, top_k))
 
 

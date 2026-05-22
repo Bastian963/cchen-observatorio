@@ -162,7 +162,14 @@ def _normalize_match_text(value: object) -> str:
 
 def _tokenize_fixture_text(value: object) -> set[str]:
     normalized = _normalize_match_text(value)
-    return set(_FIXTURE_TOKEN_PATTERN.findall(normalized))
+    tokens = set(_FIXTURE_TOKEN_PATTERN.findall(normalized))
+    expanded = set(tokens)
+    for token in tokens:
+        if len(token) > 3 and token.endswith("s"):
+            expanded.add(token[:-1])
+        if len(token) > 4 and token.endswith("es"):
+            expanded.add(token[:-2])
+    return expanded
 
 
 def _uses_nuclear_medicine_profile(query: str) -> bool:
@@ -268,27 +275,47 @@ def _search_fixture(query: str, top_k: int) -> pd.DataFrame:
     if meta is None or meta.empty:
         return _empty_result()
 
+    return _lexical_search_meta(query, meta, top_k)
+
+
+def _lexical_search_meta(query: str, meta: pd.DataFrame, top_k: int) -> pd.DataFrame:
+    """Degraded local search when the transformer model cannot encode queries."""
+    if meta is None or meta.empty:
+        return _empty_result()
+
     query_tokens = _tokenize_fixture_text(query)
     if not query_tokens:
         return _empty_result()
 
-    fixture = meta.copy()
-    combined_text = fixture["title"].astype(str) + " " + fixture["abstract"].astype(str)
-    fixture["score"] = combined_text.map(
-        lambda text: float(len(query_tokens & _tokenize_fixture_text(text)))
+    out = meta.copy().fillna("")
+    for column in ("openalex_id", "doi", "title", "year", "abstract"):
+        if column not in out.columns:
+            out[column] = ""
+
+    title_text = out["title"].astype(str)
+    body_text = (
+        out["title"].astype(str)
+        + " "
+        + out["abstract"].astype(str)
+        + " "
+        + out["doi"].astype(str)
     )
-    fixture = fixture[fixture["score"] > 0].copy()
-    if fixture.empty:
+    out["_title_hits"] = title_text.map(lambda text: len(query_tokens & _tokenize_fixture_text(text)))
+    out["_body_hits"] = body_text.map(lambda text: len(query_tokens & _tokenize_fixture_text(text)))
+    out["score"] = ((out["_title_hits"] * 2.0) + out["_body_hits"]).astype(float)
+    out = out[out["score"] > 0].copy()
+    if out.empty:
         return _empty_result()
 
-    fixture["_year_sort"] = pd.to_numeric(fixture["year"], errors="coerce").fillna(0)
-    fixture = fixture.sort_values(
-        by=["score", "_year_sort", "title"],
-        ascending=[False, False, True],
+    out["_year_sort"] = pd.to_numeric(out["year"], errors="coerce").fillna(0)
+    candidate_count = _candidate_count(top_k, query)
+    out = out.sort_values(
+        by=["score", "_title_hits", "_year_sort", "title"],
+        ascending=[False, False, False, True],
     )
-    fixture = fixture.head(top_k)
-    fixture = fixture[[c for c in _result_columns() if c in fixture.columns]].reset_index(drop=True)
-    return _rerank_profile_results(fixture, query=query, top_k=top_k)
+    out = out.head(candidate_count)
+    out = out[[c for c in _result_columns() if c in out.columns]].reset_index(drop=True)
+    return _rerank_profile_results(out, query=query, top_k=top_k)
 
 
 def search(query: str, top_k: int = 10) -> pd.DataFrame:
@@ -302,7 +329,7 @@ def search(query: str, top_k: int = 10) -> pd.DataFrame:
         # Ruta local: más rápida
         q_vec = _encode_query(query)
         if q_vec is None:
-            return _empty_result()
+            return _lexical_search_meta(query, meta, top_k)
         scores = emb @ q_vec
         candidate_count = _candidate_count(top_k, query)
         top_idx = np.argsort(scores)[::-1][:candidate_count]
